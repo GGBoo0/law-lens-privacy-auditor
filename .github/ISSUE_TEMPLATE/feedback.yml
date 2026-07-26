@@ -1,0 +1,49 @@
+name: 서비스 피드백
+description: 법령렌즈의 분석 결과나 사용 경험에 대한 의견을 남겨주세요.
+title: "[Feedback] "
+labels:
+  - feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        피드백을 남겨주셔서 감사합니다. 실제 개인정보, 비공개 URL, 계정 정보는 작성하지 마세요.
+
+  - type: dropdown
+    id: feedback_type
+    attributes:
+      label: 피드백 유형
+      options:
+        - 분석 결과의 오탐
+        - 분석 결과의 누락
+        - 사용성·화면
+        - 새로운 기능
+        - 법령 근거
+        - 기타
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 어떤 상황이었나요?
+      description: 공개된 테스트 URL 또는 개인정보를 제거한 예시 문구만 입력해 주세요.
+      placeholder: 입력한 대상과 기대했던 결과를 설명해 주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: result
+    attributes:
+      label: 실제 결과와 기대 결과
+      placeholder: 실제로 표시된 결과와 더 적절하다고 생각한 결과를 적어주세요.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 공개 정보 확인
+      options:
+        - label: 이 이슈에 실제 개인정보·비밀번호·비공개 자료를 포함하지 않았습니다.
+          required: true

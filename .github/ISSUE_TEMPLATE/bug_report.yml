@@ -1,0 +1,42 @@
+name: 버그 신고
+description: 재현 가능한 오류나 동작 문제를 알려주세요.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        보안 취약점의 악용 방법이나 실제 개인정보는 공개 이슈에 작성하지 마세요.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 문제 설명
+      description: 어떤 문제가 발생했는지 간단히 설명해 주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법
+      placeholder: |
+        1. URL 또는 원문 입력
+        2. 분석 실행
+        3. 오류 확인
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: 브라우저와 운영체제
+      placeholder: Chrome 128 / Windows 11
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작
+    validations:
+      required: true
