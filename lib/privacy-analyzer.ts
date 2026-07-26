@@ -1,3 +1,5 @@
+import { LEGAL_BASELINE } from "./legal-baseline";
+
 export type Severity = "high" | "medium" | "low" | "pass" | "na";
 
 type FindingType =
@@ -113,6 +115,11 @@ const SOURCES = {
     law: "전자상거래 등에서의 소비자보호에 관한 법률",
     article: "제6조",
     url: "https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031806291",
+  },
+  ecommerceDecree: {
+    law: "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+    article: "제6조",
+    url: "https://law.go.kr/LSW/lumLsLinkPop.do?lspttninfSeq=63460",
   },
   ai: {
     law: "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
@@ -884,7 +891,7 @@ export function analyzePrivacyPolicy(
         evidence: excerpt(compact, ecommercePatterns),
         recommendation:
           "표시·광고 6개월, 계약·청약철회 5년, 대금결제·공급 5년, 소비자 불만·분쟁 3년을 실제 보유 항목과 연결하세요.",
-        legalBasis: [SOURCES.ecommerce],
+        legalBasis: [SOURCES.ecommerce, SOURCES.ecommerceDecree],
         confidence: "보통",
       });
     }
@@ -957,7 +964,7 @@ export function analyzePrivacyPolicy(
     analysisEngine: {
       mode: "local_rules",
       name: "무료 규칙·휴리스틱 엔진",
-      version: "KR-PRIVACY-2026.07",
+      version: LEGAL_BASELINE.rulesetVersion,
       aiUsed: false,
       externalApiCalls: 0,
       estimatedApiCostKrw: 0,
@@ -968,29 +975,11 @@ export function analyzePrivacyPolicy(
       ],
     },
     legalBaseline: {
-      date: "2026-07-26",
-      statutes: [
-        {
-          name: "개인정보 보호법",
-          version: "시행 2025.10.02 · 법률 제20897호",
-          url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=270351",
-        },
-        {
-          name: "개인정보 보호법 시행령",
-          version: "시행 2026.05.19 · 대통령령 제36340호",
-          url: "https://www.law.go.kr/LSW/lsSc.do?eventGubun=060101&menuId=1&query=%EA%B0%9C%EC%9D%B8%EC%A0%95%EB%B3%B4+%EB%B3%B4%ED%98%B8%EB%B2%95+%EC%8B%9C%ED%96%89%EB%A0%B9",
-        },
-        {
-          name: "개인정보 처리방침 작성지침",
-          version: "개인정보보호위원회 · 2026.04 개정",
-          url: "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=&nttId=12018",
-        },
-        {
-          name: "개인정보의 안전성 확보조치 기준",
-          version: "시행 2025.10.31 · 고시 제2025-9호",
-          url: "https://www.law.go.kr/admRulStmdInfoP.do?admRulSeq=2100000265956",
-        },
-      ],
+      date: LEGAL_BASELINE.verifiedAt,
+      verifiedAt: LEGAL_BASELINE.verifiedAt,
+      rulesetVersion: LEGAL_BASELINE.rulesetVersion,
+      statutes: LEGAL_BASELINE.statutes,
+      upcomingChanges: LEGAL_BASELINE.upcomingChanges,
     },
   };
 }

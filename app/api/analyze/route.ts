@@ -1,78 +1,82 @@
 import { analyzePrivacyPolicy } from "../../../lib/privacy-analyzer";
+import {
+  assertPublicDns,
+  normalizeAndAssertPublicUrl,
+  readUtf8Stream,
+} from "../../../lib/network-security";
 
 export const runtime = "edge";
 
 const MAX_HTML_CHARS = 700_000;
 const MAX_POLICY_CHARS = 180_000;
 const MAX_REDIRECTS = 3;
+const MAX_REQUEST_BYTES = 350_000;
+const MAX_RESPONSE_BYTES = 1_500_000;
+const RATE_LIMIT = 12;
+const RATE_WINDOW_MS = 60_000;
 
-function json(data: unknown, status = 200) {
+const rateWindows = new Map<string, { count: number; resetAt: number }>();
+
+function json(data: unknown, status = 200, extraHeaders?: HeadersInit) {
   return Response.json(data, {
     status,
     headers: {
       "Cache-Control": "no-store",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+      "Cross-Origin-Resource-Policy": "same-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      ...extraHeaders,
     },
   });
 }
 
-function normalizeUrl(value: string) {
-  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(value)
-    ? value
-    : `https://${value}`;
-  return new URL(candidate);
-}
-
-function isPrivateIpv4(hostname: string) {
-  const parts = hostname.split(".").map(Number);
-  if (
-    parts.length !== 4 ||
-    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
-  ) {
+function sameOriginRequest(request: Request) {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) {
     return false;
   }
-  return (
-    parts[0] === 10 ||
-    parts[0] === 127 ||
-    parts[0] === 0 ||
-    (parts[0] === 169 && parts[1] === 254) ||
-    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-    (parts[0] === 192 && parts[1] === 168) ||
-    (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
-    parts[0] >= 224
-  );
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  try {
+    return new URL(origin).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
 }
 
-function assertPublicUrl(url: URL) {
-  if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("http 또는 https 주소만 분석할 수 있습니다.");
+function takeRateLimit(request: Request) {
+  const key =
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-real-ip") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "anonymous";
+  const now = Date.now();
+  const existing = rateWindows.get(key);
+  if (!existing || existing.resetAt <= now) {
+    rateWindows.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return null;
   }
-  if (url.username || url.password) {
-    throw new Error("로그인 정보가 포함된 주소는 분석할 수 없습니다.");
-  }
-  if (url.port && !["80", "443"].includes(url.port)) {
-    throw new Error("일반 웹 포트(80, 443)의 공개 페이지를 입력해 주세요.");
-  }
+  existing.count += 1;
+  if (existing.count <= RATE_LIMIT) return null;
+  return Math.max(1, Math.ceil((existing.resetAt - now) / 1_000));
+}
 
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
-  if (
-    hostname === "localhost" ||
-    hostname === "::1" ||
-    hostname === "[::1]" ||
-    hostname.endsWith(".localhost") ||
-    hostname.endsWith(".local") ||
-    hostname.endsWith(".internal") ||
-    hostname.endsWith(".lan") ||
-    isPrivateIpv4(hostname)
-  ) {
-    throw new Error("공개 인터넷에 있는 웹사이트만 분석할 수 있습니다.");
+function pruneRateWindows() {
+  if (rateWindows.size < 2_000) return;
+  const now = Date.now();
+  for (const [key, value] of rateWindows) {
+    if (value.resetAt <= now) rateWindows.delete(key);
   }
 }
 
 async function fetchHtml(initialUrl: URL) {
   let current = initialUrl;
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
-    assertPublicUrl(current);
+    current = normalizeAndAssertPublicUrl(current);
+    await assertPublicDns(current);
     const response = await fetch(current, {
       method: "GET",
       redirect: "manual",
@@ -88,7 +92,7 @@ async function fetchHtml(initialUrl: URL) {
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       if (!location) throw new Error("사이트의 이동 주소가 비어 있습니다.");
-      current = new URL(location, current);
+      current = normalizeAndAssertPublicUrl(new URL(location, current));
       continue;
     }
 
@@ -119,11 +123,17 @@ async function fetchHtml(initialUrl: URL) {
     }
 
     const declaredLength = Number(response.headers.get("content-length") || 0);
-    if (declaredLength > 3_000_000) {
+    if (declaredLength > MAX_RESPONSE_BYTES) {
       throw new Error("페이지가 너무 커서 안전하게 분석할 수 없습니다.");
     }
 
-    const html = (await response.text()).slice(0, MAX_HTML_CHARS);
+    const html = (
+      await readUtf8Stream(
+        response.body,
+        MAX_RESPONSE_BYTES,
+        "페이지가 너무 커서 안전하게 분석할 수 없습니다.",
+      )
+    ).slice(0, MAX_HTML_CHARS);
     return { html, finalUrl: current };
   }
   throw new Error("페이지 이동 횟수가 너무 많습니다.");
@@ -248,12 +258,44 @@ function looksLikePolicy(text: string, url: URL) {
 
 export async function POST(request: Request) {
   try {
+    if (!sameOriginRequest(request)) {
+      return json({ error: "교차 사이트 요청은 허용되지 않습니다." }, 403);
+    }
+    const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+    if (!contentType.startsWith("application/json")) {
+      return json({ error: "JSON 요청만 허용됩니다." }, 415);
+    }
+
+    pruneRateWindows();
+    const retryAfter = takeRateLimit(request);
+    if (retryAfter !== null) {
+      return json(
+        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
+        429,
+        { "Retry-After": String(retryAfter) },
+      );
+    }
+
     const contentLength = Number(request.headers.get("content-length") || 0);
-    if (contentLength > 350_000) {
+    if (contentLength > MAX_REQUEST_BYTES) {
       return json({ error: "입력 내용이 너무 큽니다." }, 413);
     }
 
-    const body = (await request.json()) as { url?: unknown; text?: unknown };
+    let body: { url?: unknown; text?: unknown };
+    try {
+      const rawBody = await readUtf8Stream(
+        request.body,
+        MAX_REQUEST_BYTES,
+        "입력 내용이 너무 큽니다.",
+      );
+      body = JSON.parse(rawBody) as { url?: unknown; text?: unknown };
+    } catch (error) {
+      if (error instanceof Error && error.message === "입력 내용이 너무 큽니다.") {
+        return json({ error: error.message }, 413);
+      }
+      return json({ error: "올바른 JSON 요청을 보내 주세요." }, 400);
+    }
+
     if (typeof body.text === "string") {
       const text = body.text.trim().slice(0, MAX_POLICY_CHARS);
       if (text.length < 120) {
@@ -273,8 +315,7 @@ export async function POST(request: Request) {
 
     let inputUrl: URL;
     try {
-      inputUrl = normalizeUrl(body.url.trim());
-      assertPublicUrl(inputUrl);
+      inputUrl = normalizeAndAssertPublicUrl(body.url);
     } catch (error) {
       return json(
         {

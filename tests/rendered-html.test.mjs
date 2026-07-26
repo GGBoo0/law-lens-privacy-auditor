@@ -23,6 +23,28 @@ async function fetchWorker(request) {
   );
 }
 
+let persistentWorker;
+
+async function fetchPersistentWorker(request) {
+  if (!persistentWorker) {
+    const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+    workerUrl.searchParams.set("rate-limit-test", `${process.pid}-${Date.now()}`);
+    persistentWorker = (await import(workerUrl.href)).default;
+  }
+  return persistentWorker.fetch(
+    request,
+    {
+      ASSETS: {
+        fetch: async () => new Response("Not found", { status: 404 }),
+      },
+    },
+    {
+      waitUntil() {},
+      passThroughOnException() {},
+    },
+  );
+}
+
 test("server-renders the finished Korean product", async () => {
   const response = await fetchWorker(
     new Request("http://localhost/", {
@@ -31,6 +53,11 @@ test("server-renders the finished Korean product", async () => {
   );
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+  assert.match(
+    response.headers.get("content-security-policy") ?? "",
+    /frame-ancestors 'none'/,
+  );
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
 
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);
@@ -57,6 +84,22 @@ test("analyzes pasted policy text without external services", async () => {
   const result = await response.json();
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
   assert.equal(result.legalBaseline.date, "2026-07-26");
+  assert.equal(result.legalBaseline.verifiedAt, "2026-07-26");
+  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.07.26");
+  assert.ok(
+    result.legalBaseline.statutes.some(
+      (statute) =>
+        statute.name === "개인정보의 안전성 확보조치 기준" &&
+        statute.version.includes("고시 제2026-9호"),
+    ),
+  );
+  assert.ok(
+    result.legalBaseline.upcomingChanges.some(
+      (change) =>
+        change.effectiveFrom === "2026-09-11" &&
+        change.status === "분석 규칙에 미적용",
+    ),
+  );
   assert.equal(result.analysisEngine.mode, "local_rules");
   assert.equal(result.analysisEngine.aiUsed, false);
   assert.equal(result.analysisEngine.externalApiCalls, 0);
@@ -91,4 +134,88 @@ test("flags ambiguous wording and conflicting disclosures without an AI API", as
         finding.requiresFactualVerification,
     ),
   );
+});
+
+test("rejects cross-site, non-JSON, and private-network requests", async () => {
+  const crossSite = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: "https://attacker.example",
+        "sec-fetch-site": "cross-site",
+      },
+      body: JSON.stringify({ text: "가".repeat(150) }),
+    }),
+  );
+  assert.equal(crossSite.status, 403);
+
+  const nonJson = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: "{}",
+    }),
+  );
+  assert.equal(nonJson.status, 415);
+
+  for (const url of [
+    "http://127.0.0.1/privacy",
+    "http://169.254.169.254/latest/meta-data",
+    "http://[::1]/privacy",
+    "http://[fc00::1]/privacy",
+  ]) {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+      }),
+    );
+    assert.equal(response.status, 400, url);
+  }
+});
+
+test("cites the current e-commerce retention decree when the signal appears", async () => {
+  const text =
+    "주식회사 테스트는 회원가입과 주문, 결제, 배송을 위해 이름과 이메일을 처리합니다. 개인정보 처리 목적은 회원관리와 상품 공급입니다. 처리하는 개인정보 항목은 이름과 이메일입니다. 개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다. 파기 절차 및 방법에 따라 전자파일은 영구 삭제합니다. 정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com, 02-1234-5678입니다. 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다. 개인정보를 제3자에게 제공하지 않고 처리 업무도 위탁하지 않습니다. 본 방침은 2026년 7월 1일부터 시행합니다.";
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+  );
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  const finding = result.findings.find(
+    (candidate) => candidate.id === "ecommerce-retention",
+  );
+  assert.ok(finding);
+  assert.ok(
+    finding.legalBasis.some(
+      (basis) =>
+        basis.law === "전자상거래 등에서의 소비자보호에 관한 법률 시행령" &&
+        basis.article === "제6조",
+    ),
+  );
+});
+
+test("rate-limits repeated analysis requests from one client", async () => {
+  const text = "개인정보처리방침 테스트 문장입니다. ".repeat(12);
+  let response;
+  for (let attempt = 1; attempt <= 13; attempt++) {
+    response = await fetchPersistentWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "cf-connecting-ip": "198.51.100.44",
+        },
+        body: JSON.stringify({ text }),
+      }),
+    );
+    assert.equal(response.status, attempt <= 12 ? 200 : 429);
+  }
+  assert.ok(Number(response.headers.get("retry-after")) >= 1);
 });

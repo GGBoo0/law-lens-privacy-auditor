@@ -1043,6 +1043,32 @@ main {
   font-size: 12px;
 }
 
+.pendingLaw {
+  margin-top: 18px;
+  padding: 12px 14px;
+  display: block;
+  border-left: 3px solid var(--amber);
+  background: rgba(255, 184, 77, 0.12);
+  text-decoration: none;
+}
+
+.pendingLaw strong,
+.pendingLaw span {
+  display: block;
+}
+
+.pendingLaw strong {
+  color: #8c4f00;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.pendingLaw span {
+  margin-top: 3px;
+  color: #596274;
+  font-size: 10px;
+}
+
 .statuteList {
   border-top: 1px solid rgba(17, 26, 45, 0.16);
 }

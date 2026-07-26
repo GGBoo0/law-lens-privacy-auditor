@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { LEGAL_BASELINE } from "../lib/legal-baseline";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
 
@@ -65,9 +66,19 @@ type AnalysisResult = {
   };
   legalBaseline: {
     date: string;
+    verifiedAt: string;
+    rulesetVersion: string;
     statutes: Array<{
       name: string;
       version: string;
+      scope: string;
+      url: string;
+    }>;
+    upcomingChanges: Array<{
+      name: string;
+      version: string;
+      effectiveFrom: string;
+      status: string;
       url: string;
     }>;
   };
@@ -204,7 +215,8 @@ export default function Home() {
         </a>
         <div className="topMeta">
           <span className="liveDot" aria-hidden="true" />
-          대한민국 법령 기준일 2026.07.26
+          대한민국 법령 공식 검증일{" "}
+          {LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}
         </div>
       </header>
 
@@ -218,7 +230,7 @@ export default function Home() {
           </h1>
           <p className="heroLead">
             회사 홈페이지를 넣으면 방침을 찾아 추출하고, 누락·모호성·
-            위반 소지를 오늘 기준 대한민국 법령과 함께 짚어드립니다.
+            위반 소지를 공식 검증일 기준 대한민국 법령과 함께 짚어드립니다.
           </p>
           <div className="proofRow">
             <div>
@@ -327,7 +339,8 @@ export default function Home() {
           <div className="privacyNote">
             <span aria-hidden="true">●</span>
             외부 AI API로 전송하지 않습니다. 입력 내용은 요청 중 규칙
-            분석에만 사용하며 앱 데이터베이스에 저장하지 않습니다.
+            분석에만 사용하며 앱 데이터베이스에 저장하지 않습니다. URL은
+            공개 DNS·IP를 확인하고 이동 주소마다 다시 검사합니다.
           </div>
         </div>
       </section>
@@ -578,11 +591,24 @@ export default function Home() {
           <div className="sourceGrid">
             <div>
               <div className="eyebrow">LEGAL BASELINE</div>
-              <h3>오늘 적용한 법령과 지침</h3>
+              <h3>공식 원문으로 검증한 법령과 지침</h3>
               <p>
-                기준일 이후 개정·시행되는 규정은 자동으로 소급 반영하지
-                않았습니다.
+                공식 검증일 {result.legalBaseline.verifiedAt} · 규칙셋{" "}
+                {result.legalBaseline.rulesetVersion}. 조건부 법률은 관련
+                처리 신호가 있을 때만 검사합니다.
               </p>
+              {result.legalBaseline.upcomingChanges.map((change) => (
+                <a
+                  className="pendingLaw"
+                  href={change.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  key={`${change.name}-${change.effectiveFrom}`}
+                >
+                  <strong>시행 예정 · 현재 미적용</strong>
+                  <span>{change.version}</span>
+                </a>
+              ))}
             </div>
             <div className="statuteList">
               {result.legalBaseline.statutes.map((statute) => (
@@ -594,7 +620,9 @@ export default function Home() {
                 >
                   <span>
                     <strong>{statute.name}</strong>
-                    <small>{statute.version}</small>
+                    <small>
+                      {statute.version} · {statute.scope}
+                    </small>
                   </span>
                   <b aria-hidden="true">↗</b>
                 </a>
