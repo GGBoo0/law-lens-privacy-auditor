@@ -57,7 +57,38 @@ test("analyzes pasted policy text without external services", async () => {
   const result = await response.json();
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
   assert.equal(result.legalBaseline.date, "2026-07-26");
+  assert.equal(result.analysisEngine.mode, "local_rules");
+  assert.equal(result.analysisEngine.aiUsed, false);
+  assert.equal(result.analysisEngine.externalApiCalls, 0);
+  assert.equal(result.analysisEngine.estimatedApiCostKrw, 0);
   assert.ok(result.score >= 80);
   assert.equal(result.counts.high, 0);
   assert.ok(result.coverage.length >= 10);
+});
+
+test("flags ambiguous wording and conflicting disclosures without an AI API", async () => {
+  const text =
+    "주식회사 테스트의 개인정보 처리 목적은 회원관리와 서비스 제공입니다. 처리하는 개인정보 항목은 이름과 이메일이고 보유 기간은 회원 탈퇴 시까지입니다. 파기 절차 및 방법에 따라 전자파일은 영구 삭제합니다. 정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com, 02-1234-5678입니다. 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다. 회사는 개인정보를 제3자에게 제공하지 않습니다. 다만 회사가 필요하다고 판단하는 경우 제휴사 등에 개인정보를 제공할 수 있습니다. 처리 업무를 위탁하지 않으나 배송 업무는 외부 업체에 위탁합니다. 본 방침은 2026년 7월 1일부터 시행됩니다.";
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  const ids = new Set(result.findings.map((finding) => finding.id));
+  assert.ok(ids.has("vague-purpose"));
+  assert.ok(ids.has("third-party-inconsistency"));
+  assert.ok(ids.has("vague-third-party"));
+  assert.ok(ids.has("outsourcing-inconsistency"));
+  assert.ok(
+    result.findings.some(
+      (finding) =>
+        finding.findingType === "ambiguity_or_inconsistency" &&
+        finding.requiresFactualVerification,
+    ),
+  );
 });

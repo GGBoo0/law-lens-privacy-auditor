@@ -1,5 +1,11 @@
 export type Severity = "high" | "medium" | "low" | "pass" | "na";
 
+type FindingType =
+  | "possible_missing_disclosure"
+  | "ambiguity_or_inconsistency"
+  | "factual_verification"
+  | "confirmed_disclosure";
+
 type LegalBasis = {
   law: string;
   article: string;
@@ -17,6 +23,8 @@ type Finding = {
   recommendation: string;
   legalBasis: LegalBasis[];
   confidence: "높음" | "보통" | "낮음";
+  findingType: FindingType;
+  requiresFactualVerification: boolean;
 };
 
 type CoverageItem = {
@@ -160,11 +168,33 @@ export function analyzePrivacyPolicy(
   const signals: string[] = [];
 
   const add = (
-    finding: Omit<Finding, "label"> & { label?: string },
+    finding: Omit<
+      Finding,
+      "label" | "findingType" | "requiresFactualVerification"
+    > & {
+      label?: string;
+      findingType?: FindingType;
+      requiresFactualVerification?: boolean;
+    },
   ) => {
+    const findingType =
+      finding.findingType ??
+      (finding.severity === "pass"
+        ? "confirmed_disclosure"
+        : finding.severity === "medium"
+          ? "ambiguity_or_inconsistency"
+          : finding.severity === "low"
+            ? "factual_verification"
+            : "possible_missing_disclosure");
+
     findings.push({
       ...finding,
       label: finding.label ?? labels[finding.severity],
+      findingType,
+      requiresFactualVerification:
+        finding.requiresFactualVerification ??
+        (findingType === "factual_verification" ||
+          finding.confidence === "낮음"),
     });
   };
 
@@ -347,6 +377,8 @@ export function analyzePrivacyPolicy(
     /회사가\s*필요하다고\s*판단/i,
     /기타\s*필요한\s*목적/i,
     /제반\s*업무/i,
+    /필요한\s*범위(?:에서|로)/i,
+    /향후\s*개발되는\s*서비스/i,
     /and\s+other\s+purposes/i,
   ];
   if (matches(compact, vaguePurposePatterns)) {
@@ -392,14 +424,67 @@ export function analyzePrivacyPolicy(
     /제3자에게\s*(?:제공하지|공유하지)\s*않/i,
     /제3자\s*제공\s*(?:없음|해당\s*없음)/i,
   ];
+  const affirmativeThirdPartyPatterns = [
+    /제공받는\s*자/i,
+    /개인정보를\s*(?:제3자|제휴사|협력사)[^.\n]{0,35}\s*제공/i,
+    /(?:제휴사|협력사|파트너사)(?:\s*등)?(?:에게|에)\s*제공/i,
+    /share\s+(?:your\s+)?personal/i,
+  ];
   const thirdPartySignals = [
     /제3자\s*제공/i,
-    /제공받는\s*자/i,
-    /개인정보를\s*제공/i,
-    /share\s+(?:your\s+)?personal/i,
+    ...affirmativeThirdPartyPatterns,
   ];
   const thirdParty = matches(compact, thirdPartySignals);
   const noThirdParty = matches(compact, noThirdPartyPatterns);
+  const affirmativeThirdParty = matches(
+    compact,
+    affirmativeThirdPartyPatterns,
+  );
+
+  if (noThirdParty && affirmativeThirdParty) {
+    add({
+      id: "third-party-inconsistency",
+      category: "문단 간 불일치",
+      title: "제3자 제공 여부가 서로 다르게 읽힙니다",
+      severity: "medium",
+      summary:
+        "제3자에게 제공하지 않는다는 문구와 제공받는 자·제휴사 제공 정황이 함께 발견됐습니다. 예외 제공인지, 위탁인지, 서로 다른 서비스에 관한 내용인지 문단만으로 구분하기 어렵습니다.",
+      evidence: excerpt(compact, [
+        ...noThirdPartyPatterns,
+        ...affirmativeThirdPartyPatterns,
+      ]),
+      recommendation:
+        "‘원칙적 미제공’의 예외를 제공받는 자·목적·항목·기간별로 분리하고, 처리위탁과 제3자 제공을 명확히 구분하세요.",
+      legalBasis: [SOURCES.pipa17, SOURCES.pipa26, SOURCES.pipa30],
+      confidence: "보통",
+      findingType: "ambiguity_or_inconsistency",
+      requiresFactualVerification: true,
+    });
+  }
+
+  const vagueThirdPartyPatterns = [
+    /필요한\s*범위(?:에서|로)[^.\n]{0,45}(?:제3자|제휴사|협력사)[^.\n]{0,20}제공/i,
+    /(?:제휴사|협력사|파트너사)\s*등(?:에게|에)?\s*제공/i,
+    /사업상\s*필요(?:한\s*경우)?[^.\n]{0,35}제공/i,
+    /필요하다고\s*판단(?:하는)?\s*경우[^.\n]{0,50}(?:제휴사|협력사|제3자)[^.\n]{0,35}제공/i,
+  ];
+  if (matches(compact, vagueThirdPartyPatterns)) {
+    add({
+      id: "vague-third-party",
+      category: "제3자 제공",
+      title: "제공 대상과 범위가 포괄적으로 표현돼 있습니다",
+      severity: "medium",
+      summary:
+        "‘필요한 범위’, ‘제휴사 등’만으로는 정보주체가 누구에게 어떤 정보가 넘어가는지 예측하기 어렵습니다.",
+      evidence: excerpt(compact, vagueThirdPartyPatterns),
+      recommendation:
+        "제공받는 자를 실제 법인명으로 특정하고, 각 제공 목적·항목·보유기간을 행 단위로 대응시키세요.",
+      legalBasis: [SOURCES.pipa17, SOURCES.pipa30],
+      confidence: "높음",
+      findingType: "ambiguity_or_inconsistency",
+    });
+  }
+
   if (noThirdParty) {
     addCoverage("제3자 제공", "present", "제공하지 않는다는 문구 확인");
   } else if (thirdParty) {
@@ -434,6 +519,7 @@ export function analyzePrivacyPolicy(
 
   const noOutsourcePatterns = [
     /개인정보\s*처리\s*업무를\s*위탁하지\s*않/i,
+    /처리\s*업무를\s*위탁하지\s*않/i,
     /처리\s*위탁\s*(?:없음|해당\s*없음)/i,
   ];
   const outsourcePatterns = [
@@ -444,7 +530,35 @@ export function analyzePrivacyPolicy(
     /processor/i,
   ];
   const outsourced = matches(compact, outsourcePatterns);
-  if (matches(compact, noOutsourcePatterns)) {
+  const affirmativeOutsourcePatterns = [
+    /(?:외부|전문|협력)?\s*업체[^.\n]{0,30}위탁/i,
+    /수탁자|수탁업체|위탁받는\s*자/i,
+    /위탁\s*업무(?:의)?\s*(?:내용|목적)/i,
+  ];
+  const noOutsource = matches(compact, noOutsourcePatterns);
+
+  if (noOutsource && matches(compact, affirmativeOutsourcePatterns)) {
+    add({
+      id: "outsourcing-inconsistency",
+      category: "문단 간 불일치",
+      title: "처리위탁 여부가 서로 다르게 읽힙니다",
+      severity: "medium",
+      summary:
+        "처리업무를 위탁하지 않는다는 문구와 수탁자·외부업체 위탁 정황이 함께 발견됐습니다. 문서 버전 또는 서비스별 범위를 확인해야 합니다.",
+      evidence: excerpt(compact, [
+        ...noOutsourcePatterns,
+        ...affirmativeOutsourcePatterns,
+      ]),
+      recommendation:
+        "위탁이 없는 서비스와 위탁이 있는 서비스를 구분하고, 현재 수탁자와 위탁업무를 최신 상태로 공개하세요.",
+      legalBasis: [SOURCES.pipa26, SOURCES.pipa30],
+      confidence: "보통",
+      findingType: "ambiguity_or_inconsistency",
+      requiresFactualVerification: true,
+    });
+  }
+
+  if (noOutsource) {
     addCoverage("처리위탁", "present", "위탁하지 않는다는 문구 확인");
   } else if (outsourced) {
     signals.push("처리위탁");
@@ -840,6 +954,19 @@ export function analyzePrivacyPolicy(
     coverage,
     detectedSignals: [...new Set(signals)],
     policyExcerpt: text.slice(0, 12000),
+    analysisEngine: {
+      mode: "local_rules",
+      name: "무료 규칙·휴리스틱 엔진",
+      version: "KR-PRIVACY-2026.07",
+      aiUsed: false,
+      externalApiCalls: 0,
+      estimatedApiCostKrw: 0,
+      limitations: [
+        "이미지·PDF 안의 표와 로그인 뒤 화면은 원문 붙여넣기 없이 확인할 수 없음",
+        "실제 수집 항목, 쿠키 전송, 동의 화면, 파기 실행 여부는 현장 검증 필요",
+        "문장의 의미를 통계적 AI가 해석하지 않으므로 새로운 표현은 탐지하지 못할 수 있음",
+      ],
+    },
     legalBaseline: {
       date: "2026-07-26",
       statutes: [

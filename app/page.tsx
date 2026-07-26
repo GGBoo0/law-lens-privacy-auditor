@@ -21,6 +21,12 @@ type Finding = {
   recommendation: string;
   legalBasis: LegalBasis[];
   confidence: "높음" | "보통" | "낮음";
+  findingType:
+    | "possible_missing_disclosure"
+    | "ambiguity_or_inconsistency"
+    | "factual_verification"
+    | "confirmed_disclosure";
+  requiresFactualVerification: boolean;
 };
 
 type CoverageItem = {
@@ -48,6 +54,15 @@ type AnalysisResult = {
   coverage: CoverageItem[];
   detectedSignals: string[];
   policyExcerpt: string;
+  analysisEngine: {
+    mode: "local_rules";
+    name: string;
+    version: string;
+    aiUsed: false;
+    externalApiCalls: 0;
+    estimatedApiCostKrw: 0;
+    limitations: string[];
+  };
   legalBaseline: {
     date: string;
     statutes: Array<{
@@ -215,8 +230,8 @@ export default function Home() {
               <span>근거와 수정 제안</span>
             </div>
             <div>
-              <strong>0건</strong>
-              <span>앱 DB 저장</span>
+              <strong>₩0</strong>
+              <span>외부 AI API 분석비</span>
             </div>
           </div>
         </div>
@@ -311,8 +326,8 @@ export default function Home() {
 
           <div className="privacyNote">
             <span aria-hidden="true">●</span>
-            입력 내용은 분석 응답 생성에만 사용하며 앱 데이터베이스에
-            저장하지 않습니다.
+            외부 AI API로 전송하지 않습니다. 입력 내용은 요청 중 규칙
+            분석에만 사용하며 앱 데이터베이스에 저장하지 않습니다.
           </div>
         </div>
       </section>
@@ -405,6 +420,29 @@ export default function Home() {
             </div>
           )}
 
+          <div className="engineStrip" aria-label="분석 엔진 정보">
+            <div>
+              <span>API 비용</span>
+              <strong>₩{result.analysisEngine.estimatedApiCostKrw}</strong>
+            </div>
+            <div>
+              <span>분석 방식</span>
+              <strong>{result.analysisEngine.name}</strong>
+            </div>
+            <div>
+              <span>외부 AI 전송</span>
+              <strong>{result.analysisEngine.aiUsed ? "사용" : "없음"}</strong>
+            </div>
+            <details>
+              <summary>무료 분석의 한계</summary>
+              <ul>
+                {result.analysisEngine.limitations.map((limitation) => (
+                  <li key={limitation}>{limitation}</li>
+                ))}
+              </ul>
+            </details>
+          </div>
+
           <div className="reportLayout">
             <div className="findingsPanel">
               <div className="sectionHeading">
@@ -494,6 +532,8 @@ export default function Home() {
                           </div>
                           <div className="confidence">
                             자동 판정 신뢰도 {finding.confidence}
+                            {finding.requiresFactualVerification &&
+                              " · 현장 검증 필요"}
                           </div>
                         </div>
                       )}
@@ -582,8 +622,8 @@ export default function Home() {
           </article>
           <article>
             <span>2</span>
-            <h3>맥락별 조문 대조</h3>
-            <p>국외이전·위탁·아동 등 감지된 처리에만 조건부 기준을 적용합니다.</p>
+            <h3>무료 규칙·문장 패턴 검사</h3>
+            <p>외부 AI 없이 필수항목, 포괄 표현과 문단 간 충돌을 검사합니다.</p>
           </article>
           <article>
             <span>3</span>

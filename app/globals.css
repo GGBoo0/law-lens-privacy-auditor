@@ -714,6 +714,49 @@ main {
   font-weight: 700;
 }
 
+.engineStrip {
+  margin-top: 10px;
+  padding: 15px 17px;
+  display: grid;
+  grid-template-columns: 0.5fr 1.3fr 0.65fr minmax(190px, 0.8fr);
+  gap: 16px;
+  align-items: start;
+  border: 1px solid rgba(17, 26, 45, 0.1);
+  background: rgba(215, 255, 77, 0.14);
+}
+
+.engineStrip > div span,
+.engineStrip > div strong {
+  display: block;
+}
+
+.engineStrip > div span {
+  color: #737b8a;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.engineStrip > div strong {
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.engineStrip details {
+  color: #586276;
+  font-size: 10px;
+}
+
+.engineStrip summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.engineStrip ul {
+  margin: 8px 0 0;
+  padding-left: 17px;
+  line-height: 1.55;
+}
+
 .reportLayout {
   margin-top: 72px;
   display: grid;
@@ -1246,6 +1289,14 @@ footer > a {
   .scoreCard {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+
+  .engineStrip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .engineStrip details {
+    grid-column: 1 / -1;
   }
 
   .scoreRing {
