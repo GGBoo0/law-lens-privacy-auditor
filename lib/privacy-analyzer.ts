@@ -2,6 +2,10 @@ import { LEGAL_BASELINE } from "./legal-baseline";
 
 export type Severity = "high" | "medium" | "low" | "pass" | "na";
 
+export type ContextKey = "overseas" | "children" | "ecommerce" | "ai";
+export type ContextChoice = "auto" | "yes" | "no";
+export type ContextOverrides = Partial<Record<ContextKey, ContextChoice>>;
+
 type FindingType =
   | "possible_missing_disclosure"
   | "ambiguity_or_inconsistency"
@@ -140,6 +144,12 @@ function matches(text: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(text));
 }
 
+function subjectParticle(value: string) {
+  const last = value.charCodeAt(value.length - 1);
+  if (last < 0xac00 || last > 0xd7a3) return "이";
+  return (last - 0xac00) % 28 === 0 ? "가" : "이";
+}
+
 function excerpt(text: string, patterns: RegExp[], radius = 78) {
   for (const pattern of patterns) {
     const flags = pattern.flags.replace("g", "");
@@ -162,6 +172,7 @@ export function analyzePrivacyPolicy(
     policyUrl?: string;
     policyTitle?: string;
     retrievedAt?: string;
+    contextOverrides?: ContextOverrides;
   } = {},
 ) {
   const text = rawText
@@ -173,6 +184,14 @@ export function analyzePrivacyPolicy(
   const findings: Finding[] = [];
   const coverage: CoverageItem[] = [];
   const signals: string[] = [];
+  const contextChoice = (key: ContextKey) =>
+    meta.contextOverrides?.[key] ?? "auto";
+  // 본문에서 신호가 명확하면 사용자의 '비해당' 선택만으로 숨기지 않습니다.
+  // '해당' 선택은 문서 누락을 찾기 위한 추가 사실관계로 사용합니다.
+  const contextActive = (key: ContextKey, detected: boolean) =>
+    detected || contextChoice(key) === "yes";
+  const signalLabel = (label: string, detected: boolean) =>
+    detected ? label : `${label} · 사용자 확인`;
 
   const add = (
     finding: Omit<
@@ -339,7 +358,7 @@ export function analyzePrivacyPolicy(
       add({
         id: `missing-${check.id}`,
         category: check.category,
-        title: `${check.title}이 보이지 않습니다`,
+        title: `${check.title}${subjectParticle(check.title)} 보이지 않습니다`,
         severity: check.id === "security" ? "medium" : "high",
         summary:
           "법정 필수 공개항목으로 볼 수 있는 명확한 문구를 추출 원문에서 찾지 못했습니다. 표·이미지 안에만 있거나 추출이 누락됐을 가능성도 확인해야 합니다.",
@@ -610,9 +629,10 @@ export function analyzePrivacyPolicy(
     /international\s+(?:data\s+)?transfer/i,
     /transfer.*(?:outside|overseas)/i,
   ];
-  const overseas = matches(compact, overseasPatterns);
+  const overseasDetected = matches(compact, overseasPatterns);
+  const overseas = contextActive("overseas", overseasDetected);
   if (overseas) {
-    signals.push("국외 이전");
+    signals.push(signalLabel("국외 이전", overseasDetected));
     const fields = [
       /이전받는\s*자|수신자|recipient/i,
       /이전되는\s*(?:국가|개인정보\s*항목)|국가명/i,
@@ -633,7 +653,8 @@ export function analyzePrivacyPolicy(
         recommendation:
           "국외 이전의 법적 근거, 이전받는 자와 국가, 항목, 목적, 일시·방법, 보유·이용기간, 거부 방법과 효과를 구체적으로 공개하세요.",
         legalBasis: [SOURCES.pipa28, SOURCES.decree31],
-        confidence: "높음",
+        confidence: overseasDetected ? "높음" : "보통",
+        requiresFactualVerification: !overseasDetected,
       });
       addCoverage("국외 이전", "conditional", `${found}/6 핵심 범주 감지`);
     } else {
@@ -746,8 +767,9 @@ export function analyzePrivacyPolicy(
     /아동|어린이|법정대리인/i,
     /children|child|parental\s+consent/i,
   ];
-  if (matches(compact, childPatterns)) {
-    signals.push("아동 개인정보");
+  const childrenDetected = matches(compact, childPatterns);
+  if (contextActive("children", childrenDetected)) {
+    signals.push(signalLabel("아동 개인정보", childrenDetected));
     const guardian = matches(compact, [
       /법정대리인(?:의)?\s*동의/i,
       /보호자(?:의)?\s*동의/i,
@@ -770,7 +792,8 @@ export function analyzePrivacyPolicy(
         recommendation:
           "법정대리인 동의·확인 방법, 최소 수집정보, 아동이 이해하기 쉬운 안내 방식을 별도 절로 구체화하세요.",
         legalBasis: [SOURCES.pipa22],
-        confidence: "높음",
+        confidence: childrenDetected ? "높음" : "보통",
+        requiresFactualVerification: !childrenDetected,
       });
     }
   }
@@ -804,8 +827,9 @@ export function analyzePrivacyPolicy(
     /인공지능|생성형\s*AI|AI\s*(?:모델|서비스|추천)/i,
     /automated\s+decision|profiling|artificial\s+intelligence/i,
   ];
-  if (matches(compact, automatedPatterns)) {
-    signals.push("AI·자동화 처리");
+  const automatedDetected = matches(compact, automatedPatterns);
+  if (contextActive("ai", automatedDetected)) {
+    signals.push(signalLabel("AI·자동화 처리", automatedDetected));
     const rights = matches(compact, [
       /자동화된\s*결정.*(?:거부|설명)/i,
       /인적\s*개입|재처리/i,
@@ -874,8 +898,9 @@ export function analyzePrivacyPolicy(
     /주문|배송|결제|청약철회|통신판매|전자상거래/i,
     /order|shipping|payment|e-?commerce/i,
   ];
-  if (matches(compact, ecommercePatterns)) {
-    signals.push("전자상거래");
+  const ecommerceDetected = matches(compact, ecommercePatterns);
+  if (contextActive("ecommerce", ecommerceDetected)) {
+    signals.push(signalLabel("전자상거래", ecommerceDetected));
     const statutoryPeriods =
       /계약.*5년|청약철회.*5년/i.test(compact) &&
       /대금결제.*5년|재화.*공급.*5년/i.test(compact) &&
@@ -892,7 +917,8 @@ export function analyzePrivacyPolicy(
         recommendation:
           "표시·광고 6개월, 계약·청약철회 5년, 대금결제·공급 5년, 소비자 불만·분쟁 3년을 실제 보유 항목과 연결하세요.",
         legalBasis: [SOURCES.ecommerce, SOURCES.ecommerceDecree],
-        confidence: "보통",
+        confidence: ecommerceDetected ? "보통" : "낮음",
+        requiresFactualVerification: !ecommerceDetected,
       });
     }
   }
@@ -957,10 +983,16 @@ export function analyzePrivacyPolicy(
     grade,
     counts,
     headline,
+    scoreMethod: {
+      label: "처리방침 점검 점수",
+      formula: "100 - 위반 소지×12 - 그레이존×6 - 확인 필요×2",
+      meaning:
+        "법 위반 확률이나 기업의 준법 수준이 아니라, 현재 규칙셋에서 발견된 보완 신호의 요약값입니다.",
+    },
     findings,
     coverage,
     detectedSignals: [...new Set(signals)],
-    policyExcerpt: text.slice(0, 12000),
+    policyExcerpt: text.slice(0, 18000),
     analysisEngine: {
       mode: "local_rules",
       name: "무료 규칙·휴리스틱 엔진",
@@ -968,6 +1000,9 @@ export function analyzePrivacyPolicy(
       aiUsed: false,
       externalApiCalls: 0,
       estimatedApiCostKrw: 0,
+      confidenceMeaning:
+        "신뢰도는 통계적 정확도가 아니라 문구와 규칙 패턴이 얼마나 명시적으로 일치했는지를 뜻합니다.",
+      evaluationStatus: "휴리스틱 규칙 · 통계적 보정 전",
       limitations: [
         "이미지·PDF 안의 표와 로그인 뒤 화면은 원문 붙여넣기 없이 확인할 수 없음",
         "실제 수집 항목, 쿠키 전송, 동의 화면, 파기 실행 여부는 현장 검증 필요",

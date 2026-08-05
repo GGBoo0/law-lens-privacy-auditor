@@ -51,6 +51,23 @@ button {
   color: inherit;
 }
 
+:where(button, a, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.srOnly {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 main {
   min-height: 100vh;
   overflow: hidden;
@@ -531,6 +548,76 @@ main {
   font-weight: 750;
 }
 
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.contextPicker {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid rgba(17, 26, 45, 0.16);
+  background: rgba(17, 26, 45, 0.025);
+}
+
+.contextPicker legend {
+  padding: 0 7px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.contextPicker legend small {
+  color: #727b8c;
+  font-weight: 650;
+}
+
+.contextPicker > p {
+  margin: 0 0 12px;
+  color: #626c80;
+  font-size: 13px;
+}
+
+.contextPicker > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.contextPicker label {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(17, 26, 45, 0.12);
+  background: var(--surface);
+}
+
+.contextPicker label span,
+.contextPicker label strong,
+.contextPicker label small {
+  display: block;
+}
+
+.contextPicker label strong {
+  font-size: 13px;
+}
+
+.contextPicker label small {
+  margin-top: 2px;
+  color: #737b8b;
+  font-size: 12px;
+}
+
+.contextPicker select,
+.reviewBox select {
+  min-height: 36px;
+  border: 1px solid rgba(17, 26, 45, 0.22);
+  background: white;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
 .scoreGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.85fr);
@@ -952,6 +1039,55 @@ main {
   font-size: 9px;
 }
 
+.findingTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.findingTools button,
+.findingTools a {
+  border: 1px solid rgba(17, 26, 45, 0.2);
+  background: transparent;
+  padding: 7px 9px;
+  color: #46536a;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.reviewBox {
+  margin-top: 18px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: minmax(130px, 0.45fr) 1fr;
+  gap: 12px;
+  border-top: 1px solid rgba(17, 26, 45, 0.12);
+  background: rgba(82, 119, 222, 0.055);
+}
+
+.reviewBox > div,
+.reviewBox label {
+  display: grid;
+  gap: 6px;
+  color: #596477;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.reviewBox textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgba(17, 26, 45, 0.22);
+  background: white;
+  padding: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .coveragePanel {
   position: sticky;
   top: 20px;
@@ -1127,6 +1263,31 @@ main {
   font: 11px/1.75 "SFMono-Regular", Consolas, monospace;
 }
 
+.excerptMeta {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  color: #687286;
+  font-size: 12px;
+}
+
+.excerptMeta code {
+  color: var(--ink);
+}
+
+.excerptMeta strong {
+  color: #704900;
+}
+
+.excerpt mark {
+  padding: 2px 0;
+  background: #ffe17b;
+  color: #111a2d;
+  box-shadow: 0 0 0 3px #ffe17b;
+}
+
 .methodSection {
   padding: 96px max(24px, calc((100vw - 1180px) / 2));
   display: grid;
@@ -1182,7 +1343,7 @@ footer {
   min-height: 130px;
   padding: 34px max(24px, calc((100vw - 1180px) / 2));
   display: grid;
-  grid-template-columns: 0.5fr 1.2fr 0.5fr;
+  grid-template-columns: 0.5fr 1.2fr auto auto;
   gap: 30px;
   align-items: center;
   background: #0c1425;
@@ -1211,6 +1372,54 @@ footer > a {
   font-size: 11px;
   font-weight: 750;
   text-decoration: none;
+}
+
+/* 핵심 정보는 12px 미만으로 내려가지 않도록 보정합니다. */
+.topMeta,
+.eyebrow,
+.proofRow span,
+.reportTopline p,
+.downloadButton,
+.scoreRing span,
+.scoreLabel,
+.scoreCard p,
+.countCards small,
+.signalBar > span,
+.signalBar em,
+.engineStrip > div span,
+.engineStrip > div strong,
+.engineStrip details,
+.filterRow button,
+.findingIndex,
+.statusTag,
+.findingTitle small,
+.findingDetail blockquote,
+.findingDetail blockquote span,
+.legalBasis > span,
+.recommendation > span,
+.legalBasis a,
+.recommendation p,
+.confidence,
+.coverageState,
+.coverageList strong,
+.coverageList p,
+.sourceGrid > div:first-child p,
+.pendingLaw strong,
+.pendingLaw span,
+.statuteList strong,
+.statuteList small,
+.excerpt summary,
+.methodCards span,
+.methodCards p,
+footer p,
+footer > a {
+  font-size: 12px;
+}
+
+.findingSummaryText,
+.contextPicker > p,
+.reviewBox textarea {
+  font-size: 13px;
 }
 
 @media (max-width: 980px) {
@@ -1264,7 +1473,7 @@ footer > a {
   }
 
   .topMeta {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .hero {
@@ -1292,7 +1501,7 @@ footer > a {
   }
 
   .proofRow span {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .analyzerCard {
@@ -1361,6 +1570,11 @@ footer > a {
     padding: 26px 20px;
   }
 
+  .contextPicker > div,
+  .reviewBox {
+    grid-template-columns: 1fr;
+  }
+
   .methodSection {
     padding-top: 70px;
     padding-bottom: 70px;
@@ -1411,7 +1625,8 @@ footer > a {
   .methodSection,
   footer,
   .downloadButton,
-  .filterRow {
+  .filterRow,
+  .findingTools {
     display: none !important;
   }
 
@@ -1422,6 +1637,17 @@ footer > a {
 
   .coveragePanel {
     position: static;
+  }
+
+  .findingDetail[hidden] {
+    display: block !important;
+  }
+
+  .finding,
+  .scoreCard,
+  .coveragePanel,
+  .sourceGrid {
+    break-inside: avoid;
   }
 }
 

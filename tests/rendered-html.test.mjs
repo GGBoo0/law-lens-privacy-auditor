@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+
+const ruleCorpus = JSON.parse(
+  readFileSync(new URL("./fixtures/rule-corpus.json", import.meta.url), "utf8"),
+);
 
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
@@ -64,6 +69,9 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /법령렌즈/);
   assert.match(html, /개인정보처리방침 리스크 분석/);
   assert.match(html, /위험 신호 분석하기/);
+  assert.match(html, /샘플 원문으로 바로 분석/);
+  assert.match(html, /aria-controls="input-panel-url"/);
+  assert.match(html, /서비스 맥락 보정/);
   assert.match(html, /http:\/\/localhost\/og\.png/);
   assert.doesNotMatch(html, developmentPreviewMeta);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
@@ -83,9 +91,11 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
-  assert.equal(result.legalBaseline.date, "2026-07-26");
-  assert.equal(result.legalBaseline.verifiedAt, "2026-07-26");
-  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.07.26");
+  assert.equal(result.legalBaseline.date, "2026-08-05");
+  assert.equal(result.legalBaseline.verifiedAt, "2026-08-05");
+  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.05");
+  assert.match(result.documentHash, /^[a-f0-9]{64}$/);
+  assert.equal(result.scoreMethod.label, "처리방침 점검 점수");
   assert.ok(
     result.legalBaseline.statutes.some(
       (statute) =>
@@ -97,7 +107,14 @@ test("analyzes pasted policy text without external services", async () => {
     result.legalBaseline.upcomingChanges.some(
       (change) =>
         change.effectiveFrom === "2026-09-11" &&
-        change.status === "분석 규칙에 미적용",
+        change.status === "시행 전 · 분석 규칙 미적용",
+    ),
+  );
+  assert.ok(
+    result.legalBaseline.upcomingChanges.some(
+      (change) =>
+        change.effectiveFrom === "2026-08-20" &&
+        change.status === "현재 처리방침 규칙 영향 없음",
     ),
   );
   assert.equal(result.analysisEngine.mode, "local_rules");
@@ -107,6 +124,30 @@ test("analyzes pasted policy text without external services", async () => {
   assert.ok(result.score >= 80);
   assert.equal(result.counts.high, 0);
   assert.ok(result.coverage.length >= 10);
+});
+
+test("uses declared service context to find a missing overseas disclosure", async () => {
+  const text =
+    "주식회사 테스트는 회원관리와 서비스 제공을 위해 이름과 이메일을 처리합니다. 개인정보 처리 목적과 처리하는 개인정보 항목을 공개합니다. 개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다. 파기 절차와 방법에 따라 전자파일을 영구 삭제합니다. 정보주체는 열람, 정정, 삭제, 처리정지를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com으로 연락할 수 있습니다. 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다. 본 방침은 2026년 8월 1일부터 시행합니다.";
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        text,
+        contexts: { overseas: "yes" },
+      }),
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.ok(result.detectedSignals.includes("국외 이전 · 사용자 확인"));
+  const finding = result.findings.find(
+    (candidate) => candidate.id === "overseas-transfer",
+  );
+  assert.ok(finding);
+  assert.equal(finding.requiresFactualVerification, true);
 });
 
 test("flags ambiguous wording and conflicting disclosures without an AI API", async () => {
@@ -134,6 +175,24 @@ test("flags ambiguous wording and conflicting disclosures without an AI API", as
         finding.requiresFactualVerification,
     ),
   );
+});
+
+test("keeps core heuristic rules stable against the golden corpus", async () => {
+  for (const example of ruleCorpus) {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text: example.text }),
+      }),
+    );
+    assert.equal(response.status, 200, example.name);
+    const result = await response.json();
+    const ids = new Set(result.findings.map((finding) => finding.id));
+    for (const expectedId of example.expectedFindingIds) {
+      assert.ok(ids.has(expectedId), `${example.name}: ${expectedId}`);
+    }
+  }
 });
 
 test("rejects cross-site, non-JSON, and private-network requests", async () => {

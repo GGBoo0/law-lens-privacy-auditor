@@ -1,9 +1,18 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
+type ContextKey = "overseas" | "children" | "ecommerce" | "ai";
+type ContextChoice = "auto" | "yes" | "no";
+type ReviewStatus = "unreviewed" | "needs_action" | "not_applicable" | "resolved";
 
 type LegalBasis = {
   law: string;
@@ -44,6 +53,12 @@ type AnalysisResult = {
   textLength: number;
   score: number;
   grade: string;
+  documentHash: string;
+  scoreMethod: {
+    label: string;
+    formula: string;
+    meaning: string;
+  };
   counts: {
     high: number;
     medium: number;
@@ -62,6 +77,8 @@ type AnalysisResult = {
     aiUsed: false;
     externalApiCalls: 0;
     estimatedApiCostKrw: 0;
+    confidenceMeaning: string;
+    evaluationStatus: string;
     limitations: string[];
   };
   legalBaseline: {
@@ -84,14 +101,42 @@ type AnalysisResult = {
   };
 };
 
-const samplePolicy = `주식회사 모아는 회원가입 및 서비스 제공을 위하여 이름, 이메일, 휴대전화번호를 수집합니다.
-수집한 정보는 서비스 제공, 맞춤형 서비스 개선, 마케팅 등 회사가 필요하다고 판단하는 목적으로 이용할 수 있습니다.
-개인정보는 회원 탈퇴 시까지 보유하며, 관계 법령에 따라 필요한 경우 계속 보관할 수 있습니다.
+type ReviewEntry = {
+  status: ReviewStatus;
+  note: string;
+};
+
+const samplePolicy = `1. 개인정보 처리 목적
+주식회사 모아는 회원관리, 서비스 제공, 맞춤형 서비스 개선 및 회사가 필요하다고 판단하는 목적으로 개인정보를 처리합니다.
+
+2. 처리하는 개인정보 항목
+이름, 이메일, 휴대전화번호와 서비스 이용기록을 처리합니다.
+
+3. 개인정보 처리 및 보유 기간
+회원정보는 회원 탈퇴 시까지 보유하며, 관계 법령에 따라 필요한 경우 계속 보관할 수 있습니다.
+
+4. 개인정보 파기 절차와 방법
+보유기간이 끝난 전자파일은 복구할 수 없도록 영구 삭제합니다.
+
+5. 정보주체의 권리와 행사 방법
+정보주체는 열람, 정정, 삭제, 처리정지 및 동의 철회를 고객센터에 요청할 수 있습니다.
+
+6. 개인정보 처리위탁
 결제와 배송 업무를 외부 업체에 위탁할 수 있으며 업체는 사정에 따라 변경될 수 있습니다.
-서비스 이용 과정에서 쿠키와 접속정보가 자동으로 수집될 수 있습니다.
+
+7. 개인정보 국외 이전
 회사는 서비스 개선을 위해 해외 클라우드 서비스를 이용할 수 있습니다.
-개인정보 관련 문의는 고객센터로 연락해 주세요.
-본 방침은 2026년 1월 1일부터 적용됩니다.`;
+
+8. 자동수집 장치
+서비스 이용 과정에서 쿠키와 접속정보가 자동으로 수집될 수 있습니다.
+
+9. 개인정보 보호책임자
+개인정보 관련 문의는 privacy@example.com 또는 02-1234-5678로 연락해 주세요.
+
+10. 개인정보의 안전성 확보조치
+접근권한 관리, 암호화와 접속기록 보관 조치를 시행합니다.
+
+본 방침은 2026년 1월 1일부터 시행됩니다.`;
 
 const severityOrder: Record<Severity, number> = {
   high: 0,
@@ -100,6 +145,61 @@ const severityOrder: Record<Severity, number> = {
   pass: 3,
   na: 4,
 };
+
+const contextOptions: Array<{
+  key: ContextKey;
+  label: string;
+  help: string;
+}> = [
+  { key: "ecommerce", label: "쇼핑·결제", help: "주문·결제·배송을 운영함" },
+  { key: "children", label: "만 14세 미만", help: "아동 회원이나 이용자가 있음" },
+  { key: "overseas", label: "국외 이전", help: "해외 서버·클라우드를 사용함" },
+  { key: "ai", label: "AI·자동화", help: "AI 처리 또는 자동화된 결정을 사용함" },
+];
+
+const reviewLabels: Record<ReviewStatus, string> = {
+  unreviewed: "검토 전",
+  needs_action: "조치 필요",
+  not_applicable: "해당 없음",
+  resolved: "조치 완료",
+};
+
+function feedbackUrl(finding: Finding) {
+  const title = encodeURIComponent(`[분석 피드백] ${finding.category} · ${finding.id}`);
+  const body = encodeURIComponent(
+    `규칙 ID: ${finding.id}\n분류: ${finding.category}\n표시 결과: ${finding.label}\n\n오탐·누락이라고 생각한 이유를 적어 주세요. 개인정보나 비공개 처리방침 원문은 첨부하지 마세요.`,
+  );
+  return `https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new?title=${title}&body=${body}`;
+}
+
+function highlightEvidence(text: string, evidence?: string) {
+  if (!evidence) return text;
+  const directIndex = text.indexOf(evidence);
+  let start = directIndex;
+  let end = directIndex < 0 ? -1 : directIndex + evidence.length;
+
+  if (directIndex < 0) {
+    const pattern = evidence
+      .trim()
+      .split(/\s+/)
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("\\s+");
+    const match = new RegExp(pattern, "i").exec(text);
+    if (match?.index !== undefined) {
+      start = match.index;
+      end = match.index + match[0].length;
+    }
+  }
+
+  if (start < 0 || end < 0) return text;
+  return (
+    <>
+      {text.slice(0, start)}
+      <mark>{text.slice(start, end)}</mark>
+      {text.slice(end)}
+    </>
+  );
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -118,6 +218,16 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [openFinding, setOpenFinding] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | Severity>("all");
+  const [contextOverrides, setContextOverrides] = useState<
+    Record<ContextKey, ContextChoice>
+  >({ overseas: "auto", children: "auto", ecommerce: "auto", ai: "auto" });
+  const [reviewEntries, setReviewEntries] = useState<Record<string, ReviewEntry>>(
+    {},
+  );
+  const [sourceFindingId, setSourceFindingId] = useState<string | null>(null);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const reportHeadingRef = useRef<HTMLHeadingElement>(null);
+  const sourceRef = useRef<HTMLDetailsElement>(null);
 
   const filteredFindings = useMemo(() => {
     if (!result) return [];
@@ -128,28 +238,23 @@ export default function Home() {
       );
   }, [filter, result]);
 
-  async function analyze(event: FormEvent) {
-    event.preventDefault();
+  const selectedSourceFinding = useMemo(
+    () =>
+      result?.findings.find((finding) => finding.id === sourceFindingId) ?? null,
+    [result, sourceFindingId],
+  );
+
+  async function requestAnalysis(payload: { url?: string; text?: string }) {
     setError("");
-
-    if (mode === "url" && !url.trim()) {
-      setError("분석할 회사 또는 개인정보처리방침 URL을 입력해 주세요.");
-      return;
-    }
-    if (mode === "text" && policyText.trim().length < 120) {
-      setError("분석할 방침 원문을 120자 이상 붙여 넣어 주세요.");
-      return;
-    }
-
     setLoading(true);
     setResult(null);
+    setSourceFindingId(null);
+    setSourceOpen(false);
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          mode === "url" ? { url: url.trim() } : { text: policyText.trim() },
-        ),
+        body: JSON.stringify({ ...payload, contexts: contextOverrides }),
       });
 
       const data = await response.json();
@@ -161,16 +266,26 @@ export default function Home() {
       }
 
       setResult(data);
-      const firstIssue = data.findings.find(
-        (finding: Finding) =>
-          finding.severity === "high" || finding.severity === "medium",
-      );
+      const firstIssue = [...data.findings]
+        .sort(
+          (a: Finding, b: Finding) =>
+            severityOrder[a.severity] - severityOrder[b.severity],
+        )
+        .find(
+          (finding: Finding) =>
+            finding.severity === "high" || finding.severity === "medium",
+        );
       setOpenFinding(firstIssue?.id ?? null);
       setFilter("all");
+      setReviewEntries({});
       window.setTimeout(() => {
-        document
-          .getElementById("report")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        reportHeadingRef.current?.focus({ preventScroll: true });
+        document.getElementById("report")?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "start",
+        });
       }, 80);
     } catch (caught) {
       setError(
@@ -183,15 +298,69 @@ export default function Home() {
     }
   }
 
-  function loadSample() {
+  async function analyze(event: FormEvent) {
+    event.preventDefault();
+
+    if (mode === "url" && !url.trim()) {
+      setError("분석할 회사 또는 개인정보처리방침 URL을 입력해 주세요.");
+      return;
+    }
+    if (mode === "text" && policyText.trim().length < 120) {
+      setError("분석할 방침 원문을 120자 이상 붙여 넣어 주세요.");
+      return;
+    }
+    await requestAnalysis(
+      mode === "url" ? { url: url.trim() } : { text: policyText.trim() },
+    );
+  }
+
+  async function loadSample() {
     setMode("text");
     setPolicyText(samplePolicy);
     setError("");
+    await requestAnalysis({ text: samplePolicy });
+  }
+
+  function handleTabKey(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    const nextMode =
+      event.key === "ArrowLeft" || event.key === "Home" ? "url" : "text";
+    setMode(nextMode);
+    document.getElementById(`input-tab-${nextMode}`)?.focus();
+  }
+
+  function updateReview(id: string, update: Partial<ReviewEntry>) {
+    setReviewEntries((current) => ({
+      ...current,
+      [id]: {
+        status: current[id]?.status ?? "unreviewed",
+        note: current[id]?.note ?? "",
+        ...update,
+      },
+    }));
+  }
+
+  function showEvidence(finding: Finding) {
+    setSourceFindingId(finding.id);
+    setSourceOpen(true);
+    window.setTimeout(() => {
+      sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 30);
   }
 
   function downloadReport() {
     if (!result) return;
-    const blob = new Blob([JSON.stringify(result, null, 2)], {
+    const report = {
+      ...result,
+      humanReview: {
+        exportedAt: new Date().toISOString(),
+        entries: reviewEntries,
+      },
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
       type: "application/json;charset=utf-8",
     });
     const href = URL.createObjectURL(blob);
@@ -202,6 +371,15 @@ export default function Home() {
       .slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(href);
+  }
+
+  function printReport() {
+    const previousFilter = filter;
+    setFilter("all");
+    window.setTimeout(() => {
+      window.print();
+      setFilter(previousFilter);
+    }, 50);
   }
 
   return (
@@ -259,57 +437,111 @@ export default function Home() {
 
           <div className="modeTabs" role="tablist" aria-label="분석 입력 방식">
             <button
+              id="input-tab-url"
               className={mode === "url" ? "active" : ""}
               type="button"
               role="tab"
               aria-selected={mode === "url"}
+              aria-controls="input-panel-url"
+              tabIndex={mode === "url" ? 0 : -1}
               onClick={() => setMode("url")}
+              onKeyDown={handleTabKey}
             >
               웹사이트 URL
             </button>
             <button
+              id="input-tab-text"
               className={mode === "text" ? "active" : ""}
               type="button"
               role="tab"
               aria-selected={mode === "text"}
+              aria-controls="input-panel-text"
+              tabIndex={mode === "text" ? 0 : -1}
               onClick={() => setMode("text")}
+              onKeyDown={handleTabKey}
             >
               방침 원문
             </button>
           </div>
 
-          <form onSubmit={analyze}>
+          <form onSubmit={analyze} aria-busy={loading}>
             {mode === "url" ? (
-              <label className="fieldLabel">
-                회사 또는 방침 주소
-                <div className="urlField">
-                  <span aria-hidden="true">https://</span>
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(event) => setUrl(event.target.value)}
-                    placeholder="company.co.kr"
-                    autoComplete="url"
-                    inputMode="url"
-                    aria-describedby="url-help"
-                  />
-                </div>
-                <small id="url-help">
-                  로그인 없이 공개된 HTML 방침을 분석할 수 있습니다.
-                </small>
-              </label>
+              <div
+                id="input-panel-url"
+                role="tabpanel"
+                aria-labelledby="input-tab-url"
+              >
+                <label className="fieldLabel">
+                  회사 또는 방침 주소
+                  <div className="urlField">
+                    <span aria-hidden="true">https://</span>
+                    <input
+                      type="text"
+                      value={url}
+                      onChange={(event) => setUrl(event.target.value)}
+                      placeholder="company.co.kr"
+                      autoComplete="url"
+                      inputMode="url"
+                      aria-describedby="url-help"
+                    />
+                  </div>
+                  <small id="url-help">
+                    로그인 없이 공개된 HTML 방침을 분석할 수 있습니다.
+                  </small>
+                </label>
+              </div>
             ) : (
-              <label className="fieldLabel">
-                개인정보처리방침 원문
-                <textarea
-                  value={policyText}
-                  onChange={(event) => setPolicyText(event.target.value)}
-                  placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
-                  rows={8}
-                />
-                <small>{policyText.length.toLocaleString("ko-KR")}자 입력됨</small>
-              </label>
+              <div
+                id="input-panel-text"
+                role="tabpanel"
+                aria-labelledby="input-tab-text"
+              >
+                <label className="fieldLabel">
+                  개인정보처리방침 원문
+                  <textarea
+                    value={policyText}
+                    onChange={(event) => setPolicyText(event.target.value)}
+                    placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
+                    rows={8}
+                  />
+                  <small>
+                    {policyText.length.toLocaleString("ko-KR")}자 입력됨
+                  </small>
+                </label>
+              </div>
             )}
+
+            <fieldset className="contextPicker">
+              <legend>서비스 맥락 보정 <small>선택사항</small></legend>
+              <p>
+                알고 있는 사실을 표시하면 방침에 해당 내용이 빠졌는지 함께
+                확인합니다. 본문 신호가 명확하면 ‘비해당’ 선택으로 숨기지 않습니다.
+              </p>
+              <div>
+                {contextOptions.map((option) => (
+                  <label key={option.key}>
+                    <span>
+                      <strong>{option.label}</strong>
+                      <small>{option.help}</small>
+                    </span>
+                    <select
+                      value={contextOverrides[option.key]}
+                      onChange={(event) =>
+                        setContextOverrides((current) => ({
+                          ...current,
+                          [option.key]: event.target.value as ContextChoice,
+                        }))
+                      }
+                      aria-label={`${option.label} 적용 여부`}
+                    >
+                      <option value="auto">문서 자동 판단</option>
+                      <option value="yes">해당함</option>
+                      <option value="no">해당 없음</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             {error && (
               <div className="errorBox" role="alert">
@@ -331,16 +563,29 @@ export default function Home() {
                 </>
               )}
             </button>
-            <button className="sampleButton" type="button" onClick={loadSample}>
-              입력 전에 샘플 결과 확인
+            <button
+              className="sampleButton"
+              type="button"
+              onClick={loadSample}
+              disabled={loading}
+            >
+              샘플 원문으로 바로 분석
             </button>
+            <p className="srOnly" role="status" aria-live="polite">
+              {loading
+                ? "개인정보처리방침을 분석하고 있습니다."
+                : result
+                  ? `분석이 완료되었습니다. 점검 점수 ${result.score}점, ${result.grade}입니다.`
+                  : ""}
+            </p>
           </form>
 
           <div className="privacyNote">
             <span aria-hidden="true">●</span>
             외부 AI API로 전송하지 않습니다. 입력 내용은 요청 중 규칙
             분석에만 사용하며 앱 데이터베이스에 저장하지 않습니다. URL은
-            공개 DNS·IP를 확인하고 이동 주소마다 다시 검사합니다.
+            공개 DNS·IP를 확인하고 이동 주소마다 다시 검사합니다. 남용 방지용
+            클라이언트 키는 복원 불가능하게 해시하여 짧게 보관합니다.
           </div>
         </div>
       </section>
@@ -360,7 +605,9 @@ export default function Home() {
           <div className="reportTopline">
             <div>
               <div className="eyebrow">ANALYSIS REPORT</div>
-              <h2>{result.policyTitle}</h2>
+              <h2 ref={reportHeadingRef} tabIndex={-1}>
+                {result.policyTitle}
+              </h2>
               <p>
                 {result.policyUrl ? (
                   <a
@@ -377,46 +624,70 @@ export default function Home() {
                 {formatDate(result.retrievedAt)} 분석
               </p>
             </div>
-            <button className="downloadButton" onClick={downloadReport}>
-              JSON 내려받기
-            </button>
+            <div className="reportActions">
+              <button className="downloadButton" onClick={printReport}>
+                PDF 저장·인쇄
+              </button>
+              <button className="downloadButton" onClick={downloadReport}>
+                검토 포함 JSON
+              </button>
+            </div>
           </div>
 
           <div className="scoreGrid">
             <article className={`scoreCard score-${result.grade}`}>
-              <div className="scoreRing" style={{ "--score": result.score } as React.CSSProperties}>
+              <div
+                className="scoreRing"
+                style={{ "--score": result.score } as React.CSSProperties}
+                role="img"
+                aria-label={`${result.scoreMethod.label} ${result.score}점`}
+              >
                 <div>
                   <strong>{result.score}</strong>
                   <span>/ 100</span>
                 </div>
               </div>
               <div>
-                <div className="scoreLabel">{result.grade}</div>
+                <div className="scoreLabel">
+                  {result.scoreMethod.label} · {result.grade}
+                </div>
                 <h3>{result.headline}</h3>
                 <p>
-                  자동화 검토 결과입니다. 실제 처리 흐름·동의 화면·위탁계약을
+                  {result.scoreMethod.meaning} 실제 처리 흐름·동의 화면·위탁계약을
                   함께 확인해야 최종 판단할 수 있습니다.
                 </p>
               </div>
             </article>
 
             <div className="countCards">
-              <button onClick={() => setFilter("high")}>
+              <button
+                onClick={() => setFilter("high")}
+                aria-pressed={filter === "high"}
+              >
                 <span className="countDot high" />
                 <strong>{result.counts.high}</strong>
                 <small>위반 소지</small>
               </button>
-              <button onClick={() => setFilter("medium")}>
+              <button
+                onClick={() => setFilter("medium")}
+                aria-pressed={filter === "medium"}
+              >
                 <span className="countDot medium" />
                 <strong>{result.counts.medium}</strong>
                 <small>그레이존</small>
               </button>
-              <button onClick={() => setFilter("low")}>
+              <button
+                onClick={() => setFilter("low")}
+                aria-pressed={filter === "low"}
+              >
                 <span className="countDot low" />
                 <strong>{result.counts.low}</strong>
                 <small>확인 필요</small>
               </button>
-              <button onClick={() => setFilter("pass")}>
+              <button
+                onClick={() => setFilter("pass")}
+                aria-pressed={filter === "pass"}
+              >
                 <span className="countDot pass" />
                 <strong>{result.counts.pass}</strong>
                 <small>확인됨</small>
@@ -453,6 +724,8 @@ export default function Home() {
                   <li key={limitation}>{limitation}</li>
                 ))}
               </ul>
+              <p>{result.analysisEngine.confidenceMeaning}</p>
+              <p>{result.scoreMethod.formula}</p>
             </details>
           </div>
 
@@ -479,6 +752,7 @@ export default function Home() {
                       key={value}
                       className={filter === value ? "active" : ""}
                       onClick={() => setFilter(value)}
+                      aria-pressed={filter === value}
                     >
                       {label}
                     </button>
@@ -500,6 +774,7 @@ export default function Home() {
                           setOpenFinding(opened ? null : finding.id)
                         }
                         aria-expanded={opened}
+                        aria-controls={`finding-detail-${finding.id}`}
                       >
                         <span className="findingIndex">
                           {String(index + 1).padStart(2, "0")}
@@ -515,8 +790,11 @@ export default function Home() {
                           {opened ? "−" : "+"}
                         </span>
                       </button>
-                      {opened && (
-                        <div className="findingDetail">
+                      <div
+                        className="findingDetail"
+                        id={`finding-detail-${finding.id}`}
+                        hidden={!opened}
+                      >
                           <p className="findingSummaryText">{finding.summary}</p>
                           {finding.evidence && (
                             <blockquote>
@@ -544,12 +822,58 @@ export default function Home() {
                             <p>{finding.recommendation}</p>
                           </div>
                           <div className="confidence">
-                            자동 판정 신뢰도 {finding.confidence}
+                            패턴 일치 수준 {finding.confidence}
                             {finding.requiresFactualVerification &&
                               " · 현장 검증 필요"}
                           </div>
-                        </div>
-                      )}
+                          <div className="findingTools">
+                            {finding.evidence && (
+                              <button type="button" onClick={() => showEvidence(finding)}>
+                                원문에서 보기
+                              </button>
+                            )}
+                            <a
+                              href={feedbackUrl(finding)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              오탐·누락 신고 ↗
+                            </a>
+                          </div>
+                          <div className="reviewBox">
+                            <div>
+                              <span>사람 검토</span>
+                              <select
+                                value={
+                                  reviewEntries[finding.id]?.status ?? "unreviewed"
+                                }
+                                onChange={(event) =>
+                                  updateReview(finding.id, {
+                                    status: event.target.value as ReviewStatus,
+                                  })
+                                }
+                                aria-label={`${finding.title} 검토 상태`}
+                              >
+                                {Object.entries(reviewLabels).map(([value, label]) => (
+                                  <option key={value} value={value}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <label>
+                              검토 메모
+                              <textarea
+                                value={reviewEntries[finding.id]?.note ?? ""}
+                                onChange={(event) =>
+                                  updateReview(finding.id, { note: event.target.value })
+                                }
+                                placeholder="담당자 확인사항이나 조치 내용을 남기세요."
+                                rows={2}
+                              />
+                            </label>
+                          </div>
+                      </div>
                     </article>
                   );
                 })}
@@ -605,7 +929,7 @@ export default function Home() {
                   rel="noreferrer"
                   key={`${change.name}-${change.effectiveFrom}`}
                 >
-                  <strong>시행 예정 · 현재 미적용</strong>
+                  <strong>{change.status}</strong>
                   <span>{change.version}</span>
                 </a>
               ))}
@@ -630,9 +954,27 @@ export default function Home() {
             </div>
           </div>
 
-          <details className="excerpt">
-            <summary>분석에 사용한 추출 원문 일부 보기</summary>
-            <pre>{result.policyExcerpt}</pre>
+          <details
+            className="excerpt"
+            ref={sourceRef}
+            open={sourceOpen}
+            onToggle={(event) => setSourceOpen(event.currentTarget.open)}
+          >
+            <summary>분석에 사용한 추출 원문과 근거 위치 보기</summary>
+            <div className="excerptMeta">
+              <span>
+                문서 SHA-256 <code>{result.documentHash.slice(0, 16)}…</code>
+              </span>
+              {selectedSourceFinding && (
+                <strong>{selectedSourceFinding.title} 근거 표시 중</strong>
+              )}
+            </div>
+            <pre>
+              {highlightEvidence(
+                result.policyExcerpt,
+                selectedSourceFinding?.evidence,
+              )}
+            </pre>
           </details>
         </section>
       )}
@@ -678,6 +1020,13 @@ export default function Home() {
           rel="noreferrer"
         >
           2026 처리방침 작성지침 ↗
+        </a>
+        <a
+          href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
+          target="_blank"
+          rel="noreferrer"
+        >
+          피드백 남기기 ↗
         </a>
       </footer>
     </main>

@@ -1,6 +1,6 @@
 export const LEGAL_BASELINE = {
-  verifiedAt: "2026-07-26",
-  rulesetVersion: "KR-PRIVACY-2026.07.26",
+  verifiedAt: "2026-08-05",
+  rulesetVersion: "KR-PRIVACY-2026.08.05",
   statutes: [
     {
       name: "개인정보 보호법",
@@ -53,10 +53,17 @@ export const LEGAL_BASELINE = {
   ],
   upcomingChanges: [
     {
+      name: "개인정보 보호법 시행령",
+      version: "시행 예정 2026.08.20 · 대통령령 제36121호",
+      effectiveFrom: "2026-08-20",
+      status: "현재 처리방침 규칙 영향 없음",
+      url: "https://www.law.go.kr/lsRvsDocListP.do?lsId=011468",
+    },
+    {
       name: "개인정보 보호법",
       version: "시행 예정 2026.09.11 · 법률 제21445호",
       effectiveFrom: "2026-09-11",
-      status: "분석 규칙에 미적용",
+      status: "시행 전 · 분석 규칙 미적용",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
     },
   ],

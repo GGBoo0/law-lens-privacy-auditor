@@ -1,4 +1,9 @@
-import { analyzePrivacyPolicy } from "../../../lib/privacy-analyzer";
+import {
+  analyzePrivacyPolicy,
+  type ContextChoice,
+  type ContextKey,
+  type ContextOverrides,
+} from "../../../lib/privacy-analyzer";
 import {
   assertPublicDns,
   normalizeAndAssertPublicUrl,
@@ -16,6 +21,8 @@ const RATE_LIMIT = 12;
 const RATE_WINDOW_MS = 60_000;
 
 const rateWindows = new Map<string, { count: number; resetAt: number }>();
+const contextKeys: ContextKey[] = ["overseas", "children", "ecommerce", "ai"];
+const contextChoices: ContextChoice[] = ["auto", "yes", "no"];
 
 function json(data: unknown, status = 200, extraHeaders?: HeadersInit) {
   return Response.json(data, {
@@ -47,12 +54,25 @@ function sameOriginRequest(request: Request) {
   }
 }
 
-function takeRateLimit(request: Request) {
-  const key =
+function getClientAddress(request: Request) {
+  return (
     request.headers.get("cf-connecting-ip") ||
     request.headers.get("x-real-ip") ||
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "anonymous";
+    "anonymous"
+  );
+}
+
+async function hashClientAddress(value: string) {
+  const bytes = new TextEncoder().encode(`lawlens-rate-v1:${value}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .slice(0, 16)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function takeMemoryRateLimit(key: string) {
   const now = Date.now();
   const existing = rateWindows.get(key);
   if (!existing || existing.resetAt <= now) {
@@ -64,12 +84,50 @@ function takeRateLimit(request: Request) {
   return Math.max(1, Math.ceil((existing.resetAt - now) / 1_000));
 }
 
+async function takeRateLimit(request: Request) {
+  const clientKey = await hashClientAddress(getClientAddress(request));
+  return takeMemoryRateLimit(clientKey);
+}
+
 function pruneRateWindows() {
   if (rateWindows.size < 2_000) return;
   const now = Date.now();
   for (const [key, value] of rateWindows) {
     if (value.resetAt <= now) rateWindows.delete(key);
   }
+}
+
+function normalizeContextOverrides(value: unknown): ContextOverrides {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const input = value as Record<string, unknown>;
+  return Object.fromEntries(
+    contextKeys.flatMap((key) => {
+      const choice = input[key];
+      return contextChoices.includes(choice as ContextChoice)
+        ? [[key, choice as ContextChoice]]
+        : [];
+    }),
+  ) as ContextOverrides;
+}
+
+async function documentHash(text: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function buildAnalysis(
+  text: string,
+  meta: Parameters<typeof analyzePrivacyPolicy>[1],
+) {
+  return {
+    ...analyzePrivacyPolicy(text, meta),
+    documentHash: await documentHash(text),
+  };
 }
 
 async function fetchHtml(initialUrl: URL) {
@@ -169,6 +227,7 @@ function stripHtml(html: string) {
         " ",
       )
       .replace(/<(br|hr)\s*\/?>/gi, "\n")
+      .replace(/<\/(?:th|td)>/gi, " | ")
       .replace(
         /<\/(p|div|section|article|main|header|footer|li|tr|h[1-6]|table|ul|ol|dl|dt|dd)>/gi,
         "\n",
@@ -267,7 +326,7 @@ export async function POST(request: Request) {
     }
 
     pruneRateWindows();
-    const retryAfter = takeRateLimit(request);
+    const retryAfter = await takeRateLimit(request);
     if (retryAfter !== null) {
       return json(
         { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
@@ -281,14 +340,18 @@ export async function POST(request: Request) {
       return json({ error: "입력 내용이 너무 큽니다." }, 413);
     }
 
-    let body: { url?: unknown; text?: unknown };
+    let body: { url?: unknown; text?: unknown; contexts?: unknown };
     try {
       const rawBody = await readUtf8Stream(
         request.body,
         MAX_REQUEST_BYTES,
         "입력 내용이 너무 큽니다.",
       );
-      body = JSON.parse(rawBody) as { url?: unknown; text?: unknown };
+      body = JSON.parse(rawBody) as {
+        url?: unknown;
+        text?: unknown;
+        contexts?: unknown;
+      };
     } catch (error) {
       if (error instanceof Error && error.message === "입력 내용이 너무 큽니다.") {
         return json({ error: error.message }, 413);
@@ -302,9 +365,10 @@ export async function POST(request: Request) {
         return json({ error: "방침 원문을 120자 이상 입력해 주세요." }, 400);
       }
       return json(
-        analyzePrivacyPolicy(text, {
+        await buildAnalysis(text, {
           policyTitle: "직접 입력한 개인정보처리방침",
           retrievedAt: new Date().toISOString(),
+          contextOverrides: normalizeContextOverrides(body.contexts),
         }),
       );
     }
@@ -376,13 +440,14 @@ export async function POST(request: Request) {
     }
 
     return json(
-      analyzePrivacyPolicy(policyText, {
+      await buildAnalysis(policyText, {
         sourceUrl: inputUrl.toString(),
         policyUrl: policyUrl.toString(),
         policyTitle:
           extractTitle(policyHtml) ||
           `${policyUrl.hostname} 개인정보처리방침`,
         retrievedAt: new Date().toISOString(),
+        contextOverrides: normalizeContextOverrides(body.contexts),
       }),
     );
   } catch (error) {
