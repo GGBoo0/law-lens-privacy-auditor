@@ -195,29 +195,79 @@ export function normalizeAndAssertPublicUrl(value: string | URL) {
   return url;
 }
 
+type ReadTextStreamOptions = {
+  encoding?: string;
+  truncate?: boolean;
+};
+
+function normalizeEncoding(value: string | undefined) {
+  const encoding = value?.trim().toLowerCase();
+  if (!encoding) return undefined;
+  if (["cp949", "ks_c_5601-1987", "ks-c-5601-1987"].includes(encoding)) {
+    return "euc-kr";
+  }
+  return encoding;
+}
+
+function sniffHtmlEncoding(bytes: Uint8Array) {
+  const sample = new TextDecoder("latin1").decode(bytes.slice(0, 4_096));
+  return normalizeEncoding(
+    /<meta\b[^>]*charset\s*=\s*["']?\s*([^\s"'/>;]+)/i.exec(sample)?.[1] ||
+      /<meta\b[^>]*content\s*=\s*["'][^"']*charset\s*=\s*([^\s"';/>]+)/i.exec(
+        sample,
+      )?.[1],
+  );
+}
+
+export async function readTextStream(
+  stream: ReadableStream<Uint8Array> | null,
+  maxBytes: number,
+  sizeError: string,
+  options: ReadTextStreamOptions = {},
+) {
+  if (!stream) return "";
+  const reader = stream.getReader();
+  let size = 0;
+  const chunks: Uint8Array[] = [];
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      const remaining = maxBytes - size;
+      if (chunk.value.byteLength > remaining) {
+        if (remaining > 0) {
+          chunks.push(chunk.value.slice(0, remaining));
+          size += remaining;
+        }
+        await reader.cancel();
+        if (options.truncate) break;
+        throw new Error(sizeError);
+      }
+      chunks.push(chunk.value);
+      size += chunk.value.byteLength;
+    }
+
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const encoding = normalizeEncoding(options.encoding) || sniffHtmlEncoding(bytes) || "utf-8";
+    try {
+      return new TextDecoder(encoding).decode(bytes);
+    } catch {
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export async function readUtf8Stream(
   stream: ReadableStream<Uint8Array> | null,
   maxBytes: number,
   sizeError: string,
 ) {
-  if (!stream) return "";
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let size = 0;
-  let value = "";
-  try {
-    while (true) {
-      const chunk = await reader.read();
-      if (chunk.done) break;
-      size += chunk.value.byteLength;
-      if (size > maxBytes) {
-        await reader.cancel();
-        throw new Error(sizeError);
-      }
-      value += decoder.decode(chunk.value, { stream: true });
-    }
-    return value + decoder.decode();
-  } finally {
-    reader.releaseLock();
-  }
+  return readTextStream(stream, maxBytes, sizeError, { encoding: "utf-8" });
 }

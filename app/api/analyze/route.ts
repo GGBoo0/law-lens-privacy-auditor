@@ -6,20 +6,27 @@ import {
 } from "../../../lib/privacy-analyzer";
 import {
   normalizeAndAssertPublicUrl,
+  readTextStream,
   readUtf8Stream,
 } from "../../../lib/network-security";
+import {
+  hostnameMatchesDomain,
+  isRegisteredPolicyHost,
+  registeredPolicyHints,
+} from "../../../lib/policy-source-registry";
 
 export const runtime = "edge";
 
-const MAX_HTML_CHARS = 700_000;
+const MAX_HTML_CHARS = 1_450_000;
 const MAX_POLICY_CHARS = 180_000;
 const MAX_REDIRECTS = 3;
 const MAX_REQUEST_BYTES = 350_000;
 const MAX_RESPONSE_BYTES = 1_500_000;
-const MAX_METADATA_BYTES = 600_000;
+const MAX_METADATA_BYTES = 1_200_000;
 const MAX_DISCOVERY_DEPTH = 3;
-const MAX_DISCOVERY_PAGES = 8;
-const MAX_CANDIDATES_PER_PAGE = 6;
+const MAX_DISCOVERY_PAGES = 12;
+const MAX_CANDIDATES_PER_PAGE = 10;
+const MAX_DISCOVERY_MS = 25_000;
 const RATE_LIMIT = 12;
 const RATE_WINDOW_MS = 60_000;
 
@@ -45,8 +52,7 @@ class AnalysisError extends Error {
 }
 
 function hostnameMatches(url: URL, domain: string) {
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
-  return hostname === domain || hostname.endsWith(`.${domain}`);
+  return hostnameMatchesDomain(url.hostname, domain);
 }
 
 function json(data: unknown, status = 200, extraHeaders?: HeadersInit) {
@@ -168,7 +174,7 @@ async function fetchHtml(initialUrl: URL) {
         "User-Agent":
           "LawLens-PrivacyPolicy-Checker/1.0 (+public privacy policy review)",
       },
-      signal: AbortSignal.timeout(14_000),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -206,16 +212,13 @@ async function fetchHtml(initialUrl: URL) {
       throw new Error("HTML 또는 텍스트로 공개된 방침만 자동 추출할 수 있습니다.");
     }
 
-    const declaredLength = Number(response.headers.get("content-length") || 0);
-    if (declaredLength > MAX_RESPONSE_BYTES) {
-      throw new Error("페이지가 너무 커서 안전하게 분석할 수 없습니다.");
-    }
-
+    const charset = /charset\s*=\s*([^;\s]+)/i.exec(contentType)?.[1];
     const html = (
-      await readUtf8Stream(
+      await readTextStream(
         response.body,
         MAX_RESPONSE_BYTES,
         "페이지가 너무 커서 안전하게 분석할 수 없습니다.",
+        { encoding: charset, truncate: true },
       )
     ).slice(0, MAX_HTML_CHARS);
     return { html, finalUrl: current };
@@ -318,6 +321,15 @@ function extractTitle(html: string) {
 
 type PolicyCandidate = { url: URL; text: string; score: number };
 
+function decodeEmbeddedUrl(value: string) {
+  return decodeEntities(value)
+    .replace(/\\u002f/gi, "/")
+    .replace(/\\u0026/gi, "&")
+    .replace(/\\u003d/gi, "=")
+    .replace(/\\u003a/gi, ":")
+    .replace(/\\\//g, "/");
+}
+
 function scorePolicyCandidate(
   url: URL,
   text: string,
@@ -352,7 +364,7 @@ function extractLinks(html: string, baseUrl: URL) {
   ) => {
     if (!rawUrl || /^(?:#|javascript:|mailto:|tel:|data:)/i.test(rawUrl)) return;
     try {
-      const url = new URL(decodeEntities(rawUrl), baseUrl);
+      const url = new URL(decodeEmbeddedUrl(rawUrl), baseUrl);
       if (!["http:", "https:"].includes(url.protocol)) return;
       url.hash = "";
       const score = scorePolicyCandidate(url, text, baseUrl, source);
@@ -371,14 +383,26 @@ function extractLinks(html: string, baseUrl: URL) {
   let match: RegExpExecArray | null;
   let inspected = 0;
 
-  while ((match = anchorPattern.exec(html)) && inspected < 900) {
+  while ((match = anchorPattern.exec(html)) && inspected < 4_000) {
     inspected++;
     const attributes = match[1];
     const href =
       /\bhref\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
       /\bhref\s*=\s*'([^']+)'/i.exec(attributes)?.[1] ||
       /\bhref\s*=\s*([^\s>]+)/i.exec(attributes)?.[1];
-    if (href) addCandidate(href, stripHtml(match[2]).slice(0, 180), "anchor");
+    const accessibleLabel =
+      /\baria-label\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
+      /\baria-label\s*=\s*'([^']+)'/i.exec(attributes)?.[1] ||
+      /\btitle\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
+      /\btitle\s*=\s*'([^']+)'/i.exec(attributes)?.[1] ||
+      "";
+    if (href) {
+      addCandidate(
+        href,
+        `${stripHtml(match[2]).slice(0, 180)} ${decodeEntities(accessibleLabel)}`,
+        "anchor",
+      );
+    }
   }
 
   const framePattern = /<(?:iframe|frame)\b([^>]*)>/gi;
@@ -405,7 +429,7 @@ function extractLinks(html: string, baseUrl: URL) {
   inspected = 0;
   while ((match = quotedPathPattern.exec(html)) && inspected < 1_200) {
     inspected++;
-    const rawUrl = match[1].replace(/\\u002f/gi, "/").replace(/\\\//g, "/");
+    const rawUrl = decodeEmbeddedUrl(match[1]);
     const nearby = html.slice(Math.max(0, match.index - 100), match.index + match[0].length + 100);
     if (/privacy|policy|개인정보|처리방침/i.test(`${rawUrl} ${nearby}`)) {
       addCandidate(rawUrl, stripHtml(nearby).slice(0, 180), "embedded");
@@ -435,7 +459,13 @@ function looksLikePolicy(text: string, url: URL) {
     /개인정보\s*보호\s*책임자|data\s+protection\s+officer|privacy\s+contact/i,
   ].filter((pattern) => pattern.test(text)).length;
 
-  return (
+  const strongDocumentSignal =
+    text.length >= 1_500 &&
+    Boolean(policyHeading && policyHeading.index < 4_000) &&
+    urlSignal &&
+    (text.match(/privacy|개인정보/gi)?.length ?? 0) >= 5;
+
+  return strongDocumentSignal || (
     text.length >= 500 &&
     contentSignals >= 2 &&
     (urlSignal || Boolean(policyHeading && policyHeading.index < 3200))
@@ -443,14 +473,9 @@ function looksLikePolicy(text: string, url: URL) {
 }
 
 function knownPolicyHints(inputUrl: URL) {
-  const hints: URL[] = [];
-  if (hostnameMatches(inputUrl, "naver.com")) {
-    hints.push(new URL("https://policy.naver.com/rules/privacy.html"));
-  }
-  if (hostnameMatches(inputUrl, "11st.co.kr")) {
-    hints.push(new URL("https://privacy.11st.co.kr/"));
-  }
-  return hints.filter((hint) => hint.toString() !== inputUrl.toString());
+  return registeredPolicyHints(inputUrl).filter(
+    (hint) => hint.toString() !== inputUrl.toString(),
+  );
 }
 
 function commonPolicyHints(inputUrl: URL) {
@@ -462,7 +487,57 @@ function commonPolicyHints(inputUrl: URL) {
     "/policy/privacy-policy",
     "/info/privacy",
     "/terms/privacy",
+    "/privacy/policy",
+    "/legal/privacy",
+    "/support/privacy",
+    "/customer/privacy",
+    "/privacy.do",
   ].map((pathname) => new URL(pathname, origin));
+}
+
+function registrableDomain(hostname: string) {
+  const labels = hostname.toLowerCase().replace(/\.$/, "").split(".");
+  if (labels.length <= 2) return labels.join(".");
+  const publicSuffix = labels.slice(-2).join(".");
+  const koreanSecondLevelSuffixes = new Set([
+    "co.kr",
+    "or.kr",
+    "go.kr",
+    "ne.kr",
+    "ac.kr",
+    "re.kr",
+    "pe.kr",
+  ]);
+  return labels
+    .slice(koreanSecondLevelSuffixes.has(publicSuffix) ? -3 : -2)
+    .join(".");
+}
+
+function isPolicyContextMatch(
+  inputUrl: URL,
+  candidateUrl: URL,
+  directInput: boolean,
+) {
+  const candidateContext = `${candidateUrl.hostname}${candidateUrl.pathname}`;
+  if (
+    /(?:^|[./_-])(career|careers|recruit|recruitment|jobs?|hiring)(?:[./_-]|$)/i.test(
+      candidateContext,
+    ) &&
+    !/(career|recruit|jobs?)/i.test(`${inputUrl.hostname}${inputUrl.pathname}`)
+  ) {
+    return false;
+  }
+
+  if (
+    directInput &&
+    /privacy|policy|개인정보|처리방침/i.test(`${inputUrl.pathname}${inputUrl.search}`)
+  ) {
+    return true;
+  }
+  if (registrableDomain(inputUrl.hostname) === registrableDomain(candidateUrl.hostname)) {
+    return true;
+  }
+  return isRegisteredPolicyHost(inputUrl, candidateUrl);
 }
 
 function uniquePath(path: string[]) {
@@ -543,12 +618,221 @@ async function discoverBaeminPolicy(inputUrl: URL) {
   };
 }
 
+async function discoverAutomakerPolicy(
+  inputUrl: URL,
+  brand: "hyundai" | "kia",
+) {
+  if (!hostnameMatches(inputUrl, `${brand}.com`)) return null;
+
+  const apiOrigin = `https://privacy-web-api-kr.${brand}.com`;
+  const landingUrl = new URL(
+    brand === "kia"
+      ? "https://privacy.kia.com/overview/full-policy/"
+      : "https://privacy.hyundai.com/overview/full-policy",
+  );
+  const listUrl = new URL("/api/web/privacy?type=PI", apiOrigin);
+  const listResponse = await fetchMetadataText(listUrl);
+  const listPayload = JSON.parse(listResponse.text) as {
+    retValue?: { privacyList?: Array<{ sequence?: unknown; seq?: unknown }> };
+  };
+  const current = listPayload.retValue?.privacyList?.[0];
+  const sequence = current?.sequence ?? current?.seq;
+  if (typeof sequence !== "number" && typeof sequence !== "string") return null;
+
+  const detailUrl = new URL(`/api/web/privacy/${sequence}`, apiOrigin);
+  const detailResponse = await fetchMetadataText(detailUrl);
+  const detailPayload = JSON.parse(detailResponse.text) as {
+    retValue?: { content?: unknown; title?: unknown };
+  };
+  if (typeof detailPayload.retValue?.content !== "string") return null;
+  const html = detailPayload.retValue.content;
+  const text = stripHtml(html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html,
+    text,
+    url: landingUrl,
+    title:
+      typeof detailPayload.retValue.title === "string"
+        ? stripHtml(detailPayload.retValue.title)
+        : `${brand === "kia" ? "기아" : "현대자동차"} 개인정보처리방침`,
+    path: uniquePath([
+      inputUrl.toString(),
+      landingUrl.toString(),
+      listUrl.toString(),
+      detailUrl.toString(),
+    ]),
+  };
+}
+
+async function discoverKakaoBankPolicy(inputUrl: URL) {
+  if (!hostnameMatches(inputUrl, "kakaobank.com")) return null;
+  const landingUrl = new URL(
+    "https://m.kakaobank.com/PrivacyPolicy;ctg=privacyManagementPolicy",
+  );
+  const apiUrl = new URL(
+    "https://m.kakaobank.com/api/v1/template/corp?g=policy&s=privacyManagementPolicy",
+  );
+  const response = await fetchMetadataText(apiUrl);
+  const html = response.text;
+  const text = stripHtml(html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html,
+    text,
+    url: landingUrl,
+    title: "카카오뱅크 개인정보처리방침",
+    path: uniquePath([inputUrl.toString(), landingUrl.toString(), apiUrl.toString()]),
+  };
+}
+
+async function discoverTmapPolicy(inputUrl: URL) {
+  if (
+    !hostnameMatches(inputUrl, "tmapmobility.com") &&
+    !hostnameMatches(inputUrl, "tmap.co.kr")
+  ) {
+    return null;
+  }
+
+  const homepage = await fetchHtml(inputUrl);
+  const matches = [...homepage.html.matchAll(/externalCode=([a-f\d]{64})/gi)];
+  const preferred = matches.find((match) =>
+    /개인|privacy/i.test(
+      homepage.html.slice(Math.max(0, match.index - 240), match.index + 120),
+    ),
+  );
+  const externalCode = preferred?.[1] || matches.at(-1)?.[1];
+  if (!externalCode) return null;
+
+  const landingUrl = new URL("https://web.tmapmobility.com/policy/detail");
+  landingUrl.searchParams.set("externalCode", externalCode);
+  landingUrl.searchParams.set("headerYn", "n");
+  landingUrl.searchParams.set("prevShowYn", "Y");
+  const apiUrl = new URL(
+    `https://frontman.tmobiapi.com/proxy/heimdall-terms/v1/external/code/${externalCode}`,
+  );
+  const response = await fetchMetadataText(apiUrl);
+  const payload = JSON.parse(response.text) as {
+    data?: { termsCodeTitle?: unknown; termsCodeDetail?: unknown };
+  };
+  if (typeof payload.data?.termsCodeDetail !== "string") return null;
+  const html = payload.data.termsCodeDetail;
+  const title =
+    typeof payload.data.termsCodeTitle === "string"
+      ? stripHtml(payload.data.termsCodeTitle)
+      : "TMAP 개인정보처리방침";
+  const text = `${title}\n${stripHtml(html)}`.slice(0, MAX_POLICY_CHARS);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html,
+    text,
+    url: landingUrl,
+    title,
+    path: uniquePath([
+      inputUrl.toString(),
+      homepage.finalUrl.toString(),
+      landingUrl.toString(),
+      apiUrl.toString(),
+    ]),
+  };
+}
+
+async function discoverWavvePolicy(inputUrl: URL) {
+  if (!hostnameMatches(inputUrl, "wavve.com")) return null;
+  const landingUrl = new URL("https://www.wavve.com/customer/agreement");
+  const apiUrl = new URL("https://apis.wavve.com/terms?type=privacy&version=last");
+  const response = await fetchMetadataText(apiUrl);
+  const payload = JSON.parse(response.text) as { content?: unknown; title?: unknown };
+  if (typeof payload.content !== "string") return null;
+  const html = payload.content;
+  const text = stripHtml(html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html,
+    text,
+    url: landingUrl,
+    title: typeof payload.title === "string" ? stripHtml(payload.title) : "Wavve 개인정보처리방침",
+    path: uniquePath([inputUrl.toString(), landingUrl.toString(), apiUrl.toString()]),
+  };
+}
+
+async function discoverTvingPolicy(inputUrl: URL) {
+  if (!hostnameMatches(inputUrl, "tving.com")) return null;
+  const landingUrl = new URL("https://www.tving.com/policy/privacy");
+  const apiUrl = new URL("https://api.tving.com/v2/user/policy/agreement/20/");
+  const response = await fetchMetadataText(apiUrl);
+  const payload = JSON.parse(response.text) as {
+    body?: { contents?: unknown; title?: unknown };
+  };
+  if (typeof payload.body?.contents !== "string") return null;
+  const html = payload.body.contents;
+  const text = stripHtml(html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html,
+    text,
+    url: landingUrl,
+    title:
+      typeof payload.body.title === "string"
+        ? stripHtml(payload.body.title)
+        : "TVING 개인정보처리방침",
+    path: uniquePath([inputUrl.toString(), landingUrl.toString(), apiUrl.toString()]),
+  };
+}
+
+async function discoverSoopPolicy(inputUrl: URL) {
+  if (
+    !hostnameMatches(inputUrl, "sooplive.co.kr") &&
+    !hostnameMatches(inputUrl, "sooplive.com")
+  ) {
+    return null;
+  }
+  const landingUrl = new URL("https://res.sooplive.com/policy/policy2.html");
+  const wrapper = await fetchHtml(landingUrl);
+  const version = /historyOptions\s*=\s*\[\s*['"](\d{8})/i.exec(wrapper.html)?.[1];
+  if (!version) return null;
+  const contentUrl = new URL(
+    `/policy/contents/privacy/ko/${version}.html`,
+    landingUrl,
+  );
+  const fetched = await fetchHtml(contentUrl);
+  const text = stripHtml(fetched.html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  return {
+    html: fetched.html,
+    text,
+    url: landingUrl,
+    title: extractTitle(fetched.html) || "SOOP 개인정보처리방침",
+    path: uniquePath([
+      inputUrl.toString(),
+      landingUrl.toString(),
+      contentUrl.toString(),
+    ]),
+  };
+}
+
 async function discoverKnownDynamicPolicy(inputUrl: URL) {
   const adapter = hostnameMatches(inputUrl, "toss.im")
     ? discoverTossPolicy
     : hostnameMatches(inputUrl, "baemin.com")
       ? discoverBaeminPolicy
-      : null;
+      : hostnameMatches(inputUrl, "hyundai.com")
+        ? (url: URL) => discoverAutomakerPolicy(url, "hyundai")
+        : hostnameMatches(inputUrl, "kia.com")
+          ? (url: URL) => discoverAutomakerPolicy(url, "kia")
+          : hostnameMatches(inputUrl, "kakaobank.com")
+            ? discoverKakaoBankPolicy
+            : hostnameMatches(inputUrl, "tmapmobility.com") ||
+                hostnameMatches(inputUrl, "tmap.co.kr")
+              ? discoverTmapPolicy
+              : hostnameMatches(inputUrl, "wavve.com")
+                ? discoverWavvePolicy
+                : hostnameMatches(inputUrl, "tving.com")
+                  ? discoverTvingPolicy
+                  : hostnameMatches(inputUrl, "sooplive.co.kr") ||
+                      hostnameMatches(inputUrl, "sooplive.com")
+                    ? discoverSoopPolicy
+                    : null;
   if (!adapter) return null;
   try {
     return await adapter(inputUrl);
@@ -625,6 +909,7 @@ type DiscoveryQueueItem = {
 };
 
 async function discoverPolicy(inputUrl: URL) {
+  const discoveryStartedAt = Date.now();
   const dynamicPolicy = await discoverKnownDynamicPolicy(inputUrl);
   if (dynamicPolicy) return dynamicPolicy;
 
@@ -643,7 +928,11 @@ async function discoverPolicy(inputUrl: URL) {
   let firstError: unknown;
   let blockedError: AnalysisError | null = null;
 
-  while (queue.length && attempts < MAX_DISCOVERY_PAGES) {
+  while (
+    queue.length &&
+    attempts < MAX_DISCOVERY_PAGES &&
+    Date.now() - discoveryStartedAt < MAX_DISCOVERY_MS
+  ) {
     queue.sort((a, b) => b.score - a.score);
     const item = queue.shift();
     if (!item) break;
@@ -661,7 +950,10 @@ async function discoverPolicy(inputUrl: URL) {
       const text = stripHtml(fetched.html);
       const path = [...item.path, finalKey];
 
-      if (looksLikePolicy(text, fetched.finalUrl)) {
+      if (
+        looksLikePolicy(text, fetched.finalUrl) &&
+        isPolicyContextMatch(inputUrl, fetched.finalUrl, item.depth === 0)
+      ) {
         return {
           html: fetched.html,
           text,
@@ -676,7 +968,7 @@ async function discoverPolicy(inputUrl: URL) {
         MAX_CANDIDATES_PER_PAGE,
       );
 
-      if (item.depth === 0 && candidates.length < 2) {
+      if (item.depth === 0 && candidates.length < 4) {
         for (const url of commonPolicyHints(fetched.finalUrl)) {
           candidates.push({
             url,
@@ -696,6 +988,7 @@ async function discoverPolicy(inputUrl: URL) {
 
       for (const candidate of candidates) {
         if (visited.has(candidate.url.toString())) continue;
+        if (!isPolicyContextMatch(inputUrl, candidate.url, false)) continue;
         queue.push({
           url: candidate.url,
           depth: item.depth + 1,
