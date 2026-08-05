@@ -216,6 +216,7 @@ export default function Home() {
   const [policyText, setPolicyText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [canPasteRecovery, setCanPasteRecovery] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [openFinding, setOpenFinding] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | Severity>("all");
@@ -229,6 +230,7 @@ export default function Home() {
   const [sourceOpen, setSourceOpen] = useState(false);
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLDetailsElement>(null);
+  const policyTextRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredFindings = useMemo(() => {
     if (!result) return [];
@@ -247,6 +249,7 @@ export default function Home() {
 
   async function requestAnalysis(payload: { url?: string; text?: string }) {
     setError("");
+    setCanPasteRecovery(false);
     setLoading(true);
     setResult(null);
     setSourceFindingId(null);
@@ -260,6 +263,7 @@ export default function Home() {
 
       const data = await response.json();
       if (!response.ok) {
+        setCanPasteRecovery(Boolean(data.canPaste));
         throw new Error(
           data.error ||
             "방침을 불러오지 못했습니다. 방침 원문을 직접 붙여 넣어 주세요.",
@@ -320,6 +324,13 @@ export default function Home() {
     setPolicyText(samplePolicy);
     setError("");
     await requestAnalysis({ text: samplePolicy });
+  }
+
+  function openPasteRecovery() {
+    setMode("text");
+    setError("");
+    setCanPasteRecovery(false);
+    window.setTimeout(() => policyTextRef.current?.focus(), 0);
   }
 
   function handleTabKey(event: KeyboardEvent<HTMLButtonElement>) {
@@ -487,8 +498,8 @@ export default function Home() {
                     />
                   </div>
                   <small id="url-help">
-                    회사 홈페이지도 입력할 수 있습니다. 공개 링크와 포함 문서를
-                    최대 3단계까지 따라가 방침 본문을 찾습니다.
+                    홈페이지의 링크·포함 문서·공통 경로·사이트맵과 일부 공식 공개
+                    데이터를 비용 없이 확인해 방침 본문을 찾습니다.
                   </small>
                 </label>
               </div>
@@ -501,6 +512,7 @@ export default function Home() {
                 <label className="fieldLabel">
                   개인정보처리방침 원문
                   <textarea
+                    ref={policyTextRef}
                     value={policyText}
                     onChange={(event) => setPolicyText(event.target.value)}
                     placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
@@ -548,7 +560,14 @@ export default function Home() {
             {error && (
               <div className="errorBox" role="alert">
                 <span aria-hidden="true">!</span>
-                {error}
+                <div>
+                  <p>{error}</p>
+                  {canPasteRecovery && (
+                    <button type="button" onClick={openPasteRecovery}>
+                      원문 붙여넣기로 계속하기
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -584,8 +603,9 @@ export default function Home() {
 
           <div className="privacyNote">
             <span aria-hidden="true">●</span>
-            외부 AI API로 전송하지 않습니다. 입력 내용은 요청 중 규칙
-            분석에만 사용하며 앱 데이터베이스에 저장하지 않습니다. URL은
+            유료 브라우저나 외부 AI API로 전송하지 않습니다. 공식 사이트의 공개
+            문서와 공개 데이터만 읽으며 입력 내용은 요청 중 규칙 분석에만 사용하고
+            앱 데이터베이스에 저장하지 않습니다. URL은
             IP 리터럴·내부 호스트·이동 주소를 검사하고 공개 인터넷 경로만
             사용합니다. 남용 방지용 클라이언트 키는 복원 불가능하게 해시하여
             짧게 보관합니다.
