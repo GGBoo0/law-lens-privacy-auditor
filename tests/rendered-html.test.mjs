@@ -63,6 +63,7 @@ test("server-renders the finished Korean product", async () => {
     /frame-ancestors 'none'/,
   );
   assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.match(response.headers.get("cache-control") ?? "", /must-revalidate/);
 
   const html = await response.text();
   assert.match(html, /<html lang="ko">/i);

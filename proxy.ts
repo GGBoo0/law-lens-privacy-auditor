@@ -23,6 +23,9 @@ export function proxy(request: NextRequest) {
   const response = NextResponse.next({
     request: { headers: requestHeaders },
   });
+  // 공개 링크가 새 배포 뒤 이전 HTML을 오래 보여주지 않도록 매번 재검증합니다.
+  // 해시가 붙은 정적 자산은 matcher에서 제외되어 장기 캐시를 그대로 사용합니다.
+  response.headers.set("Cache-Control", "public, max-age=0, must-revalidate");
   response.headers.set("Content-Security-Policy", contentSecurityPolicy);
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
