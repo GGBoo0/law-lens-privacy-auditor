@@ -809,6 +809,54 @@ main {
   font-size: 12px;
 }
 
+.evaluationAxes {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evaluationAxes article {
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(17, 26, 45, 0.13);
+  background: var(--surface);
+}
+
+.evaluationAxes article > span {
+  align-self: flex-start;
+  border-radius: 20px;
+  padding: 4px 8px;
+  background: #e8ebef;
+  color: #586276;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.evaluationAxes .axis-good > span {
+  background: rgba(46, 154, 111, 0.18);
+  color: #246447;
+}
+
+.evaluationAxes .axis-review > span {
+  background: rgba(255, 190, 61, 0.24);
+  color: #6b500c;
+}
+
+.evaluationAxes strong {
+  font-size: 15px;
+}
+
+.evaluationAxes p {
+  margin: auto 0 0;
+  color: #687184;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .signalBar {
   margin-top: 18px;
   padding: 14px 17px;
@@ -840,7 +888,7 @@ main {
   margin-top: 10px;
   padding: 15px 17px;
   display: grid;
-  grid-template-columns: 0.5fr 1.3fr 0.65fr minmax(190px, 0.8fr);
+  grid-template-columns: 0.5fr 1.1fr 0.65fr 1.7fr;
   gap: 16px;
   align-items: start;
   border: 1px solid rgba(17, 26, 45, 0.1);
@@ -864,6 +912,7 @@ main {
 }
 
 .engineStrip details {
+  grid-column: 1 / -1;
   color: #586276;
   font-size: 10px;
 }
@@ -986,6 +1035,19 @@ main {
 .findingTitle small,
 .findingTitle strong {
   display: block;
+}
+
+.verificationTag {
+  display: inline-flex;
+  margin-top: 6px;
+  border: 1px solid rgba(20, 91, 204, 0.22);
+  border-radius: 20px;
+  padding: 3px 7px;
+  background: rgba(20, 91, 204, 0.07);
+  color: #315b9d;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .findingTitle small {
@@ -1176,6 +1238,10 @@ main {
 .coverageState.conditional {
   background: var(--amber);
   color: var(--ink);
+}
+
+.coverageState.unknown {
+  background: #667085;
 }
 
 .coverageState.na {
@@ -1476,6 +1542,10 @@ footer > a {
     grid-template-columns: 1fr;
   }
 
+  .evaluationAxes {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .coveragePanel {
     position: static;
   }
@@ -1607,6 +1677,10 @@ footer > a {
 
   .contextPicker > div,
   .reviewBox {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluationAxes {
     grid-template-columns: 1fr;
   }
 

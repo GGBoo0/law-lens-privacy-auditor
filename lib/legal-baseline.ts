@@ -1,6 +1,6 @@
 export const LEGAL_BASELINE = {
   verifiedAt: "2026-08-05",
-  rulesetVersion: "KR-PRIVACY-2026.08.05",
+  rulesetVersion: "KR-PRIVACY-2026.08.05-r2",
   statutes: [
     {
       name: "개인정보 보호법",
@@ -18,7 +18,19 @@ export const LEGAL_BASELINE = {
       name: "개인정보 처리방침 작성지침",
       version: "개인정보보호위원회 · 2026.04 개정",
       scope: "공식 지침",
-      url: "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=&nttId=12018",
+      url: "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030020&nttId=12018",
+    },
+    {
+      name: "개인정보 처리방침 평가에 관한 고시",
+      version: "시행 2024.02.20 · 개인정보보호위원회고시 제2024-3호",
+      scope: "적정성·가독성·접근성 평가체계",
+      url: "https://www.law.go.kr/admRulLsInfoP.do?admRulSeq=2100000236594",
+    },
+    {
+      name: "개인정보 보호법 시행령 제44조의4",
+      version: "시행 2026.05.19 · 자동화된 결정 공개사항",
+      scope: "완전히 자동화된 결정이 있을 때",
+      url: "https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1033216053",
     },
     {
       name: "개인정보의 안전성 확보조치 기준",
@@ -56,7 +68,7 @@ export const LEGAL_BASELINE = {
       name: "개인정보 보호법 시행령",
       version: "시행 예정 2026.08.20 · 대통령령 제36121호",
       effectiveFrom: "2026-08-20",
-      status: "현재 처리방침 규칙 영향 없음",
+      status: "시행 전 · 적용 대상은 본인전송요구 방법 반영 필요",
       url: "https://www.law.go.kr/lsRvsDocListP.do?lsId=011468",
     },
     {
