@@ -230,7 +230,7 @@ async function queryDns(hostname: string, type: "A" | "AAAA") {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
-    return await Promise.race([
+    const results = await Promise.race([
       lookup,
       new Promise<never>((_, reject) => {
         timeoutId = setTimeout(
@@ -239,6 +239,13 @@ async function queryDns(hostname: string, type: "A" | "AAAA") {
         );
       }),
     ]);
+    const addresses = results.filter((address) =>
+      type === "A" ? Boolean(parseIpv4(address)) : Boolean(parseIpv6(address)),
+    );
+    if (!addresses.length && results.length) {
+      return queryDnsOverHttps(hostname, type);
+    }
+    return addresses;
   } catch (error) {
     const code = dnsErrorCode(error);
     if (code === "ENODATA" || code === "ENOTFOUND") return [];
