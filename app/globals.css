@@ -538,6 +538,17 @@ main {
   margin: 0 8px;
 }
 
+.discoveryNote {
+  width: fit-content;
+  margin-top: 9px;
+  padding: 6px 9px;
+  border: 1px solid rgba(16, 102, 77, 0.2);
+  background: rgba(230, 247, 240, 0.72);
+  color: #17654f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .downloadButton {
   flex: none;
   border: 1px solid rgba(17, 26, 45, 0.3);

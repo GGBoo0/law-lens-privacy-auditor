@@ -17,6 +17,9 @@ const MAX_POLICY_CHARS = 180_000;
 const MAX_REDIRECTS = 3;
 const MAX_REQUEST_BYTES = 350_000;
 const MAX_RESPONSE_BYTES = 1_500_000;
+const MAX_DISCOVERY_DEPTH = 3;
+const MAX_DISCOVERY_PAGES = 8;
+const MAX_CANDIDATES_PER_PAGE = 6;
 const RATE_LIMIT = 12;
 const RATE_WINDOW_MS = 60_000;
 
@@ -248,8 +251,57 @@ function extractTitle(html: string) {
   return stripHtml(h1 || title || "").slice(0, 140);
 }
 
+type PolicyCandidate = { url: URL; text: string; score: number };
+
+function scorePolicyCandidate(
+  url: URL,
+  text: string,
+  baseUrl: URL,
+  source: "anchor" | "frame",
+) {
+  const haystack = `${text} ${url.pathname} ${url.search}`.toLowerCase();
+  let score = source === "frame" ? 4 : 0;
+  if (/개인정보\s*처리\s*방침/.test(haystack)) score += 18;
+  if (/개인정보\s*보호\s*정책/.test(haystack)) score += 15;
+  if (/privacy[\s_-]*policy/.test(haystack)) score += 15;
+  if (/policywrapper|policytype|privacy(?:detail|content)/.test(haystack)) {
+    score += 12;
+  }
+  if (/privacy/.test(haystack)) score += 8;
+  if (/개인정보/.test(haystack)) score += 8;
+  if (/policy|정책|방침/.test(haystack)) score += 4;
+  if (url.hostname === baseUrl.hostname) score += 3;
+  if (/terms|이용약관|location|위치정보|marketing|광고/.test(haystack)) {
+    score -= 5;
+  }
+  return score;
+}
+
 function extractLinks(html: string, baseUrl: URL) {
-  const links: Array<{ url: URL; text: string; score: number }> = [];
+  const links = new Map<string, PolicyCandidate>();
+
+  const addCandidate = (
+    rawUrl: string,
+    text: string,
+    source: "anchor" | "frame",
+  ) => {
+    if (!rawUrl || /^(?:#|javascript:|mailto:|tel:|data:)/i.test(rawUrl)) return;
+    try {
+      const url = new URL(decodeEntities(rawUrl), baseUrl);
+      if (!["http:", "https:"].includes(url.protocol)) return;
+      url.hash = "";
+      const score = scorePolicyCandidate(url, text, baseUrl, source);
+      if (score < 6) return;
+      const key = url.toString();
+      const existing = links.get(key);
+      if (!existing || existing.score < score) {
+        links.set(key, { url, text, score });
+      }
+    } catch {
+      // Ignore malformed page-authored links.
+    }
+  };
+
   const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
   let match: RegExpExecArray | null;
   let inspected = 0;
@@ -261,31 +313,22 @@ function extractLinks(html: string, baseUrl: URL) {
       /\bhref\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
       /\bhref\s*=\s*'([^']+)'/i.exec(attributes)?.[1] ||
       /\bhref\s*=\s*([^\s>]+)/i.exec(attributes)?.[1];
-    if (!href || /^(?:#|javascript:|mailto:|tel:)/i.test(href)) continue;
-
-    try {
-      const url = new URL(decodeEntities(href), baseUrl);
-      if (!["http:", "https:"].includes(url.protocol)) continue;
-      const text = stripHtml(match[2]).slice(0, 180);
-      const haystack = `${text} ${url.pathname} ${url.search}`.toLowerCase();
-      let score = 0;
-      if (/개인정보\s*처리\s*방침/.test(haystack)) score += 18;
-      if (/개인정보\s*보호\s*정책/.test(haystack)) score += 15;
-      if (/privacy[\s_-]*policy/.test(haystack)) score += 15;
-      if (/privacy/.test(haystack)) score += 8;
-      if (/개인정보/.test(haystack)) score += 8;
-      if (/policy|정책|방침/.test(haystack)) score += 4;
-      if (url.hostname === baseUrl.hostname) score += 3;
-      if (/terms|이용약관|location|위치정보|marketing|광고/.test(haystack)) {
-        score -= 5;
-      }
-      if (score >= 6) links.push({ url, text, score });
-    } catch {
-      // Ignore malformed page-authored links.
-    }
+    if (href) addCandidate(href, stripHtml(match[2]).slice(0, 180), "anchor");
   }
 
-  return links.sort((a, b) => b.score - a.score);
+  const framePattern = /<(?:iframe|frame)\b([^>]*)>/gi;
+  inspected = 0;
+  while ((match = framePattern.exec(html)) && inspected < 120) {
+    inspected++;
+    const attributes = match[1];
+    const src =
+      /\bsrc\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
+      /\bsrc\s*=\s*'([^']+)'/i.exec(attributes)?.[1] ||
+      /\bsrc\s*=\s*([^\s>]+)/i.exec(attributes)?.[1];
+    if (src) addCandidate(src, "embedded policy document", "frame");
+  }
+
+  return [...links.values()].sort((a, b) => b.score - a.score);
 }
 
 function looksLikePolicy(text: string, url: URL) {
@@ -298,20 +341,87 @@ function looksLikePolicy(text: string, url: URL) {
       `${url.pathname}${url.search}`,
     );
   const contentSignals = [
-    /개인정보\s*(?:처리|수집[·ㆍ\s]*이용)\s*목적/i,
-    /개인정보\s*(?:처리\s*및\s*)?보유\s*기간/i,
-    /정보주체(?:와\s*법정대리인)?의?\s*권리/i,
-    /개인정보\s*보호\s*책임자/i,
+    /개인정보(?:의)?\s*(?:처리|수집[·ㆍ\s]*이용)\s*목적|purposes?\s+of\s+(?:the\s+)?processing|how\s+we\s+use/i,
+    /개인정보(?:의)?\s*(?:처리\s*및\s*)?보유\s*기간|retention\s+period|how\s+long\s+we\s+(?:keep|retain)/i,
+    /처리하는\s*개인정보(?:의)?\s*항목|수집(?:하는)?\s*개인정보\s*항목|information\s+we\s+collect|categories\s+of\s+personal\s+(?:data|information)/i,
+    /개인정보(?:의)?\s*제3자\s*제공|third[-\s]party\s+(?:sharing|disclosure)|share\s+.*personal\s+(?:data|information)/i,
+    /개인정보\s*처리\s*위탁|service\s+providers?|data\s+processors?/i,
+    /개인정보(?:의)?\s*파기|delet(?:e|ion)|destruction\s+of\s+personal/i,
+    /정보주체(?:와\s*법정대리인)?의?\s*권리|your\s+(?:privacy\s+)?rights|data\s+subject\s+rights/i,
+    /개인정보\s*보호\s*책임자|data\s+protection\s+officer|privacy\s+contact/i,
   ].filter((pattern) => pattern.test(text)).length;
 
   return (
     text.length >= 500 &&
-    (urlSignal ||
-      Boolean(
-        policyHeading &&
-          policyHeading.index < 3200 &&
-          contentSignals >= 2,
-      ))
+    contentSignals >= 2 &&
+    (urlSignal || Boolean(policyHeading && policyHeading.index < 3200))
+  );
+}
+
+type DiscoveryQueueItem = {
+  url: URL;
+  depth: number;
+  score: number;
+  path: string[];
+};
+
+async function discoverPolicy(inputUrl: URL) {
+  const queue: DiscoveryQueueItem[] = [
+    { url: inputUrl, depth: 0, score: Number.MAX_SAFE_INTEGER, path: [] },
+  ];
+  const visited = new Set<string>();
+  let attempts = 0;
+  let firstError: unknown;
+
+  while (queue.length && attempts < MAX_DISCOVERY_PAGES) {
+    queue.sort((a, b) => b.score - a.score);
+    const item = queue.shift();
+    if (!item) break;
+
+    const normalized = normalizeAndAssertPublicUrl(item.url);
+    const key = normalized.toString();
+    if (visited.has(key)) continue;
+    visited.add(key);
+    attempts++;
+
+    try {
+      const fetched = await fetchHtml(normalized);
+      const finalKey = fetched.finalUrl.toString();
+      visited.add(finalKey);
+      const text = stripHtml(fetched.html);
+      const path = [...item.path, finalKey];
+
+      if (looksLikePolicy(text, fetched.finalUrl)) {
+        return {
+          html: fetched.html,
+          text,
+          url: fetched.finalUrl,
+          path: [...new Set(path)],
+        };
+      }
+
+      if (item.depth >= MAX_DISCOVERY_DEPTH) continue;
+      const candidates = extractLinks(fetched.html, fetched.finalUrl).slice(
+        0,
+        MAX_CANDIDATES_PER_PAGE,
+      );
+      for (const candidate of candidates) {
+        if (visited.has(candidate.url.toString())) continue;
+        queue.push({
+          url: candidate.url,
+          depth: item.depth + 1,
+          score: candidate.score,
+          path,
+        });
+      }
+    } catch (error) {
+      if (attempts === 1) firstError = error;
+    }
+  }
+
+  if (attempts === 1 && firstError) throw firstError;
+  throw new Error(
+    "홈페이지에서 개인정보처리방침 본문을 찾지 못했습니다. 방침의 직접 주소를 넣거나 원문을 붙여 넣어 주세요.",
   );
 }
 
@@ -392,42 +502,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const first = await fetchHtml(inputUrl);
-    const firstText = stripHtml(first.html);
-    let policyHtml = first.html;
-    let policyText = firstText;
-    let policyUrl = first.finalUrl;
-
-    if (!looksLikePolicy(firstText, first.finalUrl)) {
-      const candidates = extractLinks(first.html, first.finalUrl);
-      if (!candidates.length) {
-        return json(
-          {
-            error:
-              "홈페이지에서 개인정보처리방침 링크를 찾지 못했습니다. 방침의 직접 주소를 넣거나 원문을 붙여 넣어 주세요.",
-          },
-          422,
-        );
-      }
-
-      let lastError: unknown;
-      for (const candidate of candidates.slice(0, 3)) {
-        try {
-          const fetched = await fetchHtml(candidate.url);
-          const candidateText = stripHtml(fetched.html);
-          if (candidateText.length >= 500) {
-            policyHtml = fetched.html;
-            policyText = candidateText;
-            policyUrl = fetched.finalUrl;
-            lastError = undefined;
-            break;
-          }
-        } catch (error) {
-          lastError = error;
-        }
-      }
-      if (lastError && policyText === firstText) throw lastError;
-    }
+    const discovered = await discoverPolicy(inputUrl);
+    const policyHtml = discovered.html;
+    const policyText = discovered.text;
+    const policyUrl = discovered.url;
 
     if (policyText.length < 500) {
       return json(
@@ -439,17 +517,15 @@ export async function POST(request: Request) {
       );
     }
 
-    return json(
-      await buildAnalysis(policyText, {
-        sourceUrl: inputUrl.toString(),
-        policyUrl: policyUrl.toString(),
-        policyTitle:
-          extractTitle(policyHtml) ||
-          `${policyUrl.hostname} 개인정보처리방침`,
-        retrievedAt: new Date().toISOString(),
-        contextOverrides: normalizeContextOverrides(body.contexts),
-      }),
-    );
+    const analysis = await buildAnalysis(policyText, {
+      sourceUrl: inputUrl.toString(),
+      policyUrl: policyUrl.toString(),
+      policyTitle:
+        extractTitle(policyHtml) || `${policyUrl.hostname} 개인정보처리방침`,
+      retrievedAt: new Date().toISOString(),
+      contextOverrides: normalizeContextOverrides(body.contexts),
+    });
+    return json({ ...analysis, discoveryPath: discovered.path });
   } catch (error) {
     const message =
       error instanceof DOMException && error.name === "TimeoutError"

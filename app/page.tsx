@@ -48,6 +48,7 @@ type CoverageItem = {
 type AnalysisResult = {
   sourceUrl?: string;
   policyUrl?: string;
+  discoveryPath?: string[];
   policyTitle: string;
   retrievedAt: string;
   textLength: number;
@@ -486,7 +487,8 @@ export default function Home() {
                     />
                   </div>
                   <small id="url-help">
-                    로그인 없이 공개된 HTML 방침을 분석할 수 있습니다.
+                    회사 홈페이지도 입력할 수 있습니다. 공개 링크와 포함 문서를
+                    최대 3단계까지 따라가 방침 본문을 찾습니다.
                   </small>
                 </label>
               </div>
@@ -623,6 +625,12 @@ export default function Home() {
                 <span>·</span>
                 {formatDate(result.retrievedAt)} 분석
               </p>
+              {result.discoveryPath && result.discoveryPath.length > 1 && (
+                <div className="discoveryNote">
+                  홈페이지에서 {result.discoveryPath.length - 1}단계의 링크를 따라
+                  실제 방침 본문을 찾았습니다.
+                </div>
+              )}
             </div>
             <div className="reportActions">
               <button className="downloadButton" onClick={printReport}>
