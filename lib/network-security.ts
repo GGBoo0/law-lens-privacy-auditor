@@ -1,5 +1,3 @@
-import dns from "node:dns";
-
 const MAX_URL_CHARS = 2_048;
 const DNS_TIMEOUT_MS = 4_000;
 
@@ -194,11 +192,6 @@ export function normalizeAndAssertPublicUrl(value: string | URL) {
   return url;
 }
 
-function dnsErrorCode(error: unknown) {
-  if (!error || typeof error !== "object" || !("code" in error)) return "";
-  return String(error.code);
-}
-
 async function queryDnsOverHttps(hostname: string, type: "A" | "AAAA") {
   const endpoint = new URL("https://dns.google/resolve");
   endpoint.searchParams.set("name", hostname);
@@ -223,36 +216,7 @@ async function queryDnsOverHttps(hostname: string, type: "A" | "AAAA") {
 }
 
 async function queryDns(hostname: string, type: "A" | "AAAA") {
-  const lookup =
-    type === "A"
-      ? dns.promises.resolve4(hostname)
-      : dns.promises.resolve6(hostname);
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    const results = await Promise.race([
-      lookup,
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new DOMException("DNS timeout", "TimeoutError")),
-          DNS_TIMEOUT_MS,
-        );
-      }),
-    ]);
-    const addresses = results.filter((address) =>
-      type === "A" ? Boolean(parseIpv4(address)) : Boolean(parseIpv6(address)),
-    );
-    if (!addresses.length && results.length) {
-      return queryDnsOverHttps(hostname, type);
-    }
-    return addresses;
-  } catch (error) {
-    const code = dnsErrorCode(error);
-    if (code === "ENODATA" || code === "ENOTFOUND") return [];
-    return queryDnsOverHttps(hostname, type);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
+  return queryDnsOverHttps(hostname, type);
 }
 
 export async function assertPublicDns(url: URL) {
