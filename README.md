@@ -40,7 +40,7 @@
 
 ```mermaid
 flowchart LR
-    A["웹사이트 URL 또는 원문"] --> B["URL·DNS 보안 검사"]
+    A["웹사이트 URL 또는 원문"] --> B["URL·공개 경로 보안 검사"]
     B --> C["처리방침 링크 탐색"]
     C --> D["HTML 정제·본문 추출"]
     D --> E["필수항목 규칙 검사"]
@@ -80,7 +80,7 @@ URL 입력을 받는 크롤링 서비스의 SSRF와 프롬프트 인젝션 위�
 - `http`·`https`와 80·443 포트만 허용
 - localhost, 클라우드 메타데이터, 내부 호스트 이름 차단
 - 사설·예약·문서용 IPv4와 IPv6 대역 차단
-- 공개 DNS의 A·AAAA 결과 검사와 모든 리다이렉트 재검사
+- 공개 인터넷 전용 네트워크 격리와 모든 리다이렉트 URL 재검사
 - 요청·응답 크기, 응답 시간, 리다이렉트 횟수 제한
 - 응답 본문을 스트리밍으로 읽으며 최대 크기 초과 시 중단
 - 동일 출처·JSON 요청 검사와 IP별 요청 속도 제한
@@ -135,7 +135,7 @@ app/
   page.tsx                 입력 화면과 분석 대시보드
 lib/
   legal-baseline.ts        법령 검증일·버전·공식 출처
-  network-security.ts      URL·IP·DNS·스트림 보안 검사
+  network-security.ts      URL·IP·스트림 보안 검사
   privacy-analyzer.ts      규칙 엔진과 보고서 생성
 tests/
   rendered-html.test.mjs   렌더링·분석·보안 통합 테스트

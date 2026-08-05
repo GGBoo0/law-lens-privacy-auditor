@@ -1,7 +1,4 @@
-import dns from "node:dns";
-
 const MAX_URL_CHARS = 2_048;
-const DNS_TIMEOUT_MS = 4_000;
 
 const blockedHostSuffixes = [
   ".localhost",
@@ -196,98 +193,6 @@ export function normalizeAndAssertPublicUrl(value: string | URL) {
     throw new Error("사설·예약 IPv6 주소는 분석할 수 없습니다.");
   }
   return url;
-}
-
-async function queryDnsOverHttps(hostname: string, type: "A" | "AAAA") {
-  const endpoint = new URL("https://dns.google/resolve");
-  endpoint.searchParams.set("name", hostname);
-  endpoint.searchParams.set("type", type);
-  const response = await fetch(endpoint, {
-    headers: { Accept: "application/dns-json" },
-    signal: AbortSignal.timeout(DNS_TIMEOUT_MS),
-    redirect: "error",
-  });
-  if (!response.ok) throw new Error("공개 DNS 확인에 실패했습니다.");
-  const result = (await response.json()) as {
-    Status?: number;
-    Answer?: Array<{ type?: number; data?: string }>;
-  };
-  if (result.Status !== 0 && result.Status !== 3) {
-    throw new Error("공개 DNS 확인에 실패했습니다.");
-  }
-  const numericType = type === "A" ? 1 : 28;
-  return (result.Answer ?? [])
-    .filter((answer) => answer.type === numericType && answer.data)
-    .map((answer) => answer.data as string);
-}
-
-function dnsErrorCode(error: unknown) {
-  if (!error || typeof error !== "object" || !("code" in error)) return "";
-  return String(error.code);
-}
-
-async function queryDns(hostname: string, type: "A" | "AAAA") {
-  const lookup =
-    type === "A"
-      ? dns.promises.resolve4(hostname)
-      : dns.promises.resolve6(hostname);
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    const results = await Promise.race([
-      lookup,
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new DOMException("DNS timeout", "TimeoutError")),
-          DNS_TIMEOUT_MS,
-        );
-      }),
-    ]);
-    const addresses = results.filter((address) =>
-      type === "A" ? Boolean(parseIpv4(address)) : Boolean(parseIpv6(address)),
-    );
-    if (!addresses.length && results.length) {
-      return queryDnsOverHttps(hostname, type);
-    }
-    return addresses;
-  } catch (error) {
-    const code = dnsErrorCode(error);
-    if (code === "ENODATA" || code === "ENOTFOUND") return [];
-    return queryDnsOverHttps(hostname, type);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
-}
-
-export async function assertPublicDns(url: URL) {
-  normalizeAndAssertPublicUrl(url);
-  const hostname = normalizeHostname(url.hostname);
-  if (parseIpv4(hostname) || hostname.includes(":")) return;
-
-  let addresses: string[];
-  try {
-    const [ipv4, ipv6] = await Promise.all([
-      queryDns(hostname, "A"),
-      queryDns(hostname, "AAAA"),
-    ]);
-    addresses = [...ipv4, ...ipv6];
-  } catch {
-    throw new Error(
-      "도메인의 공개 DNS 주소를 안전하게 확인하지 못했습니다. 원문 직접 입력을 이용해 주세요.",
-    );
-  }
-  if (!addresses.length) {
-    throw new Error("공개 DNS 주소가 확인되는 웹사이트만 분석할 수 있습니다.");
-  }
-  if (
-    addresses.some((address) =>
-      address.includes(":")
-        ? !isPublicIpv6(address)
-        : !isPublicIpv4(address),
-    )
-  ) {
-    throw new Error("내부·사설 IP로 연결되는 도메인은 분석할 수 없습니다.");
-  }
 }
 
 export async function readUtf8Stream(

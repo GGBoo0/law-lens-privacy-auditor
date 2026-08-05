@@ -5,7 +5,6 @@ import {
   type ContextOverrides,
 } from "../../../lib/privacy-analyzer";
 import {
-  assertPublicDns,
   normalizeAndAssertPublicUrl,
   readUtf8Stream,
 } from "../../../lib/network-security";
@@ -137,7 +136,6 @@ async function fetchHtml(initialUrl: URL) {
   let current = initialUrl;
   for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
     current = normalizeAndAssertPublicUrl(current);
-    await assertPublicDns(current);
     const response = await fetch(current, {
       method: "GET",
       redirect: "manual",
