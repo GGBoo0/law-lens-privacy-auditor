@@ -224,6 +224,7 @@ test("rejects cross-site, non-JSON, and private-network requests", async () => {
     "http://169.254.169.254/latest/meta-data",
     "http://[::1]/privacy",
     "http://[fc00::1]/privacy",
+    "http://[64:ff9b::0a00:0001]/privacy",
   ]) {
     const response = await fetchWorker(
       new Request("http://localhost/api/analyze", {

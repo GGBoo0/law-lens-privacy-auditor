@@ -1,3 +1,5 @@
+import dns from "node:dns";
+
 const MAX_URL_CHARS = 2_048;
 const DNS_TIMEOUT_MS = 4_000;
 
@@ -119,10 +121,10 @@ export function isPublicIpv6(value: string) {
   const documentation = words[0] === 0x2001 && words[1] === 0x0db8;
   const teredo = words[0] === 0x2001 && words[1] === 0;
   const sixToFour = words[0] === 0x2002;
-  const translation =
+  const wellKnownNat64 =
     words[0] === 0x0064 &&
     words[1] === 0xff9b &&
-    (words[2] === 0 || words[2] === 1);
+    words.slice(2, 6).every((word) => word === 0);
   const ipv4Mapped =
     words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
   const ipv4Compatible = words.slice(0, 6).every((word) => word === 0);
@@ -135,10 +137,14 @@ export function isPublicIpv6(value: string) {
     multicast ||
     documentation ||
     teredo ||
-    sixToFour ||
-    translation
+    sixToFour
   ) {
     return false;
+  }
+
+  if (wellKnownNat64) {
+    const embedded = `${words[6] >> 8}.${words[6] & 255}.${words[7] >> 8}.${words[7] & 255}`;
+    return isPublicIpv4(embedded);
   }
 
   if (ipv4Mapped || ipv4Compatible) {
@@ -215,8 +221,42 @@ async function queryDnsOverHttps(hostname: string, type: "A" | "AAAA") {
     .map((answer) => answer.data as string);
 }
 
+function dnsErrorCode(error: unknown) {
+  if (!error || typeof error !== "object" || !("code" in error)) return "";
+  return String(error.code);
+}
+
 async function queryDns(hostname: string, type: "A" | "AAAA") {
-  return queryDnsOverHttps(hostname, type);
+  const lookup =
+    type === "A"
+      ? dns.promises.resolve4(hostname)
+      : dns.promises.resolve6(hostname);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    const results = await Promise.race([
+      lookup,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
+          () => reject(new DOMException("DNS timeout", "TimeoutError")),
+          DNS_TIMEOUT_MS,
+        );
+      }),
+    ]);
+    const addresses = results.filter((address) =>
+      type === "A" ? Boolean(parseIpv4(address)) : Boolean(parseIpv6(address)),
+    );
+    if (!addresses.length && results.length) {
+      return queryDnsOverHttps(hostname, type);
+    }
+    return addresses;
+  } catch (error) {
+    const code = dnsErrorCode(error);
+    if (code === "ENODATA" || code === "ENOTFOUND") return [];
+    return queryDnsOverHttps(hostname, type);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 export async function assertPublicDns(url: URL) {
