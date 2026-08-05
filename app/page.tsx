@@ -10,9 +10,23 @@ import {
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
-type ContextKey = "overseas" | "children" | "ecommerce" | "ai";
+type ContextKey =
+  | "thirdParty"
+  | "outsourcing"
+  | "overseas"
+  | "foreignController"
+  | "children"
+  | "cookies"
+  | "ecommerce"
+  | "ai"
+  | "automatedDecision";
 type ContextChoice = "auto" | "yes" | "no";
-type ReviewStatus = "unreviewed" | "needs_action" | "not_applicable" | "resolved";
+type ReviewStatus =
+  | "unreviewed"
+  | "needs_evidence"
+  | "needs_action"
+  | "not_applicable"
+  | "resolved";
 
 type LegalBasis = {
   law: string;
@@ -41,7 +55,14 @@ type Finding = {
 
 type CoverageItem = {
   label: string;
-  state: "present" | "missing" | "conditional" | "na";
+  state: "present" | "missing" | "conditional" | "unknown" | "na";
+  detail: string;
+};
+
+type EvaluationAxis = {
+  key: "appropriateness" | "readability" | "accessibility" | "consistency";
+  label: string;
+  state: "good" | "review" | "not_evaluated";
   detail: string;
 };
 
@@ -69,6 +90,7 @@ type AnalysisResult = {
   headline: string;
   findings: Finding[];
   coverage: CoverageItem[];
+  evaluationAxes: EvaluationAxis[];
   detectedSignals: string[];
   policyExcerpt: string;
   analysisEngine: {
@@ -152,14 +174,20 @@ const contextOptions: Array<{
   label: string;
   help: string;
 }> = [
+  { key: "thirdParty", label: "제3자 제공", help: "다른 회사가 자체 목적으로 이용함" },
+  { key: "outsourcing", label: "처리위탁", help: "외부 업체가 우리 업무를 대신 처리함" },
+  { key: "cookies", label: "쿠키·행태정보", help: "쿠키·광고·분석 도구를 사용함" },
   { key: "ecommerce", label: "쇼핑·결제", help: "주문·결제·배송을 운영함" },
   { key: "children", label: "만 14세 미만", help: "아동 회원이나 이용자가 있음" },
   { key: "overseas", label: "국외 이전", help: "해외 서버·클라우드를 사용함" },
-  { key: "ai", label: "AI·자동화", help: "AI 처리 또는 자동화된 결정을 사용함" },
+  { key: "foreignController", label: "해외 사업자", help: "국외 사업자가 국내 정보를 직접 처리함" },
+  { key: "ai", label: "생성형 AI", help: "프롬프트·결과물·모델 학습을 처리함" },
+  { key: "automatedDecision", label: "자동화된 결정", help: "사람 개입 없이 권리·의무를 결정함" },
 ];
 
 const reviewLabels: Record<ReviewStatus, string> = {
   unreviewed: "검토 전",
+  needs_evidence: "증거 부족·판단 유보",
   needs_action: "조치 필요",
   not_applicable: "해당 없음",
   resolved: "조치 완료",
@@ -222,7 +250,17 @@ export default function Home() {
   const [filter, setFilter] = useState<"all" | Severity>("all");
   const [contextOverrides, setContextOverrides] = useState<
     Record<ContextKey, ContextChoice>
-  >({ overseas: "auto", children: "auto", ecommerce: "auto", ai: "auto" });
+  >({
+    thirdParty: "auto",
+    outsourcing: "auto",
+    overseas: "auto",
+    foreignController: "auto",
+    children: "auto",
+    cookies: "auto",
+    ecommerce: "auto",
+    ai: "auto",
+    automatedDecision: "auto",
+  });
   const [reviewEntries, setReviewEntries] = useState<Record<string, ReviewEntry>>(
     {},
   );
@@ -596,7 +634,7 @@ export default function Home() {
               {loading
                 ? "개인정보처리방침을 분석하고 있습니다."
                 : result
-                  ? `분석이 완료되었습니다. 점검 점수 ${result.score}점, ${result.grade}입니다.`
+                  ? `분석이 완료되었습니다. 누락 가능성 높음 ${result.counts.high}건, 불명확 또는 보완 ${result.counts.medium}건, 사실 확인 ${result.counts.low}건입니다.`
                   : ""}
             </p>
           </form>
@@ -678,7 +716,7 @@ export default function Home() {
               </div>
               <div>
                 <div className="scoreLabel">
-                  {result.scoreMethod.label} · {result.grade}
+                  {result.scoreMethod.label}
                 </div>
                 <h3>{result.headline}</h3>
                 <p>
@@ -695,7 +733,7 @@ export default function Home() {
               >
                 <span className="countDot high" />
                 <strong>{result.counts.high}</strong>
-                <small>위반 소지</small>
+                <small>누락 가능성 높음</small>
               </button>
               <button
                 onClick={() => setFilter("medium")}
@@ -703,7 +741,7 @@ export default function Home() {
               >
                 <span className="countDot medium" />
                 <strong>{result.counts.medium}</strong>
-                <small>그레이존</small>
+                <small>불명확·보완</small>
               </button>
               <button
                 onClick={() => setFilter("low")}
@@ -711,7 +749,7 @@ export default function Home() {
               >
                 <span className="countDot low" />
                 <strong>{result.counts.low}</strong>
-                <small>확인 필요</small>
+                <small>사실 확인</small>
               </button>
               <button
                 onClick={() => setFilter("pass")}
@@ -719,9 +757,25 @@ export default function Home() {
               >
                 <span className="countDot pass" />
                 <strong>{result.counts.pass}</strong>
-                <small>확인됨</small>
+                <small>문구 확인</small>
               </button>
             </div>
+          </div>
+
+          <div className="evaluationAxes" aria-label="공식 평가체계 기반 자동 점검 축">
+            {result.evaluationAxes.map((axis) => (
+              <article className={`axis-${axis.state}`} key={axis.key}>
+                <span>
+                  {axis.state === "good"
+                    ? "자동 확인"
+                    : axis.state === "review"
+                      ? "검토 필요"
+                      : "판단 유보"}
+                </span>
+                <strong>{axis.label}</strong>
+                <p>{axis.detail}</p>
+              </article>
+            ))}
           </div>
 
           {result.detectedSignals.length > 0 && (
@@ -746,6 +800,10 @@ export default function Home() {
               <span>외부 AI 전송</span>
               <strong>{result.analysisEngine.aiUsed ? "사용" : "없음"}</strong>
             </div>
+            <div>
+              <span>검증 상태</span>
+              <strong>{result.analysisEngine.evaluationStatus}</strong>
+            </div>
             <details>
               <summary>무료 분석의 한계</summary>
               <ul>
@@ -764,17 +822,18 @@ export default function Home() {
                 <div>
                   <span className="stepPill">02</span>
                   <div>
-                    <h3>근거가 있는 위험 신호</h3>
-                    <p>문제 가능성이 큰 순서로 정렬했습니다.</p>
+                    <h3>근거가 있는 점검 결과</h3>
+                    <p>누락 가능성·불명확성·사실 확인 순서로 정렬했습니다.</p>
                   </div>
                 </div>
                 <div className="filterRow" aria-label="결과 필터">
                   {(
                     [
                       ["all", "전체"],
-                      ["high", "위반 소지"],
-                      ["medium", "그레이존"],
-                      ["pass", "확인됨"],
+                      ["high", "누락 가능성"],
+                      ["medium", "불명확·보완"],
+                      ["low", "사실 확인"],
+                      ["pass", "문구 확인"],
                     ] as const
                   ).map(([value, label]) => (
                     <button
@@ -814,6 +873,9 @@ export default function Home() {
                         <span className="findingTitle">
                           <small>{finding.category}</small>
                           <strong>{finding.title}</strong>
+                          {finding.requiresFactualVerification && (
+                            <em className="verificationTag">현장 검증 필요</em>
+                          )}
                         </span>
                         <span className="chevron" aria-hidden="true">
                           {opened ? "−" : "+"}
@@ -914,8 +976,8 @@ export default function Home() {
                 <div>
                   <span className="stepPill">03</span>
                   <div>
-                    <h3>필수항목 커버리지</h3>
-                    <p>법 제30조·시행령 제31조 기준</p>
+                    <h3>기재요소 적용 상태</h3>
+                    <p>법 제30조·시행령 제31조 및 조건부 기준</p>
                   </div>
                 </div>
               </div>
@@ -929,6 +991,8 @@ export default function Home() {
                           ? "!"
                           : item.state === "conditional"
                             ? "?"
+                            : item.state === "unknown"
+                              ? "…"
                             : "—"}
                     </span>
                     <div>

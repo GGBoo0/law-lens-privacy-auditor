@@ -31,7 +31,17 @@ const RATE_LIMIT = 12;
 const RATE_WINDOW_MS = 60_000;
 
 const rateWindows = new Map<string, { count: number; resetAt: number }>();
-const contextKeys: ContextKey[] = ["overseas", "children", "ecommerce", "ai"];
+const contextKeys: ContextKey[] = [
+  "thirdParty",
+  "outsourcing",
+  "overseas",
+  "foreignController",
+  "children",
+  "cookies",
+  "ecommerce",
+  "ai",
+  "automatedDecision",
+];
 const contextChoices: ContextChoice[] = ["auto", "yes", "no"];
 
 type AnalysisErrorCode =
@@ -1114,6 +1124,7 @@ export async function POST(request: Request) {
         extractTitle(policyHtml) ||
         `${policyUrl.hostname} 개인정보처리방침`,
       retrievedAt: new Date().toISOString(),
+      discoveryPath: discovered.path,
       contextOverrides: normalizeContextOverrides(body.contexts),
     });
     return json({ ...analysis, discoveryPath: discovered.path });
