@@ -391,6 +391,30 @@ main {
   font-weight: 900;
 }
 
+.errorBox > div {
+  display: grid;
+  gap: 8px;
+}
+
+.errorBox p {
+  margin: 0;
+}
+
+.errorBox button {
+  width: fit-content;
+  padding: 7px 10px;
+  border: 1px solid #d9a294;
+  border-radius: 7px;
+  background: #fff;
+  color: #883827;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.errorBox button:hover {
+  background: #fff7f4;
+}
+
 .primaryButton {
   width: 100%;
   min-height: 57px;

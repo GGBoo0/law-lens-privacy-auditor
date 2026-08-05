@@ -16,6 +16,7 @@ const MAX_POLICY_CHARS = 180_000;
 const MAX_REDIRECTS = 3;
 const MAX_REQUEST_BYTES = 350_000;
 const MAX_RESPONSE_BYTES = 1_500_000;
+const MAX_METADATA_BYTES = 600_000;
 const MAX_DISCOVERY_DEPTH = 3;
 const MAX_DISCOVERY_PAGES = 8;
 const MAX_CANDIDATES_PER_PAGE = 6;
@@ -25,6 +26,28 @@ const RATE_WINDOW_MS = 60_000;
 const rateWindows = new Map<string, { count: number; resetAt: number }>();
 const contextKeys: ContextKey[] = ["overseas", "children", "ecommerce", "ai"];
 const contextChoices: ContextChoice[] = ["auto", "yes", "no"];
+
+type AnalysisErrorCode =
+  | "site_blocked"
+  | "policy_not_found"
+  | "unsupported_format"
+  | "source_timeout";
+
+class AnalysisError extends Error {
+  constructor(
+    readonly code: AnalysisErrorCode,
+    message: string,
+    readonly status = 422,
+  ) {
+    super(message);
+    this.name = "AnalysisError";
+  }
+}
+
+function hostnameMatches(url: URL, domain: string) {
+  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
 
 function json(data: unknown, status = 200, extraHeaders?: HeadersInit) {
   return Response.json(data, {
@@ -157,7 +180,8 @@ async function fetchHtml(initialUrl: URL) {
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        throw new Error(
+        throw new AnalysisError(
+          "site_blocked",
           "사이트가 자동 수집을 차단했습니다. 개인정보처리방침 원문을 직접 붙여 넣어 주세요.",
         );
       }
@@ -174,7 +198,8 @@ async function fetchHtml(initialUrl: URL) {
       !contentType.includes("text/plain")
     ) {
       if (contentType.includes("pdf")) {
-        throw new Error(
+        throw new AnalysisError(
+          "unsupported_format",
           "PDF 방침은 현재 자동 추출할 수 없습니다. PDF의 텍스트를 복사해 원문 입력 탭에 붙여 넣어 주세요.",
         );
       }
@@ -196,6 +221,48 @@ async function fetchHtml(initialUrl: URL) {
     return { html, finalUrl: current };
   }
   throw new Error("페이지 이동 횟수가 너무 많습니다.");
+}
+
+async function fetchMetadataText(initialUrl: URL) {
+  let current = initialUrl;
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
+    current = normalizeAndAssertPublicUrl(current);
+    const response = await fetch(current, {
+      method: "GET",
+      redirect: "manual",
+      headers: {
+        Accept: "application/json,application/xml,text/xml,text/plain;q=0.9,*/*;q=0.2",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.6",
+        "User-Agent":
+          "LawLens-PrivacyPolicy-Checker/1.0 (+public privacy policy review)",
+      },
+      signal: AbortSignal.timeout(8_000),
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) throw new Error("사이트의 이동 주소가 비어 있습니다.");
+      current = normalizeAndAssertPublicUrl(new URL(location, current));
+      continue;
+    }
+    if (!response.ok) {
+      throw new Error(`공개 메타데이터를 불러오지 못했습니다(HTTP ${response.status}).`);
+    }
+
+    const declaredLength = Number(response.headers.get("content-length") || 0);
+    if (declaredLength > MAX_METADATA_BYTES) {
+      throw new Error("공개 메타데이터가 너무 큽니다.");
+    }
+    return {
+      text: await readUtf8Stream(
+        response.body,
+        MAX_METADATA_BYTES,
+        "공개 메타데이터가 너무 큽니다.",
+      ),
+      finalUrl: current,
+    };
+  }
+  throw new Error("공개 메타데이터의 이동 횟수가 너무 많습니다.");
 }
 
 function decodeEntities(value: string) {
@@ -255,10 +322,10 @@ function scorePolicyCandidate(
   url: URL,
   text: string,
   baseUrl: URL,
-  source: "anchor" | "frame",
+  source: "anchor" | "frame" | "embedded",
 ) {
   const haystack = `${text} ${url.pathname} ${url.search}`.toLowerCase();
-  let score = source === "frame" ? 4 : 0;
+  let score = source === "frame" ? 4 : source === "embedded" ? 1 : 0;
   if (/개인정보\s*처리\s*방침/.test(haystack)) score += 18;
   if (/개인정보\s*보호\s*정책/.test(haystack)) score += 15;
   if (/privacy[\s_-]*policy/.test(haystack)) score += 15;
@@ -281,7 +348,7 @@ function extractLinks(html: string, baseUrl: URL) {
   const addCandidate = (
     rawUrl: string,
     text: string,
-    source: "anchor" | "frame",
+    source: "anchor" | "frame" | "embedded",
   ) => {
     if (!rawUrl || /^(?:#|javascript:|mailto:|tel:|data:)/i.test(rawUrl)) return;
     try {
@@ -326,6 +393,25 @@ function extractLinks(html: string, baseUrl: URL) {
     if (src) addCandidate(src, "embedded policy document", "frame");
   }
 
+  const dataLinkPattern = /\bdata-(?:href|url|link)\s*=\s*(?:"([^"]+)"|'([^']+)')/gi;
+  inspected = 0;
+  while ((match = dataLinkPattern.exec(html)) && inspected < 300) {
+    inspected++;
+    const rawUrl = match[1] || match[2];
+    if (rawUrl) addCandidate(rawUrl, "embedded page link", "embedded");
+  }
+
+  const quotedPathPattern = /["']((?:https?:)?\\?\/\\?\/[^"'<>\s]+|\\?\/[^"'<>\s]+)["']/gi;
+  inspected = 0;
+  while ((match = quotedPathPattern.exec(html)) && inspected < 1_200) {
+    inspected++;
+    const rawUrl = match[1].replace(/\\u002f/gi, "/").replace(/\\\//g, "/");
+    const nearby = html.slice(Math.max(0, match.index - 100), match.index + match[0].length + 100);
+    if (/privacy|policy|개인정보|처리방침/i.test(`${rawUrl} ${nearby}`)) {
+      addCandidate(rawUrl, stripHtml(nearby).slice(0, 180), "embedded");
+    }
+  }
+
   return [...links.values()].sort((a, b) => b.score - a.score);
 }
 
@@ -356,6 +442,181 @@ function looksLikePolicy(text: string, url: URL) {
   );
 }
 
+function knownPolicyHints(inputUrl: URL) {
+  const hints: URL[] = [];
+  if (hostnameMatches(inputUrl, "naver.com")) {
+    hints.push(new URL("https://policy.naver.com/rules/privacy.html"));
+  }
+  if (hostnameMatches(inputUrl, "11st.co.kr")) {
+    hints.push(new URL("https://privacy.11st.co.kr/"));
+  }
+  return hints.filter((hint) => hint.toString() !== inputUrl.toString());
+}
+
+function commonPolicyHints(inputUrl: URL) {
+  const origin = new URL("/", inputUrl);
+  return [
+    "/privacy",
+    "/privacy-policy",
+    "/policy/privacy",
+    "/policy/privacy-policy",
+    "/info/privacy",
+    "/terms/privacy",
+  ].map((pathname) => new URL(pathname, origin));
+}
+
+function uniquePath(path: string[]) {
+  return [...new Set(path)];
+}
+
+async function discoverTossPolicy(inputUrl: URL) {
+  if (!hostnameMatches(inputUrl, "toss.im")) return null;
+
+  const policyUrl = new URL("https://toss.im/privacy-policy");
+  const apiUrl = new URL(
+    "https://api-public.toss.im/api-public/v3/ipd-thor/api/v1/workspaces/12/posts?category_ids=325&size=1",
+  );
+  const response = await fetchMetadataText(apiUrl);
+  const payload = JSON.parse(response.text) as {
+    success?: {
+      results?: Array<{
+        title?: unknown;
+        fullDescription?: unknown;
+      }>;
+    };
+  };
+  const current = payload.success?.results?.[0];
+  if (!current || typeof current.fullDescription !== "string") return null;
+
+  const html = current.fullDescription;
+  const text = stripHtml(html);
+  if (!looksLikePolicy(text, policyUrl)) return null;
+  return {
+    html,
+    text,
+    url: policyUrl,
+    title:
+      typeof current.title === "string"
+        ? stripHtml(current.title).trim()
+        : "토스 개인정보처리방침",
+    path: uniquePath([inputUrl.toString(), policyUrl.toString()]),
+  };
+}
+
+async function discoverBaeminPolicy(inputUrl: URL) {
+  if (!hostnameMatches(inputUrl, "baemin.com")) return null;
+
+  const termsCode =
+    /^\/content\/(BAEMIN_\d+)/i.exec(inputUrl.pathname)?.[1]?.toUpperCase() ||
+    "BAEMIN_102";
+  const landingUrl = new URL(
+    `https://terms.baemin.com/content/${termsCode}?shotList=true`,
+  );
+  const apiUrl = new URL("https://terms-api.baemin.com/v1/terms/current");
+  apiUrl.searchParams.set("termsCode", termsCode);
+  const response = await fetchMetadataText(apiUrl);
+  const payload = JSON.parse(response.text) as {
+    data?: { title?: unknown; contentTitle?: unknown; url?: unknown };
+  };
+  const sourceUrl =
+    typeof payload.data?.url === "string"
+      ? normalizeAndAssertPublicUrl(payload.data.url)
+      : null;
+  if (!sourceUrl || sourceUrl.hostname !== "terms.baemin.com") return null;
+
+  const fetched = await fetchHtml(sourceUrl);
+  const text = stripHtml(fetched.html);
+  if (!looksLikePolicy(text, landingUrl)) return null;
+  const titleParts = [payload.data?.title, payload.data?.contentTitle].filter(
+    (value): value is string => typeof value === "string" && Boolean(value.trim()),
+  );
+  return {
+    html: fetched.html,
+    text,
+    url: fetched.finalUrl,
+    title: titleParts.join(" · ") || "배달의민족 개인정보처리방침",
+    path: uniquePath([
+      inputUrl.toString(),
+      landingUrl.toString(),
+      fetched.finalUrl.toString(),
+    ]),
+  };
+}
+
+async function discoverKnownDynamicPolicy(inputUrl: URL) {
+  const adapter = hostnameMatches(inputUrl, "toss.im")
+    ? discoverTossPolicy
+    : hostnameMatches(inputUrl, "baemin.com")
+      ? discoverBaeminPolicy
+      : null;
+  if (!adapter) return null;
+  try {
+    return await adapter(inputUrl);
+  } catch {
+    // A public vendor endpoint can change. Continue with generic discovery.
+    return null;
+  }
+}
+
+function parseSitemapLocations(xml: string, baseUrl: URL) {
+  const locations: URL[] = [];
+  const pattern = /<loc\b[^>]*>([\s\S]*?)<\/loc>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(xml)) && locations.length < 2_000) {
+    try {
+      const value = decodeEntities(match[1].replace(/<[^>]+>/g, "").trim());
+      const url = normalizeAndAssertPublicUrl(new URL(value, baseUrl));
+      locations.push(url);
+    } catch {
+      // Ignore malformed or non-public sitemap entries.
+    }
+  }
+  return locations;
+}
+
+async function discoverSitemapPolicyLinks(baseUrl: URL) {
+  const root = new URL("/", baseUrl);
+  const robotsUrl = new URL("/robots.txt", root);
+  const defaultSitemap = new URL("/sitemap.xml", root);
+  const sitemapUrls: URL[] = [defaultSitemap];
+
+  try {
+    const robots = await fetchMetadataText(robotsUrl);
+    for (const match of robots.text.matchAll(/^\s*sitemap\s*:\s*(\S+)\s*$/gim)) {
+      try {
+        sitemapUrls.push(normalizeAndAssertPublicUrl(new URL(match[1], robots.finalUrl)));
+      } catch {
+        // Ignore malformed or non-public robots entries.
+      }
+    }
+  } catch {
+    // robots.txt is optional.
+  }
+
+  const candidates: PolicyCandidate[] = [];
+  const visited = new Set<string>();
+  for (const sitemapUrl of sitemapUrls.slice(0, 3)) {
+    if (visited.has(sitemapUrl.toString())) continue;
+    visited.add(sitemapUrl.toString());
+    try {
+      const sitemap = await fetchMetadataText(sitemapUrl);
+      const locations = parseSitemapLocations(sitemap.text, sitemap.finalUrl);
+      for (const url of locations) {
+        const signal = `${url.pathname}${url.search}`;
+        if (!/privacy|policy|개인정보|처리방침/i.test(signal)) continue;
+        candidates.push({
+          url,
+          text: "sitemap privacy policy",
+          score: scorePolicyCandidate(url, "privacy policy", baseUrl, "embedded") + 8,
+        });
+      }
+    } catch {
+      // Sitemaps are opportunistic hints, not a hard dependency.
+    }
+  }
+  return candidates.sort((a, b) => b.score - a.score).slice(0, 8);
+}
+
 type DiscoveryQueueItem = {
   url: URL;
   depth: number;
@@ -364,12 +625,23 @@ type DiscoveryQueueItem = {
 };
 
 async function discoverPolicy(inputUrl: URL) {
+  const dynamicPolicy = await discoverKnownDynamicPolicy(inputUrl);
+  if (dynamicPolicy) return dynamicPolicy;
+
+  const knownHints = knownPolicyHints(inputUrl);
   const queue: DiscoveryQueueItem[] = [
     { url: inputUrl, depth: 0, score: Number.MAX_SAFE_INTEGER, path: [] },
+    ...knownHints.map((url) => ({
+      url,
+      depth: 1,
+      score: 100,
+      path: [inputUrl.toString()],
+    })),
   ];
   const visited = new Set<string>();
   let attempts = 0;
   let firstError: unknown;
+  let blockedError: AnalysisError | null = null;
 
   while (queue.length && attempts < MAX_DISCOVERY_PAGES) {
     queue.sort((a, b) => b.score - a.score);
@@ -403,6 +675,25 @@ async function discoverPolicy(inputUrl: URL) {
         0,
         MAX_CANDIDATES_PER_PAGE,
       );
+
+      if (item.depth === 0 && candidates.length < 2) {
+        for (const url of commonPolicyHints(fetched.finalUrl)) {
+          candidates.push({
+            url,
+            text: "common privacy policy path",
+            score: scorePolicyCandidate(
+              url,
+              "privacy policy",
+              fetched.finalUrl,
+              "embedded",
+            ),
+          });
+        }
+      }
+      if (item.depth === 0 && candidates.length <= 6 && knownHints.length === 0) {
+        candidates.push(...(await discoverSitemapPolicyLinks(fetched.finalUrl)));
+      }
+
       for (const candidate of candidates) {
         if (visited.has(candidate.url.toString())) continue;
         queue.push({
@@ -414,11 +705,16 @@ async function discoverPolicy(inputUrl: URL) {
       }
     } catch (error) {
       if (attempts === 1) firstError = error;
+      if (error instanceof AnalysisError && error.code === "site_blocked") {
+        blockedError = error;
+      }
     }
   }
 
   if (attempts === 1 && firstError) throw firstError;
-  throw new Error(
+  if (blockedError) throw blockedError;
+  throw new AnalysisError(
+    "policy_not_found",
     "홈페이지에서 개인정보처리방침 본문을 찾지 못했습니다. 방침의 직접 주소를 넣거나 원문을 붙여 넣어 주세요.",
   );
 }
@@ -510,6 +806,8 @@ export async function POST(request: Request) {
         {
           error:
             "추출된 방침 내용이 너무 짧습니다. 자바스크립트로만 표시되는 페이지라면 원문을 직접 붙여 넣어 주세요.",
+          code: "policy_not_found",
+          canPaste: true,
         },
         422,
       );
@@ -519,18 +817,38 @@ export async function POST(request: Request) {
       sourceUrl: inputUrl.toString(),
       policyUrl: policyUrl.toString(),
       policyTitle:
-        extractTitle(policyHtml) || `${policyUrl.hostname} 개인정보처리방침`,
+        ("title" in discovered && discovered.title) ||
+        extractTitle(policyHtml) ||
+        `${policyUrl.hostname} 개인정보처리방침`,
       retrievedAt: new Date().toISOString(),
       contextOverrides: normalizeContextOverrides(body.contexts),
     });
     return json({ ...analysis, discoveryPath: discovered.path });
   } catch (error) {
-    const message =
-      error instanceof DOMException && error.name === "TimeoutError"
-        ? "사이트 응답 시간이 초과됐습니다. 방침 원문을 직접 붙여 넣어 주세요."
-        : error instanceof Error
-          ? error.message
-          : "분석 중 알 수 없는 오류가 발생했습니다.";
-    return json({ error: message }, 502);
+    if (error instanceof AnalysisError) {
+      return json(
+        { error: error.message, code: error.code, canPaste: true },
+        error.status,
+      );
+    }
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      return json(
+        {
+          error: "사이트 응답 시간이 초과됐습니다. 방침 원문을 직접 붙여 넣어 주세요.",
+          code: "source_timeout",
+          canPaste: true,
+        },
+        504,
+      );
+    }
+    return json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "분석 중 알 수 없는 오류가 발생했습니다.",
+      },
+      502,
+    );
   }
 }
