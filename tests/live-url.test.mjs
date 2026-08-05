@@ -77,3 +77,73 @@ test("reads Toss's current policy from its public content endpoint", async () =>
 test("resolves Baemin's current policy document without a paid browser", async () => {
   await assertPolicy("www.baemin.com", 86, /terms\.baemin\.com\/terms\//i);
 });
+
+test("uses Google's official Korean privacy policy for YouTube", async () => {
+  await assertPolicy("www.youtube.com", 87, /policies\.google\.com\/privacy/i);
+});
+
+test("reads Hyundai's current policy through its public web endpoint", async () => {
+  await assertPolicy("www.hyundai.com", 88, /privacy\.hyundai\.com\/overview\/full-policy/i);
+});
+
+test("reads Kia's current policy through its public web endpoint", async () => {
+  await assertPolicy("www.kia.com", 89, /privacy\.kia\.com\/overview\/full-policy/i);
+});
+
+test("reads KakaoBank's current policy through its public content endpoint", async () => {
+  await assertPolicy("www.kakaobank.com", 90, /m\.kakaobank\.com\/PrivacyPolicy/i);
+});
+
+test("reads Wavve's current policy through its public content endpoint", async () => {
+  await assertPolicy("www.wavve.com", 91, /wavve\.com\/customer\/agreement/i);
+});
+
+test("reads TVING's current policy through its public content endpoint", async () => {
+  await assertPolicy("www.tving.com", 92, /tving\.com\/policy\/privacy/i);
+});
+
+test("resolves SOOP's versioned current policy document", async () => {
+  await assertPolicy("www.sooplive.co.kr", 93, /res\.sooplive\.com\/policy\/policy2\.html/i);
+});
+
+test("does not mistake LG U+'s unrelated external document for its policy", async () => {
+  const response = await analyze("www.lguplus.com", 94);
+  const body = await response.json();
+  assert.ok([200, 422].includes(response.status), JSON.stringify(body));
+  assert.doesNotMatch(body.policyUrl || "", /notm\.or\.kr/i);
+});
+
+test("does not mistake Yanolja's careers policy for its customer policy", async () => {
+  const response = await analyze("www.yanolja.com", 95);
+  const body = await response.json();
+  assert.ok([200, 422].includes(response.status), JSON.stringify(body));
+  assert.doesNotMatch(body.policyUrl || "", /careers\.nol-universe\.com/i);
+});
+
+test("uses Kakao's official privacy policy for Daum", async () => {
+  await assertPolicy("www.daum.net", 96, /kakao\.com\/policy\/privacy/i);
+});
+
+test("uses Microsoft's general privacy statement instead of a topical policy", async () => {
+  await assertPolicy("www.microsoft.com/ko-kr", 97, /microsoft\.com\/ko-kr\/privacy\/privacystatement/i);
+});
+
+test("uses Apple's legal privacy policy instead of its privacy marketing page", async () => {
+  await assertPolicy("www.apple.com/kr", 98, /apple\.com\/legal\/privacy\/kr/i);
+});
+
+test("reads TMAP's current policy from its public terms endpoint", async () => {
+  await assertPolicy("www.tmapmobility.com", 99, /web\.tmapmobility\.com\/policy\/detail/i);
+});
+
+test("uses Watcha's official legal privacy page", async () => {
+  await assertPolicy("watcha.com", 100, /watcha\.com\/ko-KR\/legals\/privacy/i);
+});
+
+test("uses JobKorea's official privacy policy page", async () => {
+  await assertPolicy("www.jobkorea.co.kr", 101, /jobkorea\.co\.kr\/service\/policyprivacy/i);
+});
+
+test("uses Saramin's current privacy policy page", async () => {
+  await assertPolicy("www.saramin.co.kr", 102, /saramin\.co\.kr\/index\/privacy-policy/i);
+});

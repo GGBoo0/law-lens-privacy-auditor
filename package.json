@@ -11,6 +11,7 @@
     "start": "vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "test:live": "npm run build && node --test tests/live-url.test.mjs",
+    "qa:50": "npm run build && node tests/qa-50.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern node_modules.partial-backup",
     "db:generate": "drizzle-kit generate"
   },
