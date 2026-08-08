@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "pipa",
+      "name": "개인정보 보호법",
+      "type": "law",
+      "query": "개인정보 보호법",
+      "exactName": "개인정보 보호법",
+      "officialUrl": "https://www.law.go.kr/법령/개인정보보호법"
+    },
+    {
+      "id": "pipa-decree",
+      "name": "개인정보 보호법 시행령",
+      "type": "law",
+      "query": "개인정보 보호법 시행령",
+      "exactName": "개인정보 보호법 시행령",
+      "officialUrl": "https://www.law.go.kr/법령/개인정보보호법시행령"
+    },
+    {
+      "id": "ecommerce-decree",
+      "name": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+      "type": "law",
+      "query": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+      "exactName": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+      "officialUrl": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률시행령"
+    },
+    {
+      "id": "ai-framework-act",
+      "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+      "type": "law",
+      "query": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+      "exactName": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
+      "officialUrl": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법"
+    },
+    {
+      "id": "location-information-act",
+      "name": "위치정보의 보호 및 이용 등에 관한 법률",
+      "type": "law",
+      "query": "위치정보의 보호 및 이용 등에 관한 법률",
+      "exactName": "위치정보의 보호 및 이용 등에 관한 법률",
+      "officialUrl": "https://www.law.go.kr/법령/위치정보의보호및이용등에관한법률"
+    },
+    {
+      "id": "credit-information-act",
+      "name": "신용정보의 이용 및 보호에 관한 법률",
+      "type": "law",
+      "query": "신용정보의 이용 및 보호에 관한 법률",
+      "exactName": "신용정보의 이용 및 보호에 관한 법률",
+      "officialUrl": "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률"
+    },
+    {
+      "id": "privacy-security-standard",
+      "name": "개인정보의 안전성 확보조치 기준",
+      "type": "administrative_rule",
+      "query": "개인정보의 안전성 확보조치 기준",
+      "exactName": "개인정보의 안전성 확보조치 기준",
+      "officialUrl": "https://www.law.go.kr/행정규칙/개인정보의안전성확보조치기준"
+    },
+    {
+      "id": "pipc-current-guides",
+      "name": "개인정보보호위원회 현재 안내서 목록",
+      "type": "pipc_guide_list",
+      "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardList.do?bbsId=BS217&mCode=D010030000",
+      "keywords": [
+        "개인정보 처리방침",
+        "개인정보 안내서 전체 목록"
+      ]
+    },
+    {
+      "id": "pipc-privacy-policy-guideline",
+      "name": "개인정보 처리방침 작성지침",
+      "type": "pipc_article",
+      "url": "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030020&nttId=12018"
+    }
+  ]
+}

@@ -108,6 +108,13 @@ type AnalysisResult = {
     date: string;
     verifiedAt: string;
     rulesetVersion: string;
+    monitoring: {
+      enabled: boolean;
+      schedule: string;
+      sourceCount: number;
+      mode: string;
+      workflowUrl: string;
+    };
     statutes: Array<{
       name: string;
       version: string;
@@ -443,8 +450,8 @@ export default function Home() {
         </a>
         <div className="topMeta">
           <span className="liveDot" aria-hidden="true" />
-          대한민국 법령 공식 검증일{" "}
-          {LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}
+          규칙 검토 {LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}
+          <b>· 매일 자동 감시</b>
         </div>
       </header>
 
@@ -1014,6 +1021,21 @@ export default function Home() {
                 {result.legalBaseline.rulesetVersion}. 조건부 법률은 관련
                 처리 신호가 있을 때만 검사합니다.
               </p>
+              <a
+                className="monitoringCard"
+                href={result.legalBaseline.monitoring.workflowUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <strong>
+                  <span aria-hidden="true" /> 공식 소스 매일 자동 감시
+                </strong>
+                <small>
+                  {result.legalBaseline.monitoring.sourceCount}개 법령·지침 ·{" "}
+                  {result.legalBaseline.monitoring.schedule}
+                </small>
+                <em>{result.legalBaseline.monitoring.mode} ↗</em>
+              </a>
               {result.legalBaseline.upcomingChanges.map((change) => (
                 <a
                   className="pendingLaw"

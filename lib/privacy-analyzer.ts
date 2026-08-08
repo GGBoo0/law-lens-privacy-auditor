@@ -1685,6 +1685,7 @@ export function analyzePrivacyPolicy(
       date: LEGAL_BASELINE.verifiedAt,
       verifiedAt: LEGAL_BASELINE.verifiedAt,
       rulesetVersion: LEGAL_BASELINE.rulesetVersion,
+      monitoring: LEGAL_BASELINE.monitoring,
       statutes: LEGAL_BASELINE.statutes,
       upcomingChanges: LEGAL_BASELINE.upcomingChanges,
     },
