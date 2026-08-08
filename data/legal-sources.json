@@ -18,6 +18,14 @@
       "officialUrl": "https://www.law.go.kr/법령/개인정보보호법시행령"
     },
     {
+      "id": "ecommerce-act",
+      "name": "전자상거래 등에서의 소비자보호에 관한 법률",
+      "type": "law",
+      "query": "전자상거래 등에서의 소비자보호에 관한 법률",
+      "exactName": "전자상거래 등에서의 소비자보호에 관한 법률",
+      "officialUrl": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률"
+    },
+    {
       "id": "ecommerce-decree",
       "name": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
       "type": "law",
@@ -56,6 +64,14 @@
       "query": "개인정보의 안전성 확보조치 기준",
       "exactName": "개인정보의 안전성 확보조치 기준",
       "officialUrl": "https://www.law.go.kr/행정규칙/개인정보의안전성확보조치기준"
+    },
+    {
+      "id": "privacy-policy-evaluation-notice",
+      "name": "개인정보 처리방침 평가에 관한 고시",
+      "type": "administrative_rule",
+      "query": "개인정보 처리방침 평가에 관한 고시",
+      "exactName": "개인정보 처리방침 평가에 관한 고시",
+      "officialUrl": "https://www.law.go.kr/행정규칙/개인정보처리방침평가에관한고시"
     },
     {
       "id": "pipc-current-guides",

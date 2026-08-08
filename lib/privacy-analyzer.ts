@@ -1,4 +1,5 @@
 import { LEGAL_BASELINE } from "./legal-baseline";
+import { SOURCES } from "./legal-bases.mjs";
 
 export type Severity = "high" | "medium" | "low" | "pass" | "na";
 
@@ -22,6 +23,7 @@ type FindingType =
   | "confirmed_disclosure";
 
 type LegalBasis = {
+  sourceId: string;
   law: string;
   article: string;
   url: string;
@@ -54,109 +56,6 @@ type EvaluationAxis = {
   state: "good" | "review" | "not_evaluated";
   detail: string;
 };
-
-const SOURCES = {
-  pipa15: {
-    law: "개인정보 보호법",
-    article: "제15조",
-    url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029335387",
-  },
-  pipa17: {
-    law: "개인정보 보호법",
-    article: "제17조",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1020399013",
-  },
-  pipa21: {
-    law: "개인정보 보호법",
-    article: "제21조",
-    url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=270351",
-  },
-  pipa22: {
-    law: "개인정보 보호법",
-    article: "제22조의2",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1020398521",
-  },
-  pipa23: {
-    law: "개인정보 보호법",
-    article: "제23조",
-    url: "https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1027416043",
-  },
-  pipa24: {
-    law: "개인정보 보호법",
-    article: "제24조·제24조의2",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1020398189",
-  },
-  pipa26: {
-    law: "개인정보 보호법",
-    article: "제26조",
-    url: "https://law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1025127467",
-  },
-  pipa28: {
-    law: "개인정보 보호법",
-    article: "제28조의8",
-    url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029334737",
-  },
-  pipa29: {
-    law: "개인정보 보호법",
-    article: "제29조",
-    url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=270351",
-  },
-  pipa30: {
-    law: "개인정보 보호법",
-    article: "제30조",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1020398435",
-  },
-  decree31: {
-    law: "개인정보 보호법 시행령",
-    article: "제31조",
-    url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lspttninfSeq=67000",
-  },
-  rights: {
-    law: "개인정보 보호법",
-    article: "제35조~제37조",
-    url: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=270351",
-  },
-  automated: {
-    law: "개인정보 보호법",
-    article: "제37조의2",
-    url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029334889",
-  },
-  automatedDecree: {
-    law: "개인정보 보호법 시행령",
-    article: "제44조의4",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1033216053",
-  },
-  pipcGuideline: {
-    law: "개인정보보호위원회 작성지침",
-    article: "2026 개인정보 처리방침 작성지침(권고)",
-    url: "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030020&nttId=12018",
-  },
-  location: {
-    law: "위치정보의 보호 및 이용 등에 관한 법률",
-    article: "제18조·제19조",
-    url: "https://www.law.go.kr/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=9001000163",
-  },
-  credit: {
-    law: "신용정보의 이용 및 보호에 관한 법률",
-    article: "제31조·제32조",
-    url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1025128075",
-  },
-  ecommerce: {
-    law: "전자상거래 등에서의 소비자보호에 관한 법률",
-    article: "제6조",
-    url: "https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031806291",
-  },
-  ecommerceDecree: {
-    law: "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
-    article: "제6조",
-    url: "https://law.go.kr/LSW/lumLsLinkPop.do?lspttninfSeq=63460",
-  },
-  ai: {
-    law: "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
-    article: "제31조",
-    url: "https://law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031809547",
-  },
-} satisfies Record<string, LegalBasis>;
 
 const labels: Record<Severity, string> = {
   high: "누락 가능성 높음",

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "configured": true,
+  "lastAttemptAt": null,
+  "lastSuccessfulCheckAt": null,
+  "lastResult": "not_run",
+  "sourceCount": 11,
+  "failedSources": 0,
+  "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/legal-update-monitor.yml"
+}
