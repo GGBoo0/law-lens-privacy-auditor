@@ -96,6 +96,8 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(result.legalBaseline.date, "2026-08-05");
   assert.equal(result.legalBaseline.verifiedAt, "2026-08-05");
   assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.05-r2");
+  assert.equal(result.legalBaseline.monitoring.enabled, true);
+  assert.equal(result.legalBaseline.monitoring.sourceCount, 9);
   assert.match(result.documentHash, /^[a-f0-9]{64}$/);
   assert.equal(result.scoreMethod.label, "자동탐지 기재 충족도");
   assert.match(result.scoreMethod.meaning, /공식 평가점수가 아니라/);

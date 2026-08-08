@@ -1,0 +1,64 @@
+name: Legal source monitor
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+      timezone: "Asia/Seoul"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: legal-source-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check official legal sources
+        id: monitor
+        env:
+          LAW_OPEN_API_OC: ${{ secrets.LAW_OPEN_API_OC }}
+        run: node scripts/check-legal-updates.mjs
+
+      - name: Create or refresh legal review pull request
+        if: steps.monitor.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_BRANCH: automation/legal-source-update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$REVIEW_BRANCH"
+          git add data/legal-source-snapshot.json reports/legal-updates/latest.md
+          git commit -m "Detect official legal source updates"
+          git push --force-with-lease origin "HEAD:$REVIEW_BRANCH"
+
+          PR_NUMBER="$(gh pr list --head "$REVIEW_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$PR_NUMBER" ]; then
+            gh pr create \
+              --draft \
+              --base main \
+              --head "$REVIEW_BRANCH" \
+              --title "공식 법령·지침 변경 검토 필요" \
+              --body-file reports/legal-updates/latest.md
+          else
+            gh pr edit "$PR_NUMBER" \
+              --title "공식 법령·지침 변경 검토 필요" \
+              --body-file reports/legal-updates/latest.md
+          fi

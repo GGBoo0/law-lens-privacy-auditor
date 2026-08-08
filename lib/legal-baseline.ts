@@ -1,6 +1,14 @@
 export const LEGAL_BASELINE = {
   verifiedAt: "2026-08-05",
   rulesetVersion: "KR-PRIVACY-2026.08.05-r2",
+  monitoring: {
+    enabled: true,
+    schedule: "매일 09:17 KST",
+    sourceCount: 9,
+    mode: "공식 소스 자동 감시 · 변경 시 사람 승인",
+    workflowUrl:
+      "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/legal-update-monitor.yml",
+  },
   statutes: [
     {
       name: "개인정보 보호법",
@@ -65,6 +73,13 @@ export const LEGAL_BASELINE = {
   ],
   upcomingChanges: [
     {
+      name: "신용정보의 이용 및 보호에 관한 법률",
+      version: "시행 예정 2026.08.13 · 법률 제21646호",
+      effectiveFrom: "2026-08-13",
+      status: "시행 전 · 개인신용정보 조건부 규칙 영향 검토 필요",
+      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=285955&viewCls=lsRvsDocInfoR",
+    },
+    {
       name: "개인정보 보호법 시행령",
       version: "시행 예정 2026.08.20 · 대통령령 제36121호",
       effectiveFrom: "2026-08-20",
@@ -75,6 +90,27 @@ export const LEGAL_BASELINE = {
       name: "개인정보 보호법",
       version: "시행 예정 2026.09.11 · 법률 제21445호",
       effectiveFrom: "2026-09-11",
+      status: "시행 전 · 분석 규칙 미적용",
+      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
+    },
+    {
+      name: "신용정보의 이용 및 보호에 관한 법률",
+      version: "시행 예정 2026.09.11 · 법률 제21445호 타법개정",
+      effectiveFrom: "2026-09-11",
+      status: "시행 전 · 개인신용정보 조건부 규칙 영향 검토 필요",
+      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283841&viewCls=lsRvsDocInfoR",
+    },
+    {
+      name: "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+      version: "시행 예정 2027.01.21 · 대통령령 제36507호",
+      effectiveFrom: "2027-01-21",
+      status: "시행 전 · 전자상거래 조건부 규칙 영향 검토 필요",
+      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=288143&viewCls=lsRvsDocInfoR",
+    },
+    {
+      name: "개인정보 보호법",
+      version: "단계 시행 예정 2027.07.01 · 법률 제21445호",
+      effectiveFrom: "2027-07-01",
       status: "시행 전 · 분석 규칙 미적용",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
     },
