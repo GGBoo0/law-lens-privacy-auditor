@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout
+      - name: Checkout trusted main source
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -30,35 +30,83 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Check official legal sources
+      - name: Prepare safe review baseline
+        id: review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_BRANCH_PREFIX: automation/legal-source-update
+        run: |
+          set -euo pipefail
+
+          MATCHES="$(gh pr list --base main --state open --limit 100 --json number,headRefName | jq -c '[.[] | select(.headRefName | startswith("automation/legal-source-update"))]')"
+          MATCH_COUNT="$(jq 'length' <<<"$MATCHES")"
+          if [ "$MATCH_COUNT" -gt 1 ]; then
+            echo "열린 법령 자동화 PR이 둘 이상이므로 안전하게 중단합니다." >&2
+            exit 1
+          fi
+
+          SNAPSHOT="$RUNNER_TEMP/legal-source-snapshot.json"
+          REPORT="$RUNNER_TEMP/legal-monitor-report.md"
+          if [ "$MATCH_COUNT" -eq 1 ]; then
+            PR_NUMBER="$(jq -r '.[0].number' <<<"$MATCHES")"
+            REVIEW_BRANCH="$(jq -r '.[0].headRefName' <<<"$MATCHES")"
+            git fetch --no-tags origin "refs/heads/$REVIEW_BRANCH:refs/remotes/origin/$REVIEW_BRANCH"
+            git show "refs/remotes/origin/$REVIEW_BRANCH:data/legal-source-snapshot.json" > "$SNAPSHOT"
+            EXISTING_PR=true
+          else
+            PR_NUMBER=""
+            REVIEW_BRANCH="$REVIEW_BRANCH_PREFIX-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+            cp data/legal-source-snapshot.json "$SNAPSHOT"
+            EXISTING_PR=false
+          fi
+
+          echo "snapshot=$SNAPSHOT" >> "$GITHUB_OUTPUT"
+          echo "report=$REPORT" >> "$GITHUB_OUTPUT"
+          echo "branch=$REVIEW_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "existing_pr=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Check official legal sources from trusted code
         id: monitor
         env:
           LAW_OPEN_API_OC: ${{ secrets.LAW_OPEN_API_OC }}
-        run: node scripts/check-legal-updates.mjs
+        run: >-
+          node scripts/check-legal-updates.mjs
+          --snapshot "${{ steps.review.outputs.snapshot }}"
+          --report "${{ steps.review.outputs.report }}"
 
-      - name: Create or refresh legal review pull request
+      - name: Append bot commit without rewriting review history
         if: steps.monitor.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-          REVIEW_BRANCH: automation/legal-source-update
+          REVIEW_BRANCH: ${{ steps.review.outputs.branch }}
+          EXISTING_PR: ${{ steps.review.outputs.existing_pr }}
+          GENERATED_SNAPSHOT: ${{ steps.review.outputs.snapshot }}
+          GENERATED_REPORT: ${{ steps.review.outputs.report }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch -C "$REVIEW_BRANCH"
-          git add data/legal-source-snapshot.json reports/legal-updates/latest.md
-          git commit -m "Detect official legal source updates"
-          git push --force-with-lease origin "HEAD:$REVIEW_BRANCH"
+          node scripts/sync-legal-review-branch.mjs \
+            --branch "$REVIEW_BRANCH" \
+            --existing "$EXISTING_PR" \
+            --snapshot "$GENERATED_SNAPSHOT" \
+            --report "$GENERATED_REPORT"
 
-          PR_NUMBER="$(gh pr list --head "$REVIEW_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
-          if [ -z "$PR_NUMBER" ]; then
+      - name: Create review PR or add a new report comment
+        if: steps.monitor.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_BRANCH: ${{ steps.review.outputs.branch }}
+          EXISTING_PR: ${{ steps.review.outputs.existing_pr }}
+          PR_NUMBER: ${{ steps.review.outputs.pr_number }}
+          GENERATED_REPORT: ${{ steps.review.outputs.report }}
+        run: |
+          if [ "$EXISTING_PR" = "true" ]; then
+            gh pr comment "$PR_NUMBER" --body-file "$GENERATED_REPORT"
+          else
             gh pr create \
               --draft \
               --base main \
               --head "$REVIEW_BRANCH" \
               --title "공식 법령·지침 변경 검토 필요" \
-              --body-file reports/legal-updates/latest.md
-          else
-            gh pr edit "$PR_NUMBER" \
-              --title "공식 법령·지침 변경 검토 필요" \
-              --body-file reports/legal-updates/latest.md
+              --body-file "$GENERATED_REPORT"
           fi
