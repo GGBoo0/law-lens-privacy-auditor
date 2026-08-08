@@ -3,6 +3,7 @@ import fallbackStatus from "../../../data/legal-monitor-status.json";
 const STATUS_URL =
   "https://raw.githubusercontent.com/GGBoo0/law-lens-privacy-auditor/automation/legal-monitor-status/data/legal-monitor-status.json";
 const CACHE_MILLISECONDS = 5 * 60 * 1000;
+const FALLBACK_CACHE_MILLISECONDS = 30 * 1000;
 const RESULTS = new Set(["not_run", "no_changes", "changes_detected", "failed"]);
 
 type MonitorStatus = typeof fallbackStatus;
@@ -38,21 +39,30 @@ export async function GET() {
   }
 
   let value: MonitorStatus = fallbackStatus;
+  let fetchedLiveStatus = false;
   try {
     const response = await fetch(STATUS_URL, {
-      headers: { accept: "application/json" },
-      redirect: "error",
+      headers: {
+        accept: "application/json",
+        "user-agent": "LawLensPrivacyKR/1.0",
+      },
+      redirect: "follow",
       signal: AbortSignal.timeout(5_000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const candidate: unknown = await response.json();
     if (!isMonitorStatus(candidate)) throw new Error("invalid monitor status schema");
     value = candidate;
+    fetchedLiveStatus = true;
   } catch {
     value = fallbackStatus;
   }
 
-  cached = { expiresAt: now + CACHE_MILLISECONDS, value };
+  cached = {
+    expiresAt:
+      now + (fetchedLiveStatus ? CACHE_MILLISECONDS : FALLBACK_CACHE_MILLISECONDS),
+    value,
+  };
   return Response.json(value, {
     headers: { "Cache-Control": "public, max-age=60, s-maxage=300" },
   });
