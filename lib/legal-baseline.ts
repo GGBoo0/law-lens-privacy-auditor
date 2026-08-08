@@ -1,70 +1,82 @@
+import { LEGAL_SOURCE_IDS } from "./legal-source-ids.mjs";
+
 export const LEGAL_BASELINE = {
   verifiedAt: "2026-08-05",
   rulesetVersion: "KR-PRIVACY-2026.08.05-r2",
   monitoring: {
     enabled: true,
     schedule: "매일 09:17 KST",
-    sourceCount: 9,
+    sourceCount: 11,
     mode: "공식 소스 자동 감시 · 변경 시 사람 승인",
     workflowUrl:
       "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/legal-update-monitor.yml",
   },
   statutes: [
     {
+      sourceId: LEGAL_SOURCE_IDS.PIPA,
       name: "개인정보 보호법",
       version: "시행 2025.10.02 · 법률 제20897호",
       scope: "기본 규칙",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=270351",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
       name: "개인정보 보호법 시행령",
       version: "시행 2026.05.19 · 대통령령 제36340호",
       scope: "기본 규칙",
       url: "https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=900079801",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.PIPC_PRIVACY_POLICY_GUIDELINE,
       name: "개인정보 처리방침 작성지침",
       version: "개인정보보호위원회 · 2026.04 개정",
       scope: "공식 지침",
       url: "https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030020&nttId=12018",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.PRIVACY_POLICY_EVALUATION_NOTICE,
       name: "개인정보 처리방침 평가에 관한 고시",
       version: "시행 2024.02.20 · 개인정보보호위원회고시 제2024-3호",
       scope: "적정성·가독성·접근성 평가체계",
       url: "https://www.law.go.kr/admRulLsInfoP.do?admRulSeq=2100000236594",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
       name: "개인정보 보호법 시행령 제44조의4",
       version: "시행 2026.05.19 · 자동화된 결정 공개사항",
       scope: "완전히 자동화된 결정이 있을 때",
       url: "https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1033216053",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.PRIVACY_SECURITY_STANDARD,
       name: "개인정보의 안전성 확보조치 기준",
       version: "시행 2026.07.01 · 고시 제2026-9호",
       scope: "기본 규칙",
       url: "https://www.law.go.kr/LSW/admRulLsInfoP.do?admRulNm=%EA%B0%9C%EC%9D%B8%EC%A0%95%EB%B3%B4%EC%9D%98+%EC%95%88%EC%A0%84%EC%84%B1+%ED%99%95%EB%B3%B4%EC%A1%B0%EC%B9%98+%EA%B8%B0%EC%A4%80&docType=JO&joNo=001300000&languageType=KO&paras=1",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.ECOMMERCE_ACT,
       name: "전자상거래법·시행령",
       version: "시행령 2026.07.21 · 대통령령 제36507호",
       scope: "전자상거래 신호가 있을 때",
       url: "https://law.go.kr/LSW/lumLsLinkPop.do?lspttninfSeq=63460",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.AI_FRAMEWORK_ACT,
       name: "인공지능기본법",
       version: "시행 2026.07.21 · 법률 제21311호",
       scope: "AI 서비스 신호가 있을 때",
       url: "https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031809547",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.LOCATION_INFORMATION_ACT,
       name: "위치정보법",
       version: "시행 2025.10.01 · 제18조·제19조",
       scope: "위치정보 신호가 있을 때",
       url: "https://www.law.go.kr/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=9001000163",
     },
     {
+      sourceId: LEGAL_SOURCE_IDS.CREDIT_INFORMATION_ACT,
       name: "신용정보법",
       version: "현행 제31조·제32조",
       scope: "개인신용정보 신호가 있을 때",

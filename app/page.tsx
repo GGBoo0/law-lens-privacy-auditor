@@ -3,6 +3,7 @@
 import {
   FormEvent,
   KeyboardEvent,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -29,6 +30,7 @@ type ReviewStatus =
   | "resolved";
 
 type LegalBasis = {
+  sourceId: string;
   law: string;
   article: string;
   url: string;
@@ -116,6 +118,7 @@ type AnalysisResult = {
       workflowUrl: string;
     };
     statutes: Array<{
+      sourceId: string;
       name: string;
       version: string;
       scope: string;
@@ -129,6 +132,17 @@ type AnalysisResult = {
       url: string;
     }>;
   };
+};
+
+type LegalMonitorStatus = {
+  schemaVersion: 1;
+  configured: true;
+  lastAttemptAt: string | null;
+  lastSuccessfulCheckAt: string | null;
+  lastResult: "not_run" | "no_changes" | "changes_detected" | "failed";
+  sourceCount: number;
+  failedSources: number;
+  workflowRunUrl: string;
 };
 
 type ReviewEntry = {
@@ -245,6 +259,15 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function monitorResultText(status: LegalMonitorStatus) {
+  if (status.lastResult === "failed") {
+    return `${status.failedSources}개 소스 확인 실패 · 실행 기록 확인 필요`;
+  }
+  if (status.lastResult === "changes_detected") return "변경 감지 · 사람 검토 대기";
+  if (status.lastResult === "no_changes") return "전체 확인 완료 · 변경 없음";
+  return "첫 예약 실행 대기 중";
+}
+
 export default function Home() {
   const [mode, setMode] = useState<"url" | "text">("url");
   const [url, setUrl] = useState("");
@@ -253,6 +276,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [canPasteRecovery, setCanPasteRecovery] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [monitorStatus, setMonitorStatus] = useState<LegalMonitorStatus | null>(null);
   const [openFinding, setOpenFinding] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | Severity>("all");
   const [contextOverrides, setContextOverrides] = useState<
@@ -275,6 +299,21 @@ export default function Home() {
   const [sourceOpen, setSourceOpen] = useState(false);
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/legal-monitor-status", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<LegalMonitorStatus>;
+      })
+      .then(setMonitorStatus)
+      .catch((fetchError: unknown) => {
+        if (fetchError instanceof DOMException && fetchError.name === "AbortError") return;
+        setMonitorStatus(null);
+      });
+    return () => controller.abort();
+  }, []);
   const policyTextRef = useRef<HTMLTextAreaElement>(null);
 
   const filteredFindings = useMemo(() => {
@@ -451,7 +490,7 @@ export default function Home() {
         <div className="topMeta">
           <span className="liveDot" aria-hidden="true" />
           규칙 검토 {LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}
-          <b>· 매일 자동 감시</b>
+          <b>· 매일 감시 설정</b>
         </div>
       </header>
 
@@ -1023,18 +1062,25 @@ export default function Home() {
               </p>
               <a
                 className="monitoringCard"
-                href={result.legalBaseline.monitoring.workflowUrl}
+                href={
+                  monitorStatus?.workflowRunUrl ||
+                  result.legalBaseline.monitoring.workflowUrl
+                }
                 target="_blank"
                 rel="noreferrer"
               >
                 <strong>
-                  <span aria-hidden="true" /> 공식 소스 매일 자동 감시
+                  <span aria-hidden="true" /> 공식 소스 자동 감시 현황
                 </strong>
                 <small>
-                  {result.legalBaseline.monitoring.sourceCount}개 법령·지침 ·{" "}
-                  {result.legalBaseline.monitoring.schedule}
+                  {monitorStatus?.lastAttemptAt
+                    ? `마지막 시도 ${formatDate(monitorStatus.lastAttemptAt)} · ${monitorResultText(monitorStatus)}`
+                    : `${result.legalBaseline.monitoring.schedule} 실행 설정 · 성공 이력 확인 전`}
                 </small>
-                <em>{result.legalBaseline.monitoring.mode} ↗</em>
+                <em>
+                  공식 소스 {monitorStatus?.sourceCount || result.legalBaseline.monitoring.sourceCount}개 ·
+                  규칙셋 사람 검토일 {result.legalBaseline.verifiedAt} ↗
+                </em>
               </a>
               {result.legalBaseline.upcomingChanges.map((change) => (
                 <a

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -11,11 +12,53 @@ import {
   compareSnapshots,
   extractPipcArticle,
   extractPipcGuideList,
+  pipcAttachmentUrl,
+  runMonitor,
 } from "../scripts/check-legal-updates.mjs";
 import { syncReviewBranch } from "../scripts/sync-legal-review-branch.mjs";
+import { buildMonitorStatus } from "../scripts/write-legal-monitor-status.mjs";
+import { SOURCES } from "../lib/legal-bases.mjs";
+import { REQUIRED_MONITORED_LEGAL_SOURCE_IDS } from "../lib/legal-source-ids.mjs";
+import { LEGAL_BASELINE } from "../lib/legal-baseline.ts";
 
 function git(cwd, ...arguments_) {
   return execFileSync("git", arguments_, { cwd, encoding: "utf8" }).trim();
+}
+
+async function createMonitorFixture() {
+  const root = await mkdtemp(path.join(os.tmpdir(), "law-lens-monitor-flow-"));
+  const sources = path.join(root, "legal-sources.json");
+  const snapshot = path.join(root, "legal-source-snapshot.json");
+  const report = path.join(root, "latest.md");
+  const githubOutput = path.join(root, "github-output.txt");
+  await writeFile(
+    sources,
+    `${JSON.stringify({
+      schemaVersion: 1,
+      sources: [
+        {
+          id: "guide-list",
+          name: "테스트 개인정보 안내서 목록",
+          type: "pipc_guide_list",
+          url: "https://www.pipc.go.kr/guides",
+          keywords: ["개인정보 처리방침"],
+        },
+      ],
+    })}\n`,
+  );
+  return { root, sources, snapshot, report, githubOutput };
+}
+
+function guideHtml({ publishedAt = "2026-04-23", suffix = "" } = {}) {
+  return `<table><tr><td><a href="/np/cop/bbs/selectBoardArticle.do?nttId=1">개인정보 처리방침 작성지침${suffix}</a></td><td>${publishedAt}</td></tr></table>`;
+}
+
+function htmlFetch(getHtml) {
+  return async () =>
+    new Response(getHtml(), {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
 }
 
 test("canonical JSON fingerprints can ignore object key order", () => {
@@ -23,6 +66,22 @@ test("canonical JSON fingerprints can ignore object key order", () => {
     canonicalize({ b: 2, a: { d: 4, c: 3 } }),
     canonicalize({ a: { c: 3, d: 4 }, b: 2 }),
   );
+});
+
+test("every legal authority used by analysis and baseline is monitored", async () => {
+  const config = JSON.parse(await readFile("data/legal-sources.json", "utf8"));
+  const monitored = new Set(config.sources.map((source) => source.id));
+  const used = new Set([
+    ...REQUIRED_MONITORED_LEGAL_SOURCE_IDS,
+    ...Object.values(SOURCES).map((source) => source.sourceId),
+    ...LEGAL_BASELINE.statutes.map((statute) => statute.sourceId),
+  ]);
+  const missing = [...used].filter((sourceId) => !monitored.has(sourceId));
+
+  assert.deepEqual(missing, []);
+  assert.equal(LEGAL_BASELINE.monitoring.sourceCount, config.sources.length);
+  assert.ok(monitored.has("privacy-policy-evaluation-notice"));
+  assert.ok(monitored.has("ecommerce-act"));
 });
 
 test("legal snapshot comparison names changed articles", () => {
@@ -76,7 +135,196 @@ test("PIPC article extraction tracks content and attachment identity", () => {
 
   assert.equal(article.title, "개인정보 처리방침 작성지침");
   assert.equal(article.attachments[0].fileId, "FILE_1");
+  assert.equal(article.attachments[0].name, "지침.pdf");
   assert.match(article.content, /공식 지침/);
+});
+
+test("PIPC article monitoring fingerprints attachment bytes", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "law-lens-attachment-"));
+  const sources = path.join(root, "legal-sources.json");
+  const snapshot = path.join(root, "snapshot.json");
+  const report = path.join(root, "report.md");
+  const attachmentBytes = Buffer.from("official-guideline-binary-v1");
+  const articleHtml = `
+    <table><tr><th>제목</th><td>개인정보 처리방침 작성지침</td></tr>
+    <tr><th>작성일</th><td>2026-04-23</td></tr></table>
+    <a onclick="javascript:fn_egov_downFile('FILE_1','1','pdf')" alt="지침.pdf">다운로드</a>
+    <td class="tbl_cnts"><p>공식 지침 본문입니다.</p></td>`;
+
+  try {
+    await writeFile(
+      sources,
+      `${JSON.stringify({
+        schemaVersion: 1,
+        sources: [
+          {
+            id: "guideline",
+            name: "개인정보 처리방침 작성지침",
+            type: "pipc_article",
+            url: "https://www.pipc.go.kr/np/article",
+          },
+        ],
+      })}\n`,
+    );
+    await runMonitor({
+      initialize: true,
+      sources,
+      snapshot,
+      report,
+      now: () => "2026-08-09T00:17:00.000Z",
+      sleepImpl: async () => {},
+      fetchImpl: async (url) => {
+        if (String(url).includes("FileDown.do")) {
+          return new Response(attachmentBytes, {
+            status: 200,
+            headers: {
+              "content-type": "application/octet-stream",
+              "content-length": String(attachmentBytes.byteLength),
+            },
+          });
+        }
+        return new Response(articleHtml, {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      },
+    });
+
+    const saved = JSON.parse(await readFile(snapshot, "utf8"));
+    const attachment = saved.sources.guideline.article.attachments[0];
+    assert.equal(attachment.sizeBytes, attachmentBytes.byteLength);
+    assert.equal(
+      attachment.contentHash,
+      `sha256:${createHash("sha256").update(attachmentBytes).digest("hex")}`,
+    );
+    assert.equal(
+      pipcAttachmentUrl("https://www.pipc.go.kr/np/article", attachment).pathname,
+      "/np/cmm/fms/FileDown.do",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("monitor flow leaves snapshot and report untouched when nothing changed", async () => {
+  const fixture = await createMonitorFixture();
+  let html = guideHtml();
+  try {
+    await runMonitor({
+      ...fixture,
+      initialize: true,
+      now: () => "2026-08-09T00:17:00.000Z",
+      fetchImpl: htmlFetch(() => html),
+      sleepImpl: async () => {},
+    });
+    const snapshotBefore = await readFile(fixture.snapshot, "utf8");
+    const reportBefore = await readFile(fixture.report, "utf8");
+    await writeFile(fixture.githubOutput, "");
+
+    const result = await runMonitor({
+      ...fixture,
+      now: () => "2026-08-10T00:17:00.000Z",
+      fetchImpl: htmlFetch(() => html),
+      sleepImpl: async () => {},
+    });
+
+    assert.equal(result.changed, false);
+    assert.equal(await readFile(fixture.snapshot, "utf8"), snapshotBefore);
+    assert.equal(await readFile(fixture.report, "utf8"), reportBefore);
+    assert.match(await readFile(fixture.githubOutput, "utf8"), /changed=false/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("monitor flow writes a new snapshot and report for one source change", async () => {
+  const fixture = await createMonitorFixture();
+  let html = guideHtml();
+  try {
+    await runMonitor({
+      ...fixture,
+      initialize: true,
+      now: () => "2026-08-09T00:17:00.000Z",
+      fetchImpl: htmlFetch(() => html),
+      sleepImpl: async () => {},
+    });
+    const snapshotBefore = await readFile(fixture.snapshot, "utf8");
+    await writeFile(fixture.githubOutput, "");
+    html = guideHtml({ suffix: " 개정" });
+
+    const result = await runMonitor({
+      ...fixture,
+      now: () => "2026-08-10T00:17:00.000Z",
+      fetchImpl: htmlFetch(() => html),
+      sleepImpl: async () => {},
+    });
+
+    assert.equal(result.changed, true);
+    assert.notEqual(await readFile(fixture.snapshot, "utf8"), snapshotBefore);
+    assert.match(await readFile(fixture.report, "utf8"), /테스트 개인정보 안내서 목록/);
+    assert.match(await readFile(fixture.githubOutput, "utf8"), /changed=true/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("monitor flow preserves previous files when one source request fails", async () => {
+  const fixture = await createMonitorFixture();
+  try {
+    await runMonitor({
+      ...fixture,
+      initialize: true,
+      now: () => "2026-08-09T00:17:00.000Z",
+      fetchImpl: htmlFetch(() => guideHtml()),
+      sleepImpl: async () => {},
+    });
+    const snapshotBefore = await readFile(fixture.snapshot, "utf8");
+    const reportBefore = await readFile(fixture.report, "utf8");
+    await writeFile(fixture.githubOutput, "");
+
+    await assert.rejects(
+      runMonitor({
+        ...fixture,
+        now: () => "2026-08-10T00:17:00.000Z",
+        fetchImpl: async () => {
+          throw new Error("network unavailable");
+        },
+        sleepImpl: async () => {},
+      }),
+      /공식 소스 확인 실패/,
+    );
+
+    assert.equal(await readFile(fixture.snapshot, "utf8"), snapshotBefore);
+    assert.equal(await readFile(fixture.report, "utf8"), reportBefore);
+    const output = await readFile(fixture.githubOutput, "utf8");
+    assert.match(output, /failed=true/);
+    assert.match(output, /failed_source_count=1/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("failed monitor status preserves the last successful check", () => {
+  const successful = buildMonitorStatus({
+    previous: {},
+    result: "no_changes",
+    checkedAt: "2026-08-09T00:17:00.000Z",
+    sourceCount: 11,
+    failedSources: 0,
+    workflowRunUrl: "https://github.com/example/actions/runs/1",
+  });
+  const failed = buildMonitorStatus({
+    previous: successful,
+    result: "failed",
+    checkedAt: "2026-08-10T00:17:00.000Z",
+    sourceCount: 11,
+    failedSources: 1,
+    workflowRunUrl: "https://github.com/example/actions/runs/2",
+  });
+
+  assert.equal(failed.lastSuccessfulCheckAt, successful.lastSuccessfulCheckAt);
+  assert.equal(failed.lastAttemptAt, "2026-08-10T00:17:00.000Z");
+  assert.equal(failed.lastResult, "failed");
 });
 
 test("change report makes human review mandatory", () => {
@@ -211,8 +459,14 @@ test("workflow avoids force pushes and keeps human-authored PR text", async () =
   assert.doesNotMatch(workflow, /push --force|force-with-lease/);
   assert.doesNotMatch(workflow, /gh pr edit/);
   assert.match(workflow, /gh pr comment/);
+  assert.match(workflow, /Publish machine-readable monitor status/);
+  assert.match(workflow, /npm test/);
   assert.ok(
     workflow.indexOf("Prepare safe review baseline") <
       workflow.indexOf("Check official legal sources from trusted code"),
+  );
+  assert.ok(
+    workflow.indexOf("Publish machine-readable monitor status") <
+      workflow.indexOf("Append bot commit without rewriting review history"),
   );
 });

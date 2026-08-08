@@ -75,6 +75,75 @@ jobs:
           --snapshot "${{ steps.review.outputs.snapshot }}"
           --report "${{ steps.review.outputs.report }}"
 
+      - name: Publish machine-readable monitor status
+        if: always()
+        env:
+          MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
+          MONITOR_CHANGED: ${{ steps.monitor.outputs.changed }}
+          CHECKED_AT: ${{ steps.monitor.outputs.checked_at }}
+          SOURCE_COUNT: ${{ steps.monitor.outputs.source_count }}
+          FAILED_SOURCE_COUNT: ${{ steps.monitor.outputs.failed_source_count }}
+          STATUS_BRANCH: automation/legal-monitor-status
+        run: |
+          set -euo pipefail
+
+          PREVIOUS_STATUS="$RUNNER_TEMP/legal-monitor-status.previous.json"
+          GENERATED_STATUS="$RUNNER_TEMP/legal-monitor-status.json"
+          STATUS_WORKTREE="$RUNNER_TEMP/legal-monitor-status-worktree"
+
+          if git fetch --no-tags origin "refs/heads/$STATUS_BRANCH:refs/remotes/origin/$STATUS_BRANCH"; then
+            git show "refs/remotes/origin/$STATUS_BRANCH:data/legal-monitor-status.json" > "$PREVIOUS_STATUS"
+            STATUS_BRANCH_EXISTS=true
+          else
+            cp data/legal-monitor-status.json "$PREVIOUS_STATUS"
+            STATUS_BRANCH_EXISTS=false
+          fi
+
+          if [ "$MONITOR_OUTCOME" = "success" ] && [ "$MONITOR_CHANGED" = "true" ]; then
+            RESULT=changes_detected
+          elif [ "$MONITOR_OUTCOME" = "success" ]; then
+            RESULT=no_changes
+          else
+            RESULT=failed
+          fi
+
+          CHECKED_AT="${CHECKED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+          SOURCE_COUNT="${SOURCE_COUNT:-$(jq '.sources | length' data/legal-sources.json)}"
+          FAILED_SOURCE_COUNT="${FAILED_SOURCE_COUNT:-0}"
+          node scripts/write-legal-monitor-status.mjs \
+            --previous "$PREVIOUS_STATUS" \
+            --output "$GENERATED_STATUS" \
+            --result "$RESULT" \
+            --checkedAt "$CHECKED_AT" \
+            --sourceCount "$SOURCE_COUNT" \
+            --failedSources "$FAILED_SOURCE_COUNT" \
+            --workflowRunUrl "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "$STATUS_BRANCH_EXISTS" = "true" ]; then
+            git worktree add -B "$STATUS_BRANCH" "$STATUS_WORKTREE" "refs/remotes/origin/$STATUS_BRANCH"
+          else
+            git worktree add -b "$STATUS_BRANCH" "$STATUS_WORKTREE" origin/main
+          fi
+          mkdir -p "$STATUS_WORKTREE/data"
+          rm -f "$STATUS_WORKTREE/data/legal-monitor-status.json"
+          cp "$GENERATED_STATUS" "$STATUS_WORKTREE/data/legal-monitor-status.json"
+          git -C "$STATUS_WORKTREE" add -- data/legal-monitor-status.json
+          if git -C "$STATUS_WORKTREE" diff --cached --quiet; then
+            echo "감시 상태에 기록할 변경이 없습니다."
+          else
+            git -C "$STATUS_WORKTREE" commit -m "Record legal source monitor status"
+            git -C "$STATUS_WORKTREE" push origin "HEAD:refs/heads/$STATUS_BRANCH"
+          fi
+
+      - name: Validate trusted application before publishing a review
+        if: steps.monitor.outputs.changed == 'true'
+        run: |
+          npm ci
+          npm test
+          npm run lint
+
       - name: Append bot commit without rewriting review history
         if: steps.monitor.outputs.changed == 'true'
         env:

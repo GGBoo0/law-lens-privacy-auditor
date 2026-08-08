@@ -4,6 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const LAW_API_BASE = "https://www.law.go.kr/DRF";
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const USER_AGENT =
   "LawLensPrivacyKR/1.0 (+https://github.com/GGBoo0/law-lens-privacy-auditor)";
 
@@ -29,6 +30,10 @@ export function canonicalize(value) {
 
 function fingerprint(value) {
   return createHash("sha256").update(canonicalize(value)).digest("hex");
+}
+
+function binaryFingerprint(value) {
+  return `sha256:${createHash("sha256").update(value).digest("hex")}`;
 }
 
 function decodeHtml(value) {
@@ -63,29 +68,32 @@ function pick(object, keys) {
   );
 }
 
-async function fetchText(url, fetchImpl = fetch) {
+async function fetchResponse(url, options = {}) {
+  const fetchImpl = options.fetchImpl || fetch;
+  const sleepImpl = options.sleepImpl || ((milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds)));
   let lastError;
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const response = await fetchImpl(url, {
         headers: {
-          accept: "application/json,text/html;q=0.9,*/*;q=0.8",
+          accept: options.accept || "application/json,text/html;q=0.9,*/*;q=0.8",
           "user-agent": USER_AGENT,
         },
         redirect: "follow",
-        signal: AbortSignal.timeout(25_000),
+        signal: AbortSignal.timeout(options.timeoutMs || 25_000),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      return await response.text();
+      return response;
     } catch (error) {
       lastError = error;
       if (attempt < 2) {
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await sleepImpl(600);
       }
     }
   }
@@ -93,8 +101,38 @@ async function fetchText(url, fetchImpl = fetch) {
   throw lastError;
 }
 
-async function fetchJson(url, fetchImpl = fetch) {
-  const text = await fetchText(url, fetchImpl);
+async function fetchText(url, options = {}) {
+  const response = await fetchResponse(url, options);
+  return response.text();
+}
+
+async function fetchBinary(url, options = {}) {
+  const response = await fetchResponse(url, {
+    ...options,
+    accept: "application/pdf,application/octet-stream,application/haansofthwp,*/*;q=0.8",
+  });
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  const announcedSize = Number(response.headers.get("content-length") || 0);
+  if (announcedSize > MAX_ATTACHMENT_BYTES) {
+    throw new Error(`첨부파일이 ${MAX_ATTACHMENT_BYTES}바이트 제한을 초과했습니다.`);
+  }
+  if (contentType.includes("text/html") || contentType.includes("application/json")) {
+    throw new Error(`첨부파일 대신 ${contentType || "알 수 없는 형식"} 응답을 받았습니다.`);
+  }
+
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_ATTACHMENT_BYTES) {
+    throw new Error(
+      bytes.byteLength === 0
+        ? "첨부파일 응답이 비어 있습니다."
+        : `첨부파일이 ${MAX_ATTACHMENT_BYTES}바이트 제한을 초과했습니다.`,
+    );
+  }
+  return bytes;
+}
+
+async function fetchJson(url, options = {}) {
+  const text = await fetchText(url, options);
   try {
     return JSON.parse(text);
   } catch {
@@ -134,7 +172,7 @@ async function collectLaw(source, options) {
     query: source.query,
     display: 100,
   });
-  const search = await fetchJson(searchUrl, options.fetchImpl);
+  const search = await fetchJson(searchUrl, options);
   const rows = toArray(search?.LawSearch?.law)
     .filter((row) => row?.법령명한글 === source.exactName)
     .filter((row) => ["현행", "시행예정"].includes(row?.현행연혁코드))
@@ -159,7 +197,7 @@ async function collectLaw(source, options) {
         MST: row.법령일련번호,
         type: "JSON",
       });
-      response = await fetchJson(bodyUrl, options.fetchImpl);
+      response = await fetchJson(bodyUrl, options);
       bodyCache.set(String(row.법령일련번호), response);
     }
     const lawBody = response?.법령;
@@ -220,7 +258,7 @@ async function collectAdministrativeRule(source, options) {
     query: source.query,
     display: 20,
   });
-  const search = await fetchJson(searchUrl, options.fetchImpl);
+  const search = await fetchJson(searchUrl, options);
   const row = toArray(search?.AdmRulSearch?.admrul).find(
     (item) => item?.행정규칙명 === source.exactName,
   );
@@ -235,7 +273,7 @@ async function collectAdministrativeRule(source, options) {
     ID: row.행정규칙일련번호,
     type: "JSON",
   });
-  const response = await fetchJson(bodyUrl, options.fetchImpl);
+  const response = await fetchJson(bodyUrl, options);
   const body = response?.AdmRulService;
   if (!body) {
     throw new Error(`${source.exactName} 본문 구조를 확인할 수 없습니다.`);
@@ -303,14 +341,15 @@ export function extractPipcArticle(html, source) {
   );
   const attachments = [];
   const attachmentPattern =
-    /onclick="[^"]*fn_egov_downFile\('([^']+)','([^']+)','([^']+)'\)[^"]*"[^>]*?(?:alt="([^"]+)")?[^>]*>/gi;
+    /<a\b[^>]*onclick="[^"]*fn_egov_downFile\('([^']+)','([^']+)','([^']+)'\)[^"]*"[^>]*>/gi;
 
   for (const match of html.matchAll(attachmentPattern)) {
+    const name = match[0].match(/\balt=["']([^"']+)["']/i)?.[1];
     attachments.push({
       fileId: match[1],
       sequence: match[2],
       extension: match[3],
-      name: cleanText(match[4] || "첨부파일"),
+      name: cleanText(name || "첨부파일"),
     });
   }
 
@@ -330,8 +369,16 @@ export function extractPipcArticle(html, source) {
   return article;
 }
 
+export function pipcAttachmentUrl(articleUrl, attachment) {
+  const url = new URL("/np/cmm/fms/FileDown.do", articleUrl);
+  url.searchParams.set("atchFileId", attachment.fileId);
+  url.searchParams.set("fileSn", attachment.sequence);
+  url.searchParams.set("fileExtsn", attachment.extension);
+  return url;
+}
+
 async function collectPipcGuideList(source, options) {
-  const html = await fetchText(source.url, options.fetchImpl);
+  const html = await fetchText(source.url, options);
   const items = extractPipcGuideList(html, source);
   if (items.length === 0) {
     throw new Error(`${source.name}에서 대상 안내서를 찾지 못했습니다.`);
@@ -347,8 +394,18 @@ async function collectPipcGuideList(source, options) {
 }
 
 async function collectPipcArticle(source, options) {
-  const html = await fetchText(source.url, options.fetchImpl);
+  const html = await fetchText(source.url, options);
   const article = extractPipcArticle(html, source);
+  article.attachments = await Promise.all(
+    article.attachments.map(async (attachment) => {
+      const bytes = await fetchBinary(pipcAttachmentUrl(source.url, attachment), options);
+      return {
+        ...attachment,
+        sizeBytes: bytes.byteLength,
+        contentHash: binaryFingerprint(bytes),
+      };
+    }),
+  );
   return {
     id: source.id,
     name: source.name,
@@ -558,10 +615,10 @@ async function writeJson(filePath, value) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
-async function setGithubOutputs(outputs) {
-  if (!process.env.GITHUB_OUTPUT) return;
+async function setGithubOutputs(outputs, outputPath = process.env.GITHUB_OUTPUT) {
+  if (!outputPath) return;
   await appendFile(
-    process.env.GITHUB_OUTPUT,
+    outputPath,
     `${Object.entries(outputs)
       .map(([key, value]) => `${key}=${String(value)}`)
       .join("\n")}\n`,
@@ -575,13 +632,15 @@ export async function runMonitor(options) {
     throw new Error("법령 감시 소스 설정이 비어 있습니다.");
   }
 
-  const checkedAt = new Date().toISOString();
+  const checkedAt = new Date(options.now ? options.now() : Date.now()).toISOString();
   const collected = {};
   const failures = [];
   for (const source of config.sources) {
     try {
       collected[source.id] = await collectSource(source, {
-        oc: process.env.LAW_OPEN_API_OC?.trim() || "test",
+        oc: options.oc || process.env.LAW_OPEN_API_OC?.trim() || "test",
+        fetchImpl: options.fetchImpl,
+        sleepImpl: options.sleepImpl,
       });
       console.log(`확인 완료: ${source.name}`);
     } catch (error) {
@@ -590,7 +649,16 @@ export async function runMonitor(options) {
   }
 
   if (failures.length > 0) {
-    await setGithubOutputs({ changed: false, failed: true, checked_at: checkedAt });
+    await setGithubOutputs(
+      {
+        changed: false,
+        failed: true,
+        checked_at: checkedAt,
+        source_count: config.sources.length,
+        failed_source_count: failures.length,
+      },
+      options.githubOutput,
+    );
     throw new Error(`공식 소스 확인 실패\n${failures.join("\n")}`);
   }
 
@@ -605,13 +673,17 @@ export async function runMonitor(options) {
     await writeJson(options.snapshot, currentSnapshot);
     await mkdir(path.dirname(options.report), { recursive: true });
     await writeFile(options.report, buildInitialReport(currentSnapshot), "utf8");
-    await setGithubOutputs({
-      changed: false,
-      failed: false,
-      initialized: true,
-      checked_at: checkedAt,
-      source_count: config.sources.length,
-    });
+    await setGithubOutputs(
+      {
+        changed: false,
+        failed: false,
+        initialized: true,
+        checked_at: checkedAt,
+        source_count: config.sources.length,
+        failed_source_count: 0,
+      },
+      options.githubOutput,
+    );
     console.log(`초기 공식 소스 스냅샷 ${config.sources.length}개를 저장했습니다.`);
     return { changed: false, initialized: true, currentSnapshot, changes: [] };
   }
@@ -625,13 +697,17 @@ export async function runMonitor(options) {
     await writeFile(options.report, buildChangeReport(changes, checkedAt), "utf8");
   }
 
-  await setGithubOutputs({
-    changed: changes.length > 0,
-    failed: false,
-    checked_at: checkedAt,
-    change_count: changes.length,
-    source_count: config.sources.length,
-  });
+  await setGithubOutputs(
+    {
+      changed: changes.length > 0,
+      failed: false,
+      checked_at: checkedAt,
+      change_count: changes.length,
+      source_count: config.sources.length,
+      failed_source_count: 0,
+    },
+    options.githubOutput,
+  );
   console.log(
     changes.length > 0
       ? `공식 소스 ${changes.length}개의 변경을 감지했습니다.`
