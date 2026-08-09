@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "configured": true,
-  "lastAttemptAt": "2026-08-08T15:38:22.056Z",
-  "lastSuccessfulCheckAt": "2026-08-08T15:38:22.056Z",
+  "lastAttemptAt": "2026-08-09T02:26:47.089Z",
+  "lastSuccessfulCheckAt": "2026-08-09T02:26:47.089Z",
   "lastResult": "no_changes",
   "sourceCount": 11,
   "failedSources": 0,
-  "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/31264947515"
+  "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/31290341978"
 }
