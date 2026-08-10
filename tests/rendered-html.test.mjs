@@ -2,6 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import {
+  DEFAULT_STRUCTURED_TABLE_LIMITS,
+  extractStructuredTables,
+} from "../lib/html-table-extractor.ts";
+
+process.env.LAW_LENS_TEST_RUNTIME_MANIFEST = "bundled";
+
 const ruleCorpus = JSON.parse(
   readFileSync(new URL("./fixtures/rule-corpus.json", import.meta.url), "utf8"),
 );
@@ -9,18 +16,52 @@ const ruleCorpus = JSON.parse(
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
 
-async function fetchWorker(request) {
+const permissiveRateDatabase = {
+  prepare(sql) {
+    return {
+      bind(...values) {
+        return {
+          async first() {
+            return sql.includes("INSERT INTO rate_windows")
+              ? { request_count: 1, reset_at: Number(values[1]) }
+              : null;
+          },
+          async run() {
+            return { success: true };
+          },
+        };
+      },
+    };
+  },
+};
+
+async function fetchWorker(request, extraEnv = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${Math.random()}`);
   const { default: worker } = await import(workerUrl.href);
 
-  return worker.fetch(
-    request,
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
+  let testRequest = request;
+  const testUrl = new URL(request.url);
+  if (
+    testUrl.pathname === "/api/analyze" &&
+    request.method === "POST" &&
+    !request.headers.has("cf-connecting-ip")
+  ) {
+    const headers = new Headers(request.headers);
+    headers.set("cf-connecting-ip", "198.51.100.10");
+    testRequest = new Request(request, { headers });
+  }
+  const defaultEnv = {
+    ASSETS: {
+      fetch: async () => new Response("Not found", { status: 404 }),
     },
+    DB: permissiveRateDatabase,
+    RATE_LIMIT_HMAC_SECRET: "test-only-secret-with-enough-entropy",
+  };
+
+  return worker.fetch(
+    testRequest,
+    { ...defaultEnv, ...extraEnv },
     {
       waitUntil() {},
       passThroughOnException() {},
@@ -29,6 +70,40 @@ async function fetchWorker(request) {
 }
 
 let persistentWorker;
+const persistentRateRows = new Map();
+const persistentRateDatabase = {
+  prepare(sql) {
+    return {
+      bind(...values) {
+        return {
+          async first() {
+            if (!sql.includes("INSERT INTO rate_windows")) return null;
+            const [clientKey, nextResetAt, now] = values;
+            const previous = persistentRateRows.get(clientKey);
+            const row =
+              !previous || previous.reset_at <= now
+                ? { request_count: 1, reset_at: nextResetAt }
+                : {
+                    request_count: previous.request_count + 1,
+                    reset_at: previous.reset_at,
+                  };
+            persistentRateRows.set(clientKey, row);
+            return row;
+          },
+          async run() {
+            if (sql.includes("DELETE FROM rate_windows")) {
+              const [now] = values;
+              for (const [key, row] of persistentRateRows) {
+                if (row.reset_at < now) persistentRateRows.delete(key);
+              }
+            }
+            return { success: true };
+          },
+        };
+      },
+    };
+  },
+};
 
 async function fetchPersistentWorker(request) {
   if (!persistentWorker) {
@@ -42,6 +117,8 @@ async function fetchPersistentWorker(request) {
       ASSETS: {
         fetch: async () => new Response("Not found", { status: 404 }),
       },
+      DB: persistentRateDatabase,
+      RATE_LIMIT_HMAC_SECRET: "test-only-secret-with-enough-entropy",
     },
     {
       waitUntil() {},
@@ -74,9 +151,125 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /aria-controls="input-panel-url"/);
   assert.match(html, /서비스 맥락 보정/);
   assert.match(html, /자동화된 결정/);
+  assert.match(html, /공개 베타/);
+  assert.match(html, /법률 검토를 돕는 자동 점검/);
+  assert.match(html, /공식 소스 확인 중/);
+  assert.match(html, /href="\/privacy"/);
+  assert.match(html, /href="\/terms"/);
   assert.match(html, /http:\/\/localhost\/og\.png/);
   assert.doesNotMatch(html, developmentPreviewMeta);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
+});
+
+test("publishes readable privacy and terms pages for the public beta", async () => {
+  const privacyResponse = await fetchWorker(
+    new Request("http://localhost/privacy", {
+      headers: { accept: "text/html", host: "localhost" },
+    }),
+  );
+  assert.equal(privacyResponse.status, 200);
+  const privacyHtml = await privacyResponse.text();
+  assert.match(privacyHtml, /개인정보 처리 안내/);
+  assert.match(privacyHtml, /HMAC-SHA-256/);
+  assert.match(privacyHtml, /익명정보라고 단정하지 않습니다/);
+  assert.match(privacyHtml, /외부 AI API나 유료 브라우저 API로/);
+
+  const termsResponse = await fetchWorker(
+    new Request("http://localhost/terms", {
+      headers: { accept: "text/html", host: "localhost" },
+    }),
+  );
+  assert.equal(termsResponse.status, 200);
+  const termsHtml = await termsResponse.text();
+  assert.match(termsHtml, /이용조건·문의/);
+  assert.match(termsHtml, /분석 결과는 위법 여부를 확정하지 않으며/);
+  assert.match(termsHtml, /금지되는 이용/);
+});
+
+test("reports legal-monitor degradation through the health endpoint", async () => {
+  const response = await fetchWorker(
+    new Request("http://localhost/api/health", {
+      headers: { accept: "application/json", host: "localhost" },
+    }),
+  );
+  assert.ok([200, 503].includes(response.status));
+  assert.equal(response.headers.get("cache-control"), "no-store");
+
+  const health = await response.json();
+  assert.ok(["ok", "degraded"].includes(health.status));
+  assert.equal(health.service.state, "healthy");
+  assert.ok(
+    ["healthy", "review_required", "failed", "stale"].includes(
+      health.legalMonitor.state,
+    ),
+  );
+  if (health.legalMonitor.state === "failed" || health.legalMonitor.state === "stale") {
+    assert.equal(response.status, 503);
+    assert.equal(health.status, "degraded");
+    assert.equal(response.headers.get("retry-after"), "300");
+  }
+});
+
+test("accepts legacy and current legal-monitor status schemas", async () => {
+  const originalFetch = globalThis.fetch;
+  const checkedAt = new Date().toISOString();
+  const base = {
+    configured: true,
+    lastAttemptAt: checkedAt,
+    lastSuccessfulCheckAt: checkedAt,
+    lastResult: "no_changes",
+    sourceCount: 11,
+    failedSources: 0,
+    workflowRunUrl:
+      "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/123",
+  };
+  const payloads = [
+    { schemaVersion: 1, ...base },
+    {
+      schemaVersion: 2,
+      ...base,
+      consecutiveFailures: 0,
+      recoveredAt: null,
+      stale: false,
+      staleAfter: new Date(Date.now() + 36 * 60 * 60 * 1_000).toISOString(),
+      staleAfterHours: 36,
+      workflowRunAttempt: 1,
+      recentRuns: [
+        {
+          checkedAt,
+          result: "no_changes",
+          sourceCount: 11,
+          failedSources: 0,
+          workflowRunUrl:
+            "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/123",
+          workflowRunAttempt: 1,
+          consecutiveFailures: 0,
+          recovered: false,
+        },
+      ],
+    },
+  ];
+
+  try {
+    for (const payload of payloads) {
+      globalThis.fetch = async () => Response.json(payload);
+      const response = await fetchWorker(
+        new Request("http://localhost/api/legal-monitor-status", {
+          headers: { accept: "application/json", host: "localhost" },
+        }),
+      );
+      assert.equal(response.status, 200);
+      const result = await response.json();
+      assert.equal(result.schemaVersion, payload.schemaVersion);
+      assert.equal(result.lastSuccessfulCheckAt, checkedAt);
+      if (payload.schemaVersion === 2) {
+        assert.equal(result.recentRuns.length, 1);
+        assert.equal(result.consecutiveFailures, 0);
+      }
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("analyzes pasted policy text without external services", async () => {
@@ -93,9 +286,9 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
-  assert.equal(result.legalBaseline.date, "2026-08-05");
-  assert.equal(result.legalBaseline.verifiedAt, "2026-08-05");
-  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.05-r2");
+  assert.equal(result.legalBaseline.date, "2026-08-11");
+  assert.equal(result.legalBaseline.verifiedAt, "2026-08-11");
+  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.11-r3");
   assert.equal(result.legalBaseline.monitoring.enabled, true);
   assert.equal(result.legalBaseline.monitoring.sourceCount, 11);
   assert.match(result.documentHash, /^[a-f0-9]{64}$/);
@@ -112,14 +305,16 @@ test("analyzes pasted policy text without external services", async () => {
     result.legalBaseline.upcomingChanges.some(
       (change) =>
         change.effectiveFrom === "2026-09-11" &&
-        change.status === "시행 전 · 분석 규칙 미적용",
+        change.lifecycleStatus === "scheduled_review_pending" &&
+        change.impactCategories.includes("privacy_officer"),
     ),
   );
   assert.ok(
     result.legalBaseline.upcomingChanges.some(
       (change) =>
         change.effectiveFrom === "2026-08-20" &&
-        change.status === "시행 전 · 적용 대상은 본인전송요구 방법 반영 필요",
+        change.lifecycleStatus === "scheduled_review_pending" &&
+        change.impactCategories.includes("data_portability"),
     ),
   );
   assert.equal(result.analysisEngine.mode, "local_rules");
@@ -296,6 +491,153 @@ test("cites the current e-commerce retention decree when the signal appears", as
   );
 });
 
+test("keeps table headers attached to values and rejects unrelated public-suffix domains", async () => {
+  const originalFetch = globalThis.fetch;
+  const fetchedUrls = [];
+  const policyBody = `
+    <h1>개인정보처리방침</h1>
+    <p>주식회사 예시는 회원관리와 서비스 제공을 위하여 이름과 이메일을 처리합니다.</p>
+    <p>개인정보 처리 및 보유 기간은 회원 탈퇴 시까지이며, 파기 절차와 방법에 따라 전자파일을 영구 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@example.co.uk이고 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다.</p>
+    <h2>개인정보의 제3자 제공</h2>
+    <table>
+      <tr><th>제공받는 자</th><th>제공 목적</th><th>제공하는 개인정보 항목</th><th>보유 및 이용 기간</th></tr>
+      <tr><td>주식회사 배송</td><td>상품 배송</td><td>이름, 주소</td><td>배송 완료 후 30일</td></tr>
+    </table>
+    <p>처리 업무를 위탁하지 않으며 본 방침은 2026년 8월 1일부터 시행합니다.</p>
+    <p>${"개인정보 보호와 투명한 처리를 위한 상세 안내입니다. ".repeat(14)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    fetchedUrls.push(url.href);
+    if (url.hostname === "shop.example.co.uk") {
+      return new Response(
+        `<a href="https://evil.co.uk/privacy-policy">개인정보처리방침</a>
+         <a href="https://privacy.example.co.uk/privacy-policy">개인정보처리방침</a>`,
+        { status: 200, headers: { "content-type": "text/html; charset=utf-8" } },
+      );
+    }
+    if (url.hostname === "privacy.example.co.uk") {
+      return new Response(policyBody, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.hostname === "evil.co.uk") {
+      return new Response(policyBody.replaceAll("주식회사 예시", "악성 외부 문서"), {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://shop.example.co.uk" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(response.status, 200, JSON.stringify(result));
+    assert.equal(
+      result.policyUrl,
+      "https://privacy.example.co.uk/privacy-policy",
+    );
+    assert.ok(!fetchedUrls.some((url) => new URL(url).hostname === "evil.co.uk"));
+    assert.ok(
+      result.coverage.some(
+        (item) => item.label === "제3자 제공" && item.state === "present",
+      ),
+    );
+    assert.ok(
+      !result.findings.some((finding) => finding.id === "third-party-fields"),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test(
+  "terminates safely on a large unfinished table without overlapping rescans",
+  { timeout: 2_000 },
+  () => {
+    const prefix = "<p>safe prefix</p>";
+    const openingTags = "<table>".repeat(40_000);
+    const html = `${prefix}${openingTags}${"x".repeat(
+      1_400_000 - prefix.length - openingTags.length,
+    )}`;
+    const startedAt = performance.now();
+    const output = extractStructuredTables(html);
+    const elapsedMilliseconds = performance.now() - startedAt;
+
+    assert.equal(output, `${prefix} `);
+    assert.ok(
+      elapsedMilliseconds < 1_000,
+      `unfinished table scan took ${elapsedMilliseconds.toFixed(1)}ms`,
+    );
+  },
+);
+
+test("caps table, row, cell, and total output against header amplification", () => {
+  const prefix = "<p>before</p>";
+  const suffix = "<p>after</p>";
+  const headerCount = 100;
+  const headerText = "H".repeat(9_000);
+  const headerRow = `<tr>${Array.from(
+    { length: headerCount },
+    (_, index) => `<th>${headerText}${index}</th>`,
+  ).join("")}</tr>`;
+  const dataRow = `<tr>${Array.from(
+    { length: headerCount },
+    (_, index) => `<td>value-${index}</td>`,
+  ).join("")}</tr>`;
+  const html = `${prefix}<table>${headerRow}${dataRow.repeat(
+    DEFAULT_STRUCTURED_TABLE_LIMITS.maxRowsPerTable + 20,
+  )}</table>${suffix}`;
+
+  assert.ok(html.length < 1_450_000, "fixture must fit the fetch response cap");
+  const output = extractStructuredTables(html);
+  assert.ok(output.startsWith(prefix));
+  assert.ok(output.endsWith(suffix));
+  assert.ok(
+    output.length <=
+      prefix.length +
+        suffix.length +
+        DEFAULT_STRUCTURED_TABLE_LIMITS.maxOutputChars,
+  );
+  assert.ok(
+    !output.includes("H".repeat(DEFAULT_STRUCTURED_TABLE_LIMITS.maxCellChars + 1)),
+  );
+
+  const budgetFixture = Array.from(
+    { length: 3 },
+    (_, tableIndex) => `<table><tr><th>head-${tableIndex}-0</th><th>head-${tableIndex}-1</th><th>head-${tableIndex}-2</th></tr>
+      <tr><td>row-${tableIndex}-0</td><td>row-${tableIndex}-1</td><td>row-${tableIndex}-2</td></tr>
+      <tr><td>extra-${tableIndex}-0</td><td>extra-${tableIndex}-1</td><td>extra-${tableIndex}-2</td></tr></table>`,
+  ).join("");
+  const budgeted = extractStructuredTables(budgetFixture, {
+    maxTables: 1,
+    maxRowsPerTable: 2,
+    maxCellsPerRow: 2,
+    maxCellChars: 6,
+    maxOutputChars: 160,
+  });
+  assert.match(budgeted, /head-0/);
+  assert.doesNotMatch(budgeted, /head-1|head-2|extra-0|row-0-2/);
+  assert.ok(budgeted.length <= 160);
+});
+
 test("rate-limits repeated analysis requests from one client", async () => {
   const text = "개인정보처리방침 테스트 문장입니다. ".repeat(12);
   let response;
@@ -313,4 +655,137 @@ test("rate-limits repeated analysis requests from one client", async () => {
     assert.equal(response.status, attempt <= 12 ? 200 : 429);
   }
   assert.ok(Number(response.headers.get("retry-after")) >= 1);
+});
+
+test("groups rotating IPv6 interface addresses into one /64 rate-limit bucket", async () => {
+  const text = "개인정보처리방침 테스트 문장입니다. ".repeat(12);
+  let response;
+  for (let attempt = 1; attempt <= 13; attempt++) {
+    response = await fetchPersistentWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "cf-connecting-ip": `2001:db8:1234:5678::${attempt.toString(16)}`,
+        },
+        body: JSON.stringify({ text }),
+      }),
+    );
+    assert.equal(response.status, attempt <= 12 ? 200 : 429);
+  }
+
+  const otherNetwork = await fetchPersistentWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": "2001:db8:1234:5679::1",
+      },
+      body: JSON.stringify({ text }),
+    }),
+  );
+  assert.equal(otherNetwork.status, 200);
+});
+
+test("requires a hosted HMAC secret before using the durable rate limiter", async () => {
+  const database = {
+    prepare() {
+      return {
+        bind() {
+          return {
+            async first() {
+              return { request_count: 1, reset_at: Date.now() + 60_000 };
+            },
+            async run() {
+              return { success: true };
+            },
+          };
+        },
+      };
+    },
+  };
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "개인정보처리방침 테스트 문장입니다. ".repeat(12) }),
+    }),
+    { DB: database, RATE_LIMIT_HMAC_SECRET: undefined },
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("retry-after"), "60");
+});
+
+test("requires the hosted D1 binding for the global rate limiter", async () => {
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        text: "개인정보처리방침 테스트 문장입니다. ".repeat(12),
+      }),
+    }),
+    {
+      DB: undefined,
+      RATE_LIMIT_HMAC_SECRET: "test-only-secret-with-enough-entropy",
+    },
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("retry-after"), "60");
+});
+
+test("rejects analysis when the trusted Cloudflare client address is absent", async () => {
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": "",
+        "x-forwarded-for": "198.51.100.200",
+      },
+      body: JSON.stringify({
+        text: "개인정보처리방침 테스트 문장입니다. ".repeat(12),
+      }),
+    }),
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("retry-after"), "60");
+});
+
+test("fails closed when the durable rate limiter is unavailable", async () => {
+  const database = {
+    prepare() {
+      throw new Error("D1 unavailable");
+    },
+  };
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": "198.51.100.87",
+      },
+      body: JSON.stringify({
+        text: "개인정보처리방침 테스트 문장입니다. ".repeat(12),
+      }),
+    }),
+    {
+      DB: database,
+      RATE_LIMIT_HMAC_SECRET: "test-only-secret-with-enough-entropy",
+    },
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("retry-after"), "60");
+});
+
+test("keeps the unused dynamic image parser endpoint closed", async () => {
+  const response = await fetchWorker(
+    new Request("http://localhost/_vinext/image?url=%2Ffavicon.svg&w=64&q=75"),
+  );
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
 });

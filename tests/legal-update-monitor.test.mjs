@@ -7,13 +7,18 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  STAGE_EFFECTIVE_DATE_ALGORITHM,
+  articleMap,
   buildChangeReport,
+  calculateRelativePromulgationEffectiveDate,
   canonicalize,
   compareSnapshots,
+  extractStageEffectiveDates,
   extractPipcArticle,
   extractPipcGuideList,
   pipcAttachmentUrl,
   runMonitor,
+  semanticVersionFingerprintPayload,
 } from "../scripts/check-legal-updates.mjs";
 import { syncReviewBranch } from "../scripts/sync-legal-review-branch.mjs";
 import { buildMonitorStatus } from "../scripts/write-legal-monitor-status.mjs";
@@ -237,6 +242,265 @@ test("monitor flow leaves snapshot and report untouched when nothing changed", a
   }
 });
 
+test("article hashes ignore API metadata but preserve meaningful nested text", () => {
+  const baseArticle = {
+    조문키: "0030000",
+    조문번호: "30",
+    조문가지번호: "",
+    조문제목: "개인정보 처리방침의 수립 및 공개",
+    조문내용: "제30조(개인정보 처리방침의 수립 및 공개) 개인정보처리자는 처리방침을 정하여야 한다.",
+    조문시행일자: "20250911",
+    조문변경여부: "N",
+    조문이동이전: "",
+    조문이동이후: "",
+    항: {
+      항단위: [
+        {
+          항번호: "①",
+          항내용: "① 다음 각 호의 사항이 포함되어야 한다.",
+          항제개정일자: "20230314",
+          호: {
+            호단위: [
+              {
+                호번호: "1.",
+                호내용: "1. 개인정보의 처리 목적",
+                호변경여부: "N",
+              },
+            ],
+          },
+        },
+      ],
+    },
+  };
+  const metadataOnly = structuredClone(baseArticle);
+  metadataOnly.조문시행일자 = "20260911";
+  metadataOnly.조문변경여부 = "Y";
+  metadataOnly.조문이동이전 = "제29조";
+  metadataOnly.항.항단위[0].항제개정일자 = "20260401";
+  metadataOnly.항.항단위[0].호.호단위[0].호변경여부 = "Y";
+  const bodyChange = structuredClone(baseArticle);
+  bodyChange.항.항단위[0].호.호단위[0].호내용 = "1. 개인정보의 처리 목적과 법적 근거";
+
+  const baseHash = articleMap({ 조문: { 조문단위: baseArticle } })["0030000"].hash;
+  const metadataHash = articleMap({ 조문: { 조문단위: metadataOnly } })["0030000"].hash;
+  const changedHash = articleMap({ 조문: { 조문단위: bodyChange } })["0030000"].hash;
+
+  assert.equal(metadataHash, baseHash);
+  assert.notEqual(changedHash, baseHash);
+});
+
+test("staged effective dates are extracted from defensive appendix shapes", () => {
+  const lawBody = {
+    부칙: {
+      부칙단위: {
+        부칙키: "2026031021445",
+        부칙공포번호: "21445",
+        부칙공포일자: "20260310",
+        부칙내용: [
+          [
+            "부칙 <제21445호, 2026. 3. 10.>",
+            "제1조(시행일) 이 법은 공포 후 6개월이 경과한 날부터 시행한다. 다만, 제32조의2제1항 단서는 2027년 7월 1일부터 시행한다.",
+            "제2조(적용례) 이 법 시행 후부터 적용한다.",
+          ],
+        ],
+      },
+    },
+  };
+
+  const stages = extractStageEffectiveDates(lawBody, {
+    promulgationNumber: "제21445호",
+    promulgationDate: "2026-03-10",
+    knownEffectiveDates: ["20260911"],
+  });
+
+  assert.deepEqual(
+    stages.map((stage) => stage.effectiveDate),
+    ["20260911", "20270701"],
+  );
+  assert.equal(stages[0].source, "law-search");
+  assert.equal(stages[1].source, "appendix-explicit");
+  assert.match(stages[1].basisText, /2027년 7월 1일/);
+});
+
+test("relative promulgation periods capture Decree 36121's 2027-02-20 stage", () => {
+  const lawBody = {
+    부칙: {
+      부칙단위: {
+        부칙키: "2026021936121",
+        부칙공포번호: "36121",
+        부칙공포일자: "20260219",
+        부칙내용: [
+          "부칙 <제36121호, 2026. 2. 19.>",
+          "제1조(시행일) 이 영은 공포 후 6개월이 경과한 날부터 시행한다. 다만, 제42조의2제1항제1호의 개정규정은 공포 후 1년이 경과한 날부터 시행한다.",
+        ],
+      },
+    },
+  };
+
+  const stages = extractStageEffectiveDates(lawBody, {
+    promulgationNumber: "36121",
+    promulgationDate: "20260219",
+    knownEffectiveDates: ["20260820"],
+  });
+
+  assert.deepEqual(
+    stages.map((stage) => stage.effectiveDate),
+    ["20260820", "20270220"],
+  );
+  assert.equal(stages[0].source, "law-search");
+  assert.equal(stages[1].source, "appendix-relative");
+  assert.match(stages[1].basisText, /공포 후 1년/);
+  assert.equal(
+    calculateRelativePromulgationEffectiveDate("20260219", { years: 1 }),
+    "20270220",
+  );
+  assert.equal(
+    calculateRelativePromulgationEffectiveDate("20240131", { months: 1 }),
+    "20240301",
+    "month arithmetic must clamp to leap-year February before adding the commencement day",
+  );
+});
+
+test("semantic source fingerprints include stage dates and parser version", () => {
+  const base = {
+    versionIdentity: {
+      id: "283503:20260820",
+      state: "시행예정",
+      effectiveDate: "20260820",
+    },
+    documentHash: "same-semantic-law-text",
+    articleHashes: { "0042020": "same-article-hash" },
+    stageEffectiveDates: [
+      { effectiveDate: "20260820", source: "law-search" },
+    ],
+  };
+  const digest = (value) =>
+    createHash("sha256").update(canonicalize(value)).digest("hex");
+  const current = semanticVersionFingerprintPayload(base);
+  const addedStage = semanticVersionFingerprintPayload({
+    ...base,
+    stageEffectiveDates: [
+      ...base.stageEffectiveDates,
+      { effectiveDate: "20270220", source: "appendix-relative" },
+    ],
+  });
+  const upgradedParser = semanticVersionFingerprintPayload({
+    ...base,
+    stageEffectiveDateAlgorithm: `${STAGE_EFFECTIVE_DATE_ALGORITHM}-next`,
+  });
+
+  assert.equal(
+    current.stageEffectiveDateAlgorithm,
+    STAGE_EFFECTIVE_DATE_ALGORITHM,
+  );
+  assert.notEqual(digest(current), digest(addedStage));
+  assert.notEqual(digest(current), digest(upgradedParser));
+
+  const previousSnapshot = {
+    sources: {
+      "pipa-decree": {
+        name: "개인정보 보호법 시행령",
+        officialUrl: "https://www.law.go.kr/example",
+        contentHashAlgorithm: "legal-semantic-text-v1",
+        stageEffectiveDateAlgorithm: "promulgation-calendar-period-v1",
+        contentFingerprint: digest({
+          ...current,
+          stageEffectiveDateAlgorithm: "promulgation-calendar-period-v1",
+        }),
+        versions: [
+          {
+            ...base.versionIdentity,
+            documentHash: base.documentHash,
+            stageEffectiveDates: base.stageEffectiveDates,
+          },
+        ],
+      },
+    },
+  };
+  const currentSnapshot = structuredClone(previousSnapshot);
+  const currentSource = currentSnapshot.sources["pipa-decree"];
+  currentSource.stageEffectiveDateAlgorithm = STAGE_EFFECTIVE_DATE_ALGORITHM;
+  currentSource.contentFingerprint = digest(addedStage);
+  currentSource.versions[0].stageEffectiveDates = addedStage.stageEffectiveDates;
+
+  const changes = compareSnapshots(previousSnapshot, currentSnapshot);
+  assert.equal(changes.length, 1);
+  assert.match(changes[0].details.join(" "), /단계 시행일 추출 기준 변경/);
+  assert.match(changes[0].details.join(" "), /단계 시행일 추가: 20270220/);
+});
+
+test("semantic source fingerprints suppress legacy metadata-only changes", () => {
+  const previous = {
+    sources: {
+      pipa: {
+        name: "개인정보 보호법",
+        officialUrl: "https://law.go.kr/example",
+        fingerprint: "legacy-before-metadata-refresh",
+        contentHashAlgorithm: "legal-semantic-text-v1",
+        contentFingerprint: "same-legal-text",
+      },
+    },
+  };
+  const current = structuredClone(previous);
+  current.sources.pipa.fingerprint = "legacy-after-metadata-refresh";
+
+  assert.deepEqual(compareSnapshots(previous, current), []);
+});
+
+test("official-source fetches use bounded exponential retries", async () => {
+  const fixture = await createMonitorFixture();
+  let calls = 0;
+  const delays = [];
+  try {
+    const result = await runMonitor({
+      ...fixture,
+      initialize: true,
+      now: () => "2026-08-09T00:17:00.000Z",
+      fetchImpl: async () => {
+        calls += 1;
+        if (calls < 3) return new Response("temporary outage", { status: 503 });
+        return new Response(guideHtml(), {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
+      },
+      sleepImpl: async (delay) => delays.push(delay),
+    });
+
+    assert.equal(result.initialized, true);
+    assert.equal(calls, 3);
+    assert.deepEqual(delays, [750, 1_500]);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("official-source fetches do not retry permanent client errors", async () => {
+  const fixture = await createMonitorFixture();
+  let calls = 0;
+  const delays = [];
+  try {
+    await assert.rejects(
+      runMonitor({
+        ...fixture,
+        initialize: true,
+        now: () => "2026-08-09T00:17:00.000Z",
+        fetchImpl: async () => {
+          calls += 1;
+          return new Response("not found", { status: 404 });
+        },
+        sleepImpl: async (delay) => delays.push(delay),
+      }),
+      /HTTP 404/,
+    );
+
+    assert.equal(calls, 1);
+    assert.deepEqual(delays, []);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test("monitor flow writes a new snapshot and report for one source change", async () => {
   const fixture = await createMonitorFixture();
   let html = guideHtml();
@@ -325,6 +589,62 @@ test("failed monitor status preserves the last successful check", () => {
   assert.equal(failed.lastSuccessfulCheckAt, successful.lastSuccessfulCheckAt);
   assert.equal(failed.lastAttemptAt, "2026-08-10T00:17:00.000Z");
   assert.equal(failed.lastResult, "failed");
+  assert.equal(failed.consecutiveFailures, 1);
+  assert.equal(failed.recentRuns.length, 2);
+  assert.equal(failed.recentRuns[1].result, "failed");
+  assert.equal(failed.stale, false);
+});
+
+test("monitor status records stale failures and a later recovery", () => {
+  const successful = buildMonitorStatus({
+    previous: {},
+    result: "no_changes",
+    checkedAt: "2026-08-09T00:00:00.000Z",
+    sourceCount: 11,
+    failedSources: 0,
+    workflowRunUrl: "https://github.com/example/actions/runs/1",
+  });
+  const firstFailure = buildMonitorStatus({
+    previous: successful,
+    result: "failed",
+    checkedAt: "2026-08-10T00:00:00.000Z",
+    sourceCount: 11,
+    failedSources: 11,
+    workflowRunUrl: "https://github.com/example/actions/runs/2",
+  });
+  const staleFailure = buildMonitorStatus({
+    previous: firstFailure,
+    result: "failed",
+    checkedAt: "2026-08-11T00:01:00.000Z",
+    sourceCount: 11,
+    failedSources: 2,
+    workflowRunUrl: "https://github.com/example/actions/runs/3",
+    workflowRunAttempt: 2,
+  });
+  const recovered = buildMonitorStatus({
+    previous: staleFailure,
+    result: "changes_detected",
+    checkedAt: "2026-08-11T00:10:00.000Z",
+    sourceCount: 11,
+    failedSources: 0,
+    workflowRunUrl: "https://github.com/example/actions/runs/3",
+    workflowRunAttempt: 3,
+    historyLimit: 3,
+  });
+
+  assert.equal(staleFailure.consecutiveFailures, 2);
+  assert.equal(staleFailure.stale, true);
+  assert.equal(staleFailure.staleAfter, "2026-08-10T12:00:00.000Z");
+  assert.equal(recovered.consecutiveFailures, 0);
+  assert.equal(recovered.stale, false);
+  assert.equal(recovered.recoveredAt, "2026-08-11T00:10:00.000Z");
+  assert.equal(recovered.recentRuns.length, 3);
+  assert.deepEqual(
+    recovered.recentRuns.map((run) => run.result),
+    ["failed", "failed", "changes_detected"],
+  );
+  assert.equal(recovered.recentRuns.at(-1).workflowRunAttempt, 3);
+  assert.equal(recovered.recentRuns.at(-1).recovered, true);
 });
 
 test("change report makes human review mandatory", () => {
@@ -460,6 +780,18 @@ test("workflow avoids force pushes and keeps human-authored PR text", async () =
   assert.doesNotMatch(workflow, /gh pr edit/);
   assert.match(workflow, /gh pr comment/);
   assert.match(workflow, /Publish machine-readable monitor status/);
+  assert.match(workflow, /issues: write/);
+  assert.match(workflow, /Notify or resolve legal monitor incident/);
+  assert.match(workflow, /Notify or resolve legal automation pipeline incident/);
+  assert.match(workflow, /headRepositoryOwner,isCrossRepository/);
+  assert.match(workflow, /\.isCrossRepository == false/);
+  assert.match(workflow, /Revalidate the review destination/);
+  assert.match(workflow, /git rev-list --count origin\/main\.\.HEAD/);
+  assert.match(workflow, /gh issue create/);
+  assert.match(workflow, /gh issue comment/);
+  assert.match(workflow, /gh issue close/);
+  assert.match(workflow, /--historyLimit 7/);
+  assert.match(workflow, /--staleAfterHours 36/);
   assert.match(workflow, /npm test/);
   assert.ok(
     workflow.indexOf("Prepare safe review baseline") <

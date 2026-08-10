@@ -1,0 +1,2 @@
+# Local development only. Replace this value before starting the dev server.
+RATE_LIMIT_HMAC_SECRET=local-only-change-this-to-a-long-random-value

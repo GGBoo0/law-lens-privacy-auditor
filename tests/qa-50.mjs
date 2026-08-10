@@ -1,4 +1,55 @@
 const deployedBaseUrl = process.env.LAWLENS_BASE_URL?.replace(/\/$/, "");
+if (!deployedBaseUrl) {
+  process.env.LAW_LENS_TEST_RUNTIME_MANIFEST = "bundled";
+}
+
+const localRateLimitRows = new Map();
+const localRateLimitDatabase = {
+  prepare(statement) {
+    let parameters = [];
+    return {
+      bind(...values) {
+        parameters = values;
+        return this;
+      },
+      async first() {
+        if (!statement.includes("INSERT INTO rate_windows")) {
+          throw new Error(`Unexpected local QA D1 query: ${statement}`);
+        }
+        const [clientKey, nextResetAt, now] = parameters;
+        const current = localRateLimitRows.get(clientKey);
+        const row =
+          !current || current.reset_at <= now
+            ? { request_count: 1, reset_at: nextResetAt }
+            : {
+                request_count: current.request_count + 1,
+                reset_at: current.reset_at,
+              };
+        localRateLimitRows.set(clientKey, row);
+        return row;
+      },
+      async run() {
+        if (!statement.includes("DELETE FROM rate_windows")) {
+          throw new Error(`Unexpected local QA D1 query: ${statement}`);
+        }
+        const [now] = parameters;
+        for (const [clientKey, row] of localRateLimitRows) {
+          if (row.reset_at < now) localRateLimitRows.delete(clientKey);
+        }
+        return { success: true };
+      },
+    };
+  },
+};
+
+const argumentsMap = Object.fromEntries(
+  process.argv.slice(2).map((argument) => {
+    const [key, value = "true"] = argument.replace(/^--/, "").split("=", 2);
+    return [key, value];
+  }),
+);
+const minimumVerified = Number(argumentsMap["min-verified"] ?? 0);
+const maximumWrongSource = Number(argumentsMap["max-wrong-source"] ?? Number.MAX_SAFE_INTEGER);
 let localWorker;
 
 const sites = [
@@ -69,7 +120,7 @@ async function analyze(url, index) {
       "content-type": "application/json",
       origin,
       "sec-fetch-site": "same-origin",
-      "x-real-ip": `203.0.113.${index + 1}`,
+      "cf-connecting-ip": `203.0.113.${index + 1}`,
     },
     body: JSON.stringify({ url }),
   });
@@ -81,7 +132,11 @@ async function analyze(url, index) {
   }
   return localWorker.fetch(
     request,
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
+    {
+      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+      DB: localRateLimitDatabase,
+      RATE_LIMIT_HMAC_SECRET: "qa-only-secret-with-enough-entropy",
+    },
     { waitUntil() {}, passThroughOnException() {} },
   );
 }
@@ -120,11 +175,21 @@ const counts = Object.fromEntries(
     .map((key) => [key, results.filter((result) => result.result === key).length]),
 );
 const verified = counts.verified_success || 0;
-console.log(JSON.stringify({
+const report = {
   target: results.length,
   verifiedSuccess: verified,
   verifiedSuccessRate: `${((verified / results.length) * 100).toFixed(1)}%`,
   falsePositives: counts.wrong_source || 0,
+  releaseGate: {
+    minimumVerified,
+    maximumWrongSource,
+    passed:
+      verified >= minimumVerified &&
+      (counts.wrong_source || 0) <= maximumWrongSource,
+  },
   counts,
   results,
-}, null, 2));
+};
+
+console.log(JSON.stringify(report, null, 2));
+if (!report.releaseGate.passed) process.exitCode = 1;

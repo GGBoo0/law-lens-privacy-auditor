@@ -1,11 +1,56 @@
 import { LEGAL_SOURCE_IDS } from "./legal-source-ids.mjs";
 
+/**
+ * A legal source monitor may update factual publication metadata, but it must
+ * never mark a semantic rule review as complete.  Keeping the two groups
+ * explicit makes bot-authored updates safe to validate in CI.
+ */
+export const LEGAL_UPDATE_CONTRACT = {
+  schemaVersion: 1,
+  machineManagedFields: [
+    "sourceId",
+    "name",
+    "version",
+    "effectiveFrom",
+    "detectedAt",
+    "url",
+  ],
+  humanReviewOnlyFields: ["changeKind", "impactCategories", "review"],
+  safeDefaultForSemanticChanges: "defer_impacted_findings",
+} as const;
+
+export const LEGAL_IMPACT_CATEGORIES = {
+  core_disclosures: "필수 공개항목",
+  data_subject_rights: "정보주체 권리",
+  data_portability: "본인전송요구",
+  third_party_provision: "제3자 제공",
+  outsourcing: "처리위탁",
+  cross_border_transfer: "국외 이전",
+  cookies_behavioral: "자동수집·행태정보",
+  security_measures: "안전성 확보조치",
+  privacy_officer: "개인정보 보호책임자",
+  policy_transparency: "처리방침 공개·가독성",
+  special_categories: "민감정보·고유식별정보·아동정보",
+  ai_transparency: "생성형 AI 투명성",
+  automated_decision: "자동화된 결정",
+  location_information: "개인위치정보",
+  credit_information: "개인신용정보",
+  ecommerce_retention: "전자상거래 보존기간",
+} as const;
+
+export type LegalImpactCategory = keyof typeof LEGAL_IMPACT_CATEGORIES;
+
 export const LEGAL_BASELINE = {
-  verifiedAt: "2026-08-05",
-  rulesetVersion: "KR-PRIVACY-2026.08.05-r2",
+  verifiedAt: "2026-08-11",
+  rulesetVersion: "KR-PRIVACY-2026.08.11-r3",
+  lifecycle: {
+    schemaVersion: LEGAL_UPDATE_CONTRACT.schemaVersion,
+    timeZone: "Asia/Seoul",
+    reviewPolicy: "시행된 의미 변경은 검토된 규칙 버전이 없으면 관련 판단을 유보",
+  },
   monitoring: {
     enabled: true,
-    schedule: "매일 09:17 KST",
+    schedule: "매일 09:17·15:47 KST",
     sourceCount: 11,
     mode: "공식 소스 자동 감시 · 변경 시 사람 승인",
     workflowUrl:
@@ -56,10 +101,17 @@ export const LEGAL_BASELINE = {
     },
     {
       sourceId: LEGAL_SOURCE_IDS.ECOMMERCE_ACT,
-      name: "전자상거래법·시행령",
-      version: "시행령 2026.07.21 · 대통령령 제36507호",
+      name: "전자상거래 등에서의 소비자보호에 관한 법률",
+      version: "시행 2026.07.21 · 법률 제21312호",
       scope: "전자상거래 신호가 있을 때",
-      url: "https://law.go.kr/LSW/lumLsLinkPop.do?lspttninfSeq=63460",
+      url: "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률",
+    },
+    {
+      sourceId: LEGAL_SOURCE_IDS.ECOMMERCE_DECREE,
+      name: "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
+      version: "시행 2026.07.21 · 대통령령 제36507호",
+      scope: "전자상거래 신호가 있을 때",
+      url: "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률시행령",
     },
     {
       sourceId: LEGAL_SOURCE_IDS.AI_FRAMEWORK_ACT,
@@ -85,46 +137,90 @@ export const LEGAL_BASELINE = {
   ],
   upcomingChanges: [
     {
-      name: "신용정보의 이용 및 보호에 관한 법률",
-      version: "시행 예정 2026.08.13 · 법률 제21646호",
-      effectiveFrom: "2026-08-13",
-      status: "시행 전 · 개인신용정보 조건부 규칙 영향 검토 필요",
-      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=285955&viewCls=lsRvsDocInfoR",
-    },
-    {
+      changeId: "pipa-decree-36121-2026-08-20",
+      sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
+      versionId: "283503:20260820",
+      documentHash: "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
       name: "개인정보 보호법 시행령",
       version: "시행 예정 2026.08.20 · 대통령령 제36121호",
       effectiveFrom: "2026-08-20",
+      detectedAt: "2026-08-05",
+      changeKind: "semantic",
       status: "시행 전 · 적용 대상은 본인전송요구 방법 반영 필요",
       url: "https://www.law.go.kr/lsRvsDocListP.do?lsId=011468",
+      impactCategories: ["data_portability"],
+      review: {
+        status: "pending",
+        reviewedAt: null,
+        reviewedRulesetVersion: null,
+        outcome: null,
+      },
     },
     {
+      changeId: "pipa-21445-2026-09-11",
+      sourceId: LEGAL_SOURCE_IDS.PIPA,
+      versionId: "283839:20260911",
+      documentHash: "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
       name: "개인정보 보호법",
       version: "시행 예정 2026.09.11 · 법률 제21445호",
       effectiveFrom: "2026-09-11",
+      detectedAt: "2026-08-05",
+      changeKind: "semantic",
       status: "시행 전 · 분석 규칙 미적용",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
+      impactCategories: [
+        "security_measures",
+        "privacy_officer",
+      ],
+      review: {
+        status: "pending",
+        reviewedAt: null,
+        reviewedRulesetVersion: null,
+        outcome: null,
+      },
     },
     {
-      name: "신용정보의 이용 및 보호에 관한 법률",
-      version: "시행 예정 2026.09.11 · 법률 제21445호 타법개정",
-      effectiveFrom: "2026-09-11",
-      status: "시행 전 · 개인신용정보 조건부 규칙 영향 검토 필요",
-      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283841&viewCls=lsRvsDocInfoR",
-    },
-    {
-      name: "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
-      version: "시행 예정 2027.01.21 · 대통령령 제36507호",
-      effectiveFrom: "2027-01-21",
-      status: "시행 전 · 전자상거래 조건부 규칙 영향 검토 필요",
-      url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=288143&viewCls=lsRvsDocInfoR",
-    },
-    {
+      changeId: "pipa-21445-2027-07-01",
+      sourceId: LEGAL_SOURCE_IDS.PIPA,
+      versionId: "283839:20270701",
+      documentHash: "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
       name: "개인정보 보호법",
       version: "단계 시행 예정 2027.07.01 · 법률 제21445호",
       effectiveFrom: "2027-07-01",
+      detectedAt: "2026-08-05",
+      changeKind: "semantic",
       status: "시행 전 · 분석 규칙 미적용",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
+      impactCategories: [
+        "security_measures",
+        "privacy_officer",
+      ],
+      review: {
+        status: "pending",
+        reviewedAt: null,
+        reviewedRulesetVersion: null,
+        outcome: null,
+      },
+    },
+    {
+      changeId: "pipa-decree-36121-2027-02-20",
+      sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
+      versionId: "283503:20270220",
+      documentHash: "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
+      name: "개인정보 보호법 시행령",
+      version: "단계 시행 예정 2027.02.20 · 대통령령 제36121호",
+      effectiveFrom: "2027-02-20",
+      detectedAt: "2026-08-11",
+      changeKind: "semantic",
+      status: "시행 전 · 본인전송요구 적용 범위 영향 검토 필요",
+      url: "https://www.law.go.kr/lsRvsDocListP.do?lsId=011468",
+      impactCategories: ["data_portability"],
+      review: {
+        status: "pending",
+        reviewedAt: null,
+        reviewedRulesetVersion: null,
+        outcome: null,
+      },
     },
   ],
 } as const;

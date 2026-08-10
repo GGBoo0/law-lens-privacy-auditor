@@ -131,11 +131,12 @@ type AnalysisResult = {
       status: string;
       url: string;
     }>;
+    deferredFindingCount?: number;
   };
 };
 
 type LegalMonitorStatus = {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   configured: true;
   lastAttemptAt: string | null;
   lastSuccessfulCheckAt: string | null;
@@ -143,6 +144,39 @@ type LegalMonitorStatus = {
   sourceCount: number;
   failedSources: number;
   workflowRunUrl: string;
+  consecutiveFailures?: number;
+  recoveredAt?: string | null;
+  stale?: boolean;
+  staleAfter?: string | null;
+  staleAfterHours?: number;
+  workflowRunAttempt?: number | null;
+  recentRuns?: Array<{
+    checkedAt: string;
+    result: "not_run" | "no_changes" | "changes_detected" | "failed";
+    sourceCount: number;
+    failedSources: number;
+    workflowRunUrl: string;
+    workflowRunAttempt: number;
+    consecutiveFailures: number;
+    recovered: boolean;
+  }>;
+  pendingReviewCount?: number;
+  effectiveUnreviewedCount?: number;
+  oldestEffectiveFrom?: string | null;
+  runtimeManifestGeneratedAt?: string | null;
+  runtimeManifestState?:
+    | "current"
+    | "review_required"
+    | "stale"
+    | "invalid"
+    | "unavailable";
+  runtimeManifestSource?: "live" | "bundled" | "unavailable";
+};
+
+type MonitorBadge = {
+  tone: "checking" | "healthy" | "warning" | "degraded";
+  label: string;
+  detail: string;
 };
 
 type ReviewEntry = {
@@ -261,11 +295,120 @@ function formatDate(value: string) {
 
 function monitorResultText(status: LegalMonitorStatus) {
   if (status.lastResult === "failed") {
-    return `${status.failedSources}개 소스 확인 실패 · 실행 기록 확인 필요`;
+    const consecutive = status.consecutiveFailures
+      ? ` · 연속 ${status.consecutiveFailures}회 실패`
+      : "";
+    return `${status.failedSources}개 소스 확인 실패${consecutive} · 실행 기록 확인 필요`;
   }
   if (status.lastResult === "changes_detected") return "변경 감지 · 사람 검토 대기";
-  if (status.lastResult === "no_changes") return "전체 확인 완료 · 변경 없음";
+  if (status.lastResult === "no_changes") {
+    return status.recoveredAt
+      ? `전체 확인 완료 · 최근 장애 복구 ${formatDate(status.recoveredAt)}`
+      : "전체 확인 완료 · 변경 없음";
+  }
   return "첫 예약 실행 대기 중";
+}
+
+function monitorBadge(status: LegalMonitorStatus | null): MonitorBadge {
+  if (!status) {
+    return {
+      tone: "checking",
+      label: "공식 소스 확인 중",
+      detail: `규칙 검토 ${LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}`,
+    };
+  }
+
+  if (
+    status.runtimeManifestState === "stale" ||
+    status.runtimeManifestState === "invalid" ||
+    status.runtimeManifestState === "unavailable"
+  ) {
+    return {
+      tone: "degraded",
+      label: "법령 기준 확인 필요",
+      detail:
+        status.runtimeManifestState === "stale"
+          ? "자동 법령 기준이 36시간 넘게 갱신되지 않음"
+          : "자동 법령 기준을 신뢰할 수 없음",
+    };
+  }
+
+  if (status.lastResult === "failed" || status.failedSources > 0) {
+    return {
+      tone: "degraded",
+      label: "법령 감시 확인 필요",
+      detail: status.consecutiveFailures
+        ? `연속 ${status.consecutiveFailures}회 실패 · ${status.failedSources || 1}개 소스`
+        : `${status.failedSources || 1}개 소스 확인 실패`,
+    };
+  }
+
+  const lastSuccess = status.lastSuccessfulCheckAt
+    ? Date.parse(status.lastSuccessfulCheckAt)
+    : Number.NaN;
+  const staleAfter = status.staleAfter ? Date.parse(status.staleAfter) : Number.NaN;
+  const staleHours =
+    typeof status.staleAfterHours === "number" &&
+    Number.isFinite(status.staleAfterHours) &&
+    status.staleAfterHours >= 1
+      ? status.staleAfterHours
+      : 36;
+  const stale =
+    status.stale === true ||
+    (Number.isFinite(staleAfter)
+      ? Date.now() > staleAfter
+      : !Number.isFinite(lastSuccess) ||
+        Date.now() - lastSuccess > staleHours * 60 * 60 * 1000);
+
+  if (stale) {
+    return {
+      tone: "degraded",
+      label: "법령 감시 지연",
+      detail: `최근 ${staleHours}시간 성공 기록 없음`,
+    };
+  }
+
+  if ((status.effectiveUnreviewedCount ?? 0) > 0) {
+    return {
+      tone: "warning",
+      label: "시행 법령 검토 필요",
+      detail: `${status.effectiveUnreviewedCount}건 영향 판단 자동 유보 중`,
+    };
+  }
+
+  if ((status.pendingReviewCount ?? 0) > 0) {
+    return {
+      tone: "warning",
+      label: "시행예정 법령 검토 중",
+      detail: `${status.pendingReviewCount}건 · 다음 시행 ${status.oldestEffectiveFrom ?? "확인 중"}`,
+    };
+  }
+
+  if (status.lastResult === "changes_detected") {
+    return {
+      tone: "warning",
+      label: "법령 변경 검토 중",
+      detail: `최근 확인 ${formatDate(status.lastSuccessfulCheckAt!)}`,
+    };
+  }
+
+  const recoveredAt = status.recoveredAt ? Date.parse(status.recoveredAt) : Number.NaN;
+  if (
+    Number.isFinite(recoveredAt) &&
+    Date.now() - recoveredAt <= 48 * 60 * 60 * 1000
+  ) {
+    return {
+      tone: "healthy",
+      label: "법령 감시 복구 완료",
+      detail: `복구 ${formatDate(status.recoveredAt!)}`,
+    };
+  }
+
+  return {
+    tone: "healthy",
+    label: "공식 소스 최신 확인",
+    detail: `최근 확인 ${formatDate(status.lastSuccessfulCheckAt!)}`,
+  };
 }
 
 export default function Home() {
@@ -478,6 +621,8 @@ export default function Home() {
     }, 50);
   }
 
+  const monitorBadgeView = monitorBadge(monitorStatus);
+
   return (
     <main>
       <header className="topbar">
@@ -487,11 +632,23 @@ export default function Home() {
           </span>
           <span>법령렌즈</span>
         </a>
-        <div className="topMeta">
+        <a
+          className={`topMeta monitorBadge ${monitorBadgeView.tone}`}
+          href={
+            monitorStatus?.workflowRunUrl ||
+            LEGAL_BASELINE.monitoring.workflowUrl
+          }
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`${monitorBadgeView.label}. ${monitorBadgeView.detail}. GitHub 실행 기록에서 확인`}
+        >
           <span className="liveDot" aria-hidden="true" />
-          규칙 검토 {LEGAL_BASELINE.verifiedAt.replaceAll("-", ".")}
-          <b>· 매일 감시 설정</b>
-        </div>
+          <span>
+            <strong>{monitorBadgeView.label}</strong>
+            <small>{monitorBadgeView.detail}</small>
+          </span>
+          <b aria-hidden="true">↗</b>
+        </a>
       </header>
 
       <section className="hero" id="top">
@@ -506,6 +663,14 @@ export default function Home() {
             회사 홈페이지를 넣으면 방침을 찾아 추출하고, 누락·모호성·
             위반 소지를 공식 검증일 기준 대한민국 법령과 함께 짚어드립니다.
           </p>
+          <div className="betaNotice" role="note">
+            <strong>공개 베타</strong>
+            <p>
+              이 결과는 법률 검토를 돕는 자동 점검이며 위법 여부의 확정이나
+              변호사의 법률 자문이 아닙니다. 중요한 조치는 원문·실제 처리 현황과
+              전문가 검토를 함께 확인하세요.
+            </p>
+          </div>
           <div className="proofRow">
             <div>
               <strong>18+</strong>
@@ -689,10 +854,11 @@ export default function Home() {
             <span aria-hidden="true">●</span>
             유료 브라우저나 외부 AI API로 전송하지 않습니다. 공식 사이트의 공개
             문서와 공개 데이터만 읽으며 입력 내용은 요청 중 규칙 분석에만 사용하고
-            앱 데이터베이스에 저장하지 않습니다. URL은
-            IP 리터럴·내부 호스트·이동 주소를 검사하고 공개 인터넷 경로만
-            사용합니다. 남용 방지용 클라이언트 키는 복원 불가능하게 해시하여
-            짧게 보관합니다.
+            앱 데이터베이스에 저장하지 않습니다. URL은 IP 리터럴·내부 호스트·이동
+            주소를 검사하고 공개 인터넷 경로만 사용합니다. 남용 방지를 위해 원본
+            네트워크 주소 대신 비밀키 기반 HMAC-SHA-256으로 매일 달라지는
+            IPv4 또는 IPv6 /64 가명키, 1분 요청 횟수와 만료 시각을 저장합니다. 가명키를 익명정보라고
+            단정하지 않으며 만료 기록은 다음 분석 요청 때 정리합니다.
           </div>
         </div>
       </section>
@@ -1081,6 +1247,37 @@ export default function Home() {
                   공식 소스 {monitorStatus?.sourceCount || result.legalBaseline.monitoring.sourceCount}개 ·
                   규칙셋 사람 검토일 {result.legalBaseline.verifiedAt} ↗
                 </em>
+                {monitorStatus?.recentRuns && monitorStatus.recentRuns.length > 0 && (
+                  <span className="monitorHistory">
+                    최근 {monitorStatus.recentRuns.length}회 · 성공{" "}
+                    {
+                      monitorStatus.recentRuns.filter(
+                        (run) =>
+                          run.result === "no_changes" ||
+                          run.result === "changes_detected",
+                      ).length
+                    }
+                    회 · 실패{" "}
+                    {
+                      monitorStatus.recentRuns.filter(
+                        (run) => run.result === "failed",
+                      ).length
+                    }
+                    회
+                    {monitorStatus.consecutiveFailures
+                      ? ` · 현재 연속 ${monitorStatus.consecutiveFailures}회 실패`
+                      : ""}
+                  </span>
+                )}
+                {typeof monitorStatus?.pendingReviewCount === "number" && (
+                  <span className="monitorHistory">
+                    시행예정·미검토 {monitorStatus.pendingReviewCount}건 · 시행 후 판단 유보{" "}
+                    {monitorStatus.effectiveUnreviewedCount ?? 0}건
+                    {monitorStatus.oldestEffectiveFrom
+                      ? ` · 다음 검토기한 ${monitorStatus.oldestEffectiveFrom}`
+                      : ""}
+                  </span>
+                )}
               </a>
               {result.legalBaseline.upcomingChanges.map((change) => (
                 <a
@@ -1175,20 +1372,24 @@ export default function Home() {
           법률 리스크의 조기 발견을 위한 자동화 도구이며 변호사의 법률의견을
           대체하지 않습니다.
         </p>
-        <a
-          href="https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=&nttId=12018"
-          target="_blank"
-          rel="noreferrer"
-        >
-          2026 처리방침 작성지침 ↗
-        </a>
-        <a
-          href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
-          target="_blank"
-          rel="noreferrer"
-        >
-          피드백 남기기 ↗
-        </a>
+        <nav className="footerLinks" aria-label="서비스 정보">
+          <a href="/privacy">개인정보 처리 안내</a>
+          <a href="/terms">이용조건·문의</a>
+          <a
+            href="https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=&nttId=12018"
+            target="_blank"
+            rel="noreferrer"
+          >
+            2026 작성지침 ↗
+          </a>
+          <a
+            href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
+            target="_blank"
+            rel="noreferrer"
+          >
+            피드백 ↗
+          </a>
+        </nav>
       </footer>
     </main>
   );
