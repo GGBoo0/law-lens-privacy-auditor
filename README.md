@@ -1,6 +1,6 @@
 # 법령렌즈
 
-대한민국 개인정보 보호 법령을 구조화한 규칙 엔진으로 개인정보처리방침의 누락·모호성·조건부 위험을 탐지하는 무료 컴플라이언스 지원 웹앱입니다.
+대한민국 개인정보호법에 기반한 개인정보처리방침의 누락·모호성·조건부 위험을 탐지하는 무료 컴플라이언스 지원 웹앱입니다.
 
 [![CI](https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0c1425.svg)](./LICENSE)
