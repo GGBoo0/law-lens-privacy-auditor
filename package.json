@@ -9,37 +9,40 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/legal-update-monitor.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/legal-update-monitor.test.mjs tests/legal-lifecycle.test.mjs",
     "legal:check": "node scripts/check-legal-updates.mjs",
     "legal:init": "node scripts/check-legal-updates.mjs --initialize",
     "test:live": "npm run build && node --test tests/live-url.test.mjs",
     "qa:50": "npm run build && node tests/qa-50.mjs",
+    "qa:50:gate": "npm run build && node tests/qa-50.mjs --min-verified=35 --max-wrong-source=0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern node_modules.partial-backup",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:local": "wrangler d1 migrations apply site-creator-d1 --local --config wrangler.jsonc"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "next": "16.3.0",
+    "psl": "1.15.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/vite-plugin": "1.51.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
+    "@vitejs/plugin-react": "6.0.5",
+    "@vitejs/plugin-rsc": "0.5.34",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "eslint-config-next": "16.3.0",
+    "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "vite": "8.2.1",
+    "wrangler": "4.120.0"
   },
   "type": "module"
 }

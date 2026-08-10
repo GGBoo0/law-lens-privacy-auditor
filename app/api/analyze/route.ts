@@ -14,6 +14,9 @@ import {
   isRegisteredPolicyHost,
   registeredPolicyHints,
 } from "../../../lib/policy-source-registry";
+import * as psl from "psl";
+import fallbackRuntimeLegalManifest from "../../../data/legal-runtime-manifest.json";
+import { extractStructuredTables } from "../../../lib/html-table-extractor";
 
 export const runtime = "edge";
 
@@ -27,10 +30,14 @@ const MAX_DISCOVERY_DEPTH = 3;
 const MAX_DISCOVERY_PAGES = 12;
 const MAX_CANDIDATES_PER_PAGE = 10;
 const MAX_DISCOVERY_MS = 25_000;
-const RATE_LIMIT = 12;
-const RATE_WINDOW_MS = 60_000;
+const LEGAL_RUNTIME_MANIFEST_URL =
+  "https://raw.githubusercontent.com/GGBoo0/law-lens-privacy-auditor/automation/legal-monitor-status/data/legal-runtime-manifest.json";
+const LEGAL_RUNTIME_MANIFEST_CACHE_MS = 5 * 60 * 1000;
 
-const rateWindows = new Map<string, { count: number; resetAt: number }>();
+let runtimeLegalManifestCache: {
+  expiresAt: number;
+  value: unknown;
+} | null = null;
 const contextKeys: ContextKey[] = [
   "thirdParty",
   "outsourcing",
@@ -95,49 +102,6 @@ function sameOriginRequest(request: Request) {
   }
 }
 
-function getClientAddress(request: Request) {
-  return (
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-real-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "anonymous"
-  );
-}
-
-async function hashClientAddress(value: string) {
-  const bytes = new TextEncoder().encode(`lawlens-rate-v1:${value}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .slice(0, 16)
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function takeMemoryRateLimit(key: string) {
-  const now = Date.now();
-  const existing = rateWindows.get(key);
-  if (!existing || existing.resetAt <= now) {
-    rateWindows.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return null;
-  }
-  existing.count += 1;
-  if (existing.count <= RATE_LIMIT) return null;
-  return Math.max(1, Math.ceil((existing.resetAt - now) / 1_000));
-}
-
-async function takeRateLimit(request: Request) {
-  const clientKey = await hashClientAddress(getClientAddress(request));
-  return takeMemoryRateLimit(clientKey);
-}
-
-function pruneRateWindows() {
-  if (rateWindows.size < 2_000) return;
-  const now = Date.now();
-  for (const [key, value] of rateWindows) {
-    if (value.resetAt <= now) rateWindows.delete(key);
-  }
-}
-
 function normalizeContextOverrides(value: unknown): ContextOverrides {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const input = value as Record<string, unknown>;
@@ -161,12 +125,55 @@ async function documentHash(text: string) {
     .join("");
 }
 
+async function loadRuntimeLegalManifest() {
+  const now = Date.now();
+  if (runtimeLegalManifestCache && runtimeLegalManifestCache.expiresAt > now) {
+    return runtimeLegalManifestCache.value;
+  }
+
+  let value: unknown;
+  let cacheMilliseconds = LEGAL_RUNTIME_MANIFEST_CACHE_MS;
+  try {
+    const response = await fetch(LEGAL_RUNTIME_MANIFEST_URL, {
+      headers: {
+        accept: "application/json",
+        "user-agent": "LawLensPrivacyKR/1.0",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    value = await response.json();
+  } catch {
+    // Reuse the last live value only while its own 36-hour freshness gate
+    // permits it. A cold start with no live manifest passes invalid data so the
+    // analyzer conservatively defers every legal conclusion.
+    value =
+      runtimeLegalManifestCache?.value ??
+      (process.env.LAW_LENS_TEST_RUNTIME_MANIFEST === "bundled"
+        ? fallbackRuntimeLegalManifest
+        : {
+            unavailable: true,
+            reason: "live legal runtime manifest could not be loaded",
+          });
+    cacheMilliseconds = 30_000;
+  }
+
+  runtimeLegalManifestCache = {
+    expiresAt: now + cacheMilliseconds,
+    value,
+  };
+  return value;
+}
+
 async function buildAnalysis(
   text: string,
   meta: Parameters<typeof analyzePrivacyPolicy>[1],
 ) {
+  const runtimeLegalManifest =
+    meta.runtimeLegalManifest ?? (await loadRuntimeLegalManifest());
   return {
-    ...analyzePrivacyPolicy(text, meta),
+    ...analyzePrivacyPolicy(text, { ...meta, runtimeLegalManifest }),
     documentHash: await documentHash(text),
   };
 }
@@ -301,7 +308,7 @@ function decodeEntities(value: string) {
 
 function stripHtml(html: string) {
   return decodeEntities(
-    html
+    extractStructuredTables(html, { maxOutputChars: MAX_POLICY_CHARS })
       .replace(/<!--[\s\S]*?-->/g, " ")
       .replace(
         /<(script|style|noscript|svg|canvas|template|iframe)\b[\s\S]*?<\/\1>/gi,
@@ -506,21 +513,8 @@ function commonPolicyHints(inputUrl: URL) {
 }
 
 function registrableDomain(hostname: string) {
-  const labels = hostname.toLowerCase().replace(/\.$/, "").split(".");
-  if (labels.length <= 2) return labels.join(".");
-  const publicSuffix = labels.slice(-2).join(".");
-  const koreanSecondLevelSuffixes = new Set([
-    "co.kr",
-    "or.kr",
-    "go.kr",
-    "ne.kr",
-    "ac.kr",
-    "re.kr",
-    "pe.kr",
-  ]);
-  return labels
-    .slice(koreanSecondLevelSuffixes.has(publicSuffix) ? -3 : -2)
-    .join(".");
+  const normalized = hostname.toLowerCase().replace(/\.$/, "");
+  return psl.get(normalized) || normalized;
 }
 
 function isPolicyContextMatch(
@@ -1030,16 +1024,6 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
     if (!contentType.startsWith("application/json")) {
       return json({ error: "JSON 요청만 허용됩니다." }, 415);
-    }
-
-    pruneRateWindows();
-    const retryAfter = await takeRateLimit(request);
-    if (retryAfter !== null) {
-      return json(
-        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." },
-        429,
-        { "Retry-After": String(retryAfter) },
-      );
     }
 
     const contentLength = Number(request.headers.get("content-length") || 0);

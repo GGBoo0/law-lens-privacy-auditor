@@ -1,0 +1,1 @@
+CREATE INDEX `rate_windows_reset_at_idx` ON `rate_windows` (`reset_at`);

@@ -1,5 +1,13 @@
-import { LEGAL_BASELINE } from "./legal-baseline";
+import {
+  LEGAL_BASELINE,
+  LEGAL_UPDATE_CONTRACT,
+  type LegalImpactCategory,
+} from "./legal-baseline.ts";
 import { SOURCES } from "./legal-bases.mjs";
+import {
+  evaluateLegalRulesetFreshness,
+  mergeRuntimeLegalChanges,
+} from "./legal-lifecycle.ts";
 
 export type Severity = "high" | "medium" | "low" | "pass" | "na";
 
@@ -42,6 +50,18 @@ type Finding = {
   confidence: "높음" | "보통" | "낮음";
   findingType: FindingType;
   requiresFactualVerification: boolean;
+  legalJudgmentStatus?: "deferred_pending_legal_review";
+  legalReviewWarning?: {
+    message: string;
+    changeIds: string[];
+    effectiveFrom: string[];
+    impactCategories: LegalImpactCategory[];
+  };
+  originalAssessment?: {
+    severity: Severity;
+    label: string;
+    findingType: FindingType;
+  };
 };
 
 type CoverageItem = {
@@ -56,6 +76,51 @@ type EvaluationAxis = {
   state: "good" | "review" | "not_evaluated";
   detail: string;
 };
+
+function impactCategoriesForFinding(id: string): LegalImpactCategory[] {
+  if (
+    /^(?:missing-|present-)?(?:purpose|items|retention|deletion)$/.test(id) ||
+    /^(?:weak-deletion|vague-purpose|vague-retention|pseudonym)$/.test(id)
+  ) {
+    return ["core_disclosures"];
+  }
+  if (/^(?:missing-|present-)?contact$/.test(id) || id === "weak-contact") {
+    return ["core_disclosures", "privacy_officer"];
+  }
+  if (/^(?:missing-|present-)?security$/.test(id)) {
+    return ["core_disclosures", "security_measures"];
+  }
+  if (id === "version-history") {
+    return ["core_disclosures", "policy_transparency"];
+  }
+  if (/^(?:missing-|present-)?rights$/.test(id) || id === "weak-rights") {
+    // 본인전송요구는 정보주체 권리 안내와 행사 절차에 직접 연결되므로,
+    // 관련 시행령 검토가 끝나지 않은 동안 권리 항목의 충족/누락 결론도 유보합니다.
+    return ["data_subject_rights", "data_portability"];
+  }
+  if (id.startsWith("third-party") || id === "vague-third-party") {
+    return ["third_party_provision"];
+  }
+  if (id.startsWith("outsourcing")) return ["outsourcing"];
+  if (id.startsWith("overseas") || id === "foreign-controller-country") {
+    return ["cross_border_transfer"];
+  }
+  if (id.startsWith("cookie")) return ["cookies_behavioral"];
+  if (
+    id.startsWith("sensitive") ||
+    id.startsWith("unique") ||
+    id.startsWith("resident-number") ||
+    id.startsWith("children")
+  ) {
+    return ["special_categories"];
+  }
+  if (id === "automated-decision") return ["automated_decision"];
+  if (id === "ai-transparency-guidance") return ["ai_transparency"];
+  if (id === "location-sector") return ["location_information"];
+  if (id === "credit-sector") return ["credit_information"];
+  if (id === "ecommerce-retention") return ["ecommerce_retention"];
+  return [];
+}
 
 const labels: Record<Severity, string> = {
   high: "누락 가능성 높음",
@@ -146,6 +211,10 @@ export function analyzePrivacyPolicy(
     retrievedAt?: string;
     discoveryPath?: string[];
     contextOverrides?: ContextOverrides;
+    /** Internal deterministic clock used by lifecycle tests and replays. */
+    legalAsOfDate?: string | Date;
+    /** Trusted status-branch manifest. Invalid data triggers conservative deferral. */
+    runtimeLegalManifest?: unknown;
   } = {},
 ) {
   const text = rawText
@@ -157,6 +226,15 @@ export function analyzePrivacyPolicy(
   const findings: Finding[] = [];
   const coverage: CoverageItem[] = [];
   const signals: string[] = [];
+  const legalAsOfDate = meta.legalAsOfDate ?? new Date();
+  const runtimeLegalState = mergeRuntimeLegalChanges(
+    meta.runtimeLegalManifest,
+    legalAsOfDate,
+  );
+  const legalFreshness = evaluateLegalRulesetFreshness(legalAsOfDate, {
+    rulesetVersion: LEGAL_BASELINE.rulesetVersion,
+    upcomingChanges: runtimeLegalState.changes,
+  });
   const contextChoice = (key: ContextKey) =>
     meta.contextOverrides?.[key] ?? "auto";
   // 본문에서 신호가 명확하면 사용자의 '비해당' 선택만으로 숨기지 않습니다.
@@ -1440,6 +1518,49 @@ export function analyzePrivacyPolicy(
     });
   }
 
+  const overdueImpactCategories = new Set(
+    legalFreshness.affectedCategoryKeys,
+  );
+  let deferredFindingCount = 0;
+  for (let index = 0; index < findings.length; index += 1) {
+    const finding = findings[index];
+    const impactedCategories = impactCategoriesForFinding(finding.id).filter(
+      (category) => overdueImpactCategories.has(category),
+    );
+    if (impactedCategories.length === 0) continue;
+
+    const relatedChanges = legalFreshness.effectiveUnreviewedChanges.filter(
+      (change) =>
+        change.impactCategories.some((category) =>
+          impactedCategories.includes(category),
+        ),
+    );
+    if (relatedChanges.length === 0) continue;
+
+    deferredFindingCount += 1;
+    findings[index] = {
+      ...finding,
+      severity: "low",
+      label: "판단 유보 · 법령 검토 필요",
+      confidence: "낮음",
+      findingType: "factual_verification",
+      requiresFactualVerification: true,
+      legalJudgmentStatus: "deferred_pending_legal_review",
+      legalReviewWarning: {
+        message:
+          "이 항목에 영향을 줄 수 있는 법령 변경이 시행됐지만 현재 규칙셋의 의미 검토가 완료되지 않았습니다.",
+        changeIds: relatedChanges.map((change) => change.changeId),
+        effectiveFrom: relatedChanges.map((change) => change.effectiveFrom),
+        impactCategories: impactedCategories,
+      },
+      originalAssessment: {
+        severity: finding.severity,
+        label: finding.label,
+        findingType: finding.findingType,
+      },
+    };
+  }
+
   const counts = findings.reduce(
     (acc, finding) => {
       if (finding.severity !== "na") acc[finding.severity] += 1;
@@ -1463,14 +1584,17 @@ export function analyzePrivacyPolicy(
   const conditionalCoverage = coverage.filter(
     (item) => item.state === "conditional",
   );
-  const grade =
-    missingCoverage.length === 0 && counts.high === 0
+  const grade = deferredFindingCount > 0
+    ? "판단유보"
+    : missingCoverage.length === 0 && counts.high === 0
       ? "대체로양호"
       : missingCoverage.length <= 1 && counts.high <= 1
         ? "보완필요"
         : "우선검토";
   const headline =
-    grade === "대체로양호"
+    deferredFindingCount > 0
+      ? `시행 법령 검토 전이라 ${deferredFindingCount}개 항목의 판단을 유보합니다`
+      : grade === "대체로양호"
       ? "자동 탐지상 큰 누락은 적지만 실제 운영은 별도 확인해야 합니다"
       : grade === "보완필요"
         ? "일부 기재요소와 적용 조건을 검토해야 합니다"
@@ -1559,6 +1683,7 @@ export function analyzePrivacyPolicy(
         "법률 준수율·위반 확률·개인정보위 공식 평가점수가 아니라 자동 탐지된 문서 기재상태의 참고값입니다.",
     },
     findings,
+    legalReviewWarnings: legalFreshness.warnings,
     coverage,
     evaluationAxes,
     detectedSignals: [...new Set(signals)],
@@ -1572,8 +1697,15 @@ export function analyzePrivacyPolicy(
       estimatedApiCostKrw: 0,
       confidenceMeaning:
         "신뢰도는 통계적 정확도가 아니라 문구와 규칙 패턴이 얼마나 명시적으로 일치했는지를 뜻합니다.",
-      evaluationStatus: "법령요소 회귀검증 적용 · 전문가 정확도 미측정",
+      evaluationStatus: legalFreshness.overdueLegalReview
+        ? `시행 법령 의미 검토 대기 · 관련 판단 ${deferredFindingCount}건 유보`
+        : "법령요소 회귀검증 적용 · 전문가 정확도 미측정",
       limitations: [
+        ...(legalFreshness.overdueLegalReview
+          ? [
+              "시행된 법령 변경의 사람 검토가 끝날 때까지 영향받는 항목은 법률 결론 대신 판단 유보로 표시",
+            ]
+          : []),
         "이미지·PDF 안의 표와 로그인 뒤 화면은 원문 붙여넣기 없이 확인할 수 없음",
         "실제 수집 항목, 쿠키 전송, 동의 화면, 파기 실행 여부는 현장 검증 필요",
         "문장의 의미를 통계적 AI가 해석하지 않으므로 새로운 표현은 탐지하지 못할 수 있음",
@@ -1584,9 +1716,23 @@ export function analyzePrivacyPolicy(
       date: LEGAL_BASELINE.verifiedAt,
       verifiedAt: LEGAL_BASELINE.verifiedAt,
       rulesetVersion: LEGAL_BASELINE.rulesetVersion,
+      asOfDate: legalFreshness.asOfDate,
+      validThrough: legalFreshness.validThrough,
+      reviewRequiredBy: legalFreshness.reviewRequiredBy,
+      overdueLegalReview: legalFreshness.overdueLegalReview,
+      deferredFindingCount,
+      freshnessStatus: legalFreshness.status,
+      affectedCategories: legalFreshness.warnings[0]?.affectedCategories ?? [],
+      warnings: legalFreshness.warnings,
+      updateContract: LEGAL_UPDATE_CONTRACT,
+      runtimeManifest: {
+        status: runtimeLegalState.status,
+        generatedAt: runtimeLegalState.generatedAt,
+        errors: runtimeLegalState.errors,
+      },
       monitoring: LEGAL_BASELINE.monitoring,
       statutes: LEGAL_BASELINE.statutes,
-      upcomingChanges: LEGAL_BASELINE.upcomingChanges,
+      upcomingChanges: legalFreshness.changes,
     },
   };
 }

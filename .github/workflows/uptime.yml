@@ -1,0 +1,76 @@
+name: Public beta uptime
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: public-beta-uptime
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      HEALTH_URL: https://law-lens-privacy-kr.zzboof.chatgpt.site/api/health
+      ISSUE_LABEL: automation:uptime
+      ISSUE_TITLE: "[automation] Public beta health check failure"
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Probe public health endpoint
+        id: probe
+        continue-on-error: true
+        run: |
+          curl \
+            --fail-with-body \
+            --location \
+            --max-time 20 \
+            --retry 2 \
+            --retry-all-errors \
+            --retry-delay 3 \
+            --silent \
+            --show-error \
+            "$HEALTH_URL"
+
+      - name: Open or resolve uptime incident
+        if: always()
+        env:
+          PROBE_OUTCOME: ${{ steps.probe.outcome }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          gh label create "$ISSUE_LABEL" \
+            --repo "$GITHUB_REPOSITORY" \
+            --color "D93F0B" \
+            --description "Public beta health-check incident" \
+            --force
+          OPEN_ISSUE="$(gh issue list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state open \
+            --label "$ISSUE_LABEL" \
+            --limit 100 \
+            --json number,title \
+            --jq "first(.[] | select(.title == \"$ISSUE_TITLE\")).number // empty")"
+
+          if [ "$PROBE_OUTCOME" != "success" ]; then
+            printf -v BODY 'The public health endpoint did not return a successful response after bounded retries.\n\n- Endpoint: %s\n- Run: %s' "$HEALTH_URL" "$RUN_URL"
+            if [ -n "$OPEN_ISSUE" ]; then
+              gh issue comment "$OPEN_ISSUE" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$ISSUE_TITLE" --label "$ISSUE_LABEL" --body "$BODY"
+            fi
+            exit 1
+          fi
+
+          if [ -n "$OPEN_ISSUE" ]; then
+            gh issue close "$OPEN_ISSUE" \
+              --repo "$GITHUB_REPOSITORY" \
+              --comment "The public health endpoint recovered. Recovery run: $RUN_URL"
+          fi

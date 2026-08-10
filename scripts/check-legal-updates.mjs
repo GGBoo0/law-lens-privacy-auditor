@@ -5,6 +5,11 @@ import { pathToFileURL } from "node:url";
 
 const LAW_API_BASE = "https://www.law.go.kr/DRF";
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const DEFAULT_FETCH_ATTEMPTS = 3;
+const DEFAULT_RETRY_BASE_DELAY_MS = 750;
+const MAX_RETRY_DELAY_MS = 5_000;
+export const STAGE_EFFECTIVE_DATE_ALGORITHM =
+  "promulgation-calendar-period-v2";
 const USER_AGENT =
   "LawLensPrivacyKR/1.0 (+https://github.com/GGBoo0/law-lens-privacy-auditor)";
 
@@ -59,7 +64,342 @@ function cleanText(value = "") {
       .replace(/<[^>]+>/g, " "),
   )
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .normalize("NFC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "");
+}
+
+function compactObject(entries) {
+  return Object.fromEntries(
+    Object.entries(entries).filter(([, value]) => {
+      if (value === undefined || value === null || value === "") return false;
+      return !Array.isArray(value) || value.length > 0;
+    }),
+  );
+}
+
+function flattenLegalUnits(value, wrapperKeys = []) {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => flattenLegalUnits(item, wrapperKeys));
+  }
+  if (typeof value !== "object") return [value];
+
+  const wrapped = wrapperKeys.find((key) => value[key] !== undefined);
+  if (wrapped) return flattenLegalUnits(value[wrapped], wrapperKeys);
+  return [value];
+}
+
+function normalizeLeafUnits(value, {
+  wrapperKeys,
+  numberKeys,
+  textKeys,
+  childKeys = [],
+  normalizeChildren,
+}) {
+  return flattenLegalUnits(value, wrapperKeys)
+    .map((unit) => {
+      if (typeof unit !== "object" || unit === null) {
+        const text = cleanText(unit);
+        return text ? { text } : null;
+      }
+
+      const number = cleanText(numberKeys.map((key) => unit[key]).find(Boolean) || "");
+      const text = cleanText(textKeys.map((key) => unit[key]).find(Boolean) || "");
+      const childValue = childKeys.map((key) => unit[key]).find((item) => item !== undefined);
+      const children = normalizeChildren
+        ? normalizeChildren(childValue)
+        : [];
+      const normalized = compactObject({ number, text, children });
+      return Object.keys(normalized).length > 0 ? normalized : null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeSubitems(value) {
+  return normalizeLeafUnits(value, {
+    wrapperKeys: ["목단위", "목"],
+    numberKeys: ["목번호"],
+    textKeys: ["목내용"],
+  });
+}
+
+function normalizeItems(value) {
+  return normalizeLeafUnits(value, {
+    wrapperKeys: ["호단위", "호"],
+    numberKeys: ["호번호"],
+    textKeys: ["호내용"],
+    childKeys: ["목", "목단위"],
+    normalizeChildren: normalizeSubitems,
+  });
+}
+
+function normalizeParagraphs(value) {
+  return flattenLegalUnits(value, ["항단위", "항"])
+    .map((unit) => {
+      if (typeof unit !== "object" || unit === null) {
+        const text = cleanText(unit);
+        return text ? { text } : null;
+      }
+
+      const normalized = compactObject({
+        number: cleanText(unit.항번호 || ""),
+        text: cleanText(unit.항내용 || ""),
+        items: normalizeItems(unit.호 ?? unit.호단위),
+      });
+      return Object.keys(normalized).length > 0 ? normalized : null;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Normalize only the legally meaningful article text. Operational API metadata
+ * such as 시행일자, 변경여부, 이동 전후 and response ordering is intentionally
+ * excluded so an upstream metadata refresh does not look like a law amendment.
+ */
+export function normalizeArticleUnit(unit = {}) {
+  return compactObject({
+    articleNumber: cleanText(unit.조문번호 || ""),
+    branchNumber: cleanText(unit.조문가지번호 || ""),
+    title: cleanText(unit.조문제목 || ""),
+    text: cleanText(unit.조문내용 || ""),
+    paragraphs: normalizeParagraphs(unit.항),
+  });
+}
+
+function flattenTextContent(value, contentKeys = []) {
+  if (value === undefined || value === null) return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => flattenTextContent(item, contentKeys));
+  }
+  if (typeof value !== "object") {
+    const text = cleanText(value);
+    return text ? [text] : [];
+  }
+
+  const matchingKeys = contentKeys.filter((key) => value[key] !== undefined);
+  if (matchingKeys.length > 0) {
+    return matchingKeys.flatMap((key) => flattenTextContent(value[key], contentKeys));
+  }
+  return [];
+}
+
+function normalizeAppendices(value) {
+  return flattenLegalUnits(value?.부칙단위 ?? value, ["부칙단위"])
+    .map((unit) => {
+      if (typeof unit !== "object" || unit === null) {
+        const text = cleanText(unit);
+        return text ? { text: [text] } : null;
+      }
+      const normalized = compactObject({
+        promulgationDate: cleanText(unit.부칙공포일자 || ""),
+        promulgationNumber: cleanText(unit.부칙공포번호 || ""),
+        text: flattenTextContent(unit.부칙내용 ?? unit, ["부칙내용"]),
+      });
+      return Object.keys(normalized).length > 0 ? normalized : null;
+    })
+    .filter(Boolean);
+}
+
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function extractDateStrings(text) {
+  const dates = new Set();
+  for (const match of text.matchAll(/(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/g)) {
+    dates.add(`${match[1]}${match[2].padStart(2, "0")}${match[3].padStart(2, "0")}`);
+  }
+  for (const match of text.matchAll(/\b(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})\b/g)) {
+    dates.add(`${match[1]}${match[2].padStart(2, "0")}${match[3].padStart(2, "0")}`);
+  }
+  return [...dates];
+}
+
+function parseCompactCalendarDate(value) {
+  const compact = digitsOnly(value);
+  if (!/^\d{8}$/.test(compact)) return null;
+  const year = Number(compact.slice(0, 4));
+  const month = Number(compact.slice(4, 6));
+  const day = Number(compact.slice(6, 8));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return { compact, year, month, day };
+}
+
+function compactUtcDate(value) {
+  return [
+    String(value.getUTCFullYear()).padStart(4, "0"),
+    String(value.getUTCMonth() + 1).padStart(2, "0"),
+    String(value.getUTCDate()).padStart(2, "0"),
+  ].join("");
+}
+
+/**
+ * Korean commencement clauses such as "공포 후 6개월이 경과한 날" take
+ * effect on the day after the stated calendar period has elapsed. Month/year
+ * arithmetic is clamped to the target month's final day before that extra day
+ * is added, avoiding JavaScript Date's Jan-31 -> Mar rollover.
+ */
+export function calculateRelativePromulgationEffectiveDate(
+  promulgationDate,
+  { years = 0, months = 0, days = 0 } = {},
+) {
+  const promulgated = parseCompactCalendarDate(promulgationDate);
+  if (!promulgated) return null;
+  if (
+    ![years, months, days].every(
+      (part) => Number.isInteger(part) && part >= 0,
+    ) ||
+    years + months + days === 0
+  ) {
+    return null;
+  }
+
+  const targetMonthIndex = promulgated.month - 1 + years * 12 + months;
+  const targetYear = promulgated.year + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+  const finalDayOfTargetMonth = new Date(
+    Date.UTC(targetYear, targetMonth + 1, 0),
+  ).getUTCDate();
+  const targetDay = Math.min(promulgated.day, finalDayOfTargetMonth);
+  const effective = new Date(
+    Date.UTC(targetYear, targetMonth, targetDay + days + 1),
+  );
+  return compactUtcDate(effective);
+}
+
+function relativePromulgationStages(clauseText, promulgationDate) {
+  const stages = [];
+  const pattern =
+    /공포\s*후\s*((?:\d+\s*년\s*)?(?:\d+\s*개월\s*)?(?:\d+\s*일\s*)?)(?:이\s*)?경과한\s*날/g;
+
+  for (const match of clauseText.matchAll(pattern)) {
+    const period = match[1] || "";
+    if (!/\d/.test(period)) continue;
+    const years = Number(period.match(/(\d+)\s*년/)?.[1] || 0);
+    const months = Number(period.match(/(\d+)\s*개월/)?.[1] || 0);
+    const days = Number(period.match(/(\d+)\s*일/)?.[1] || 0);
+    const effectiveDate = calculateRelativePromulgationEffectiveDate(
+      promulgationDate,
+      { years, months, days },
+    );
+    if (!effectiveDate) continue;
+
+    const matchIndex = match.index || 0;
+    const previousBoundary = Math.max(
+      clauseText.lastIndexOf(". ", matchIndex),
+      clauseText.lastIndexOf("다만,", matchIndex),
+    );
+    const nextBoundary = clauseText.indexOf(".", matchIndex + match[0].length);
+    const basisText = cleanText(
+      clauseText.slice(
+        previousBoundary >= 0
+          ? previousBoundary + (clauseText.startsWith("다만,", previousBoundary) ? 0 : 2)
+          : 0,
+        nextBoundary >= 0 ? nextBoundary + 1 : clauseText.length,
+      ),
+    );
+    stages.push({ effectiveDate, basisText: basisText || cleanText(match[0]) });
+  }
+  return stages;
+}
+
+function effectiveClauseLines(lines) {
+  const start = lines.findIndex((line) => /\(시행일\)|(?:^|\s)이\s+(?:법|영|규칙).*시행/.test(line));
+  if (start < 0) return [];
+
+  const selected = [];
+  for (let index = start; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (index > start && /^제\d+조(?:의\d+)?(?:\([^)]*\))?/.test(line)) break;
+    selected.push(line);
+  }
+  return selected;
+}
+
+function sentenceForDate(clauseText, date) {
+  const formatted = `${Number(date.slice(0, 4))}년 ${Number(date.slice(4, 6))}월 ${Number(date.slice(6, 8))}일`;
+  return clauseText
+    .split(/(?<=[.!?다])\s+(?=(?:다만,?|\d+\.|제\d+조|[^\s]))/)
+    .find((sentence) => sentence.includes(formatted)) || "";
+}
+
+/**
+ * Return authoritative stage dates exposed by the law search API and enrich
+ * them with the matching 시행일 clause when the appendix structure is present.
+ * Unknown/changed API shapes degrade to the search dates rather than failing.
+ */
+export function extractStageEffectiveDates(lawBody, options = {}) {
+  const lawSearchDates = new Set(
+    toArray(options.knownEffectiveDates)
+      .map(digitsOnly)
+      .filter((date) => /^\d{8}$/.test(date)),
+  );
+  const knownDates = new Set(lawSearchDates);
+  const appendixUnits = flattenLegalUnits(lawBody?.부칙?.부칙단위 ?? lawBody?.부칙, [
+    "부칙단위",
+  ]).filter((unit) => unit && typeof unit === "object");
+  const promulgationNumber = digitsOnly(options.promulgationNumber);
+  const promulgationDate = digitsOnly(options.promulgationDate);
+  const matching = appendixUnits.filter((unit) => {
+    const numberMatches =
+      promulgationNumber && digitsOnly(unit.부칙공포번호) === promulgationNumber;
+    const dateMatches = promulgationDate && digitsOnly(unit.부칙공포일자) === promulgationDate;
+    return numberMatches || dateMatches;
+  });
+  const candidates = matching.length > 0 ? matching : appendixUnits.slice(-1);
+  const lines = candidates.flatMap((unit) =>
+    flattenTextContent(unit.부칙내용 ?? unit, ["부칙내용"]),
+  );
+  const clauses = effectiveClauseLines(lines);
+  const clauseText = cleanText(clauses.join(" "));
+  for (const date of extractDateStrings(clauseText)) knownDates.add(date);
+  const relativeStages = new Map();
+  for (const stage of relativePromulgationStages(clauseText, promulgationDate)) {
+    knownDates.add(stage.effectiveDate);
+    relativeStages.set(stage.effectiveDate, stage.basisText);
+  }
+
+  return [...knownDates]
+    .sort()
+    .map((effectiveDate) => {
+      const matchedSentence = sentenceForDate(clauseText, effectiveDate);
+      const relativeBasis = relativeStages.get(effectiveDate) || "";
+      return compactObject({
+        effectiveDate,
+        source: lawSearchDates.has(effectiveDate)
+          ? "law-search"
+          : matchedSentence
+            ? "appendix-explicit"
+            : relativeBasis
+              ? "appendix-relative"
+              : "law-search",
+        basisText: matchedSentence || relativeBasis || clauseText,
+      });
+    });
+}
+
+export function semanticVersionFingerprintPayload({
+  versionIdentity,
+  documentHash,
+  articleHashes,
+  stageEffectiveDates,
+  stageEffectiveDateAlgorithm = STAGE_EFFECTIVE_DATE_ALGORITHM,
+}) {
+  return {
+    ...versionIdentity,
+    documentHash,
+    articleHashes,
+    stageEffectiveDateAlgorithm,
+    stageEffectiveDates,
+  };
 }
 
 function pick(object, keys) {
@@ -72,9 +412,17 @@ async function fetchResponse(url, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const sleepImpl = options.sleepImpl || ((milliseconds) =>
     new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const attempts = Math.max(
+    1,
+    Math.min(Math.trunc(Number(options.fetchAttempts)) || DEFAULT_FETCH_ATTEMPTS, 5),
+  );
+  const retryBaseDelayMs = Math.max(
+    0,
+    Number(options.retryBaseDelayMs) || DEFAULT_RETRY_BASE_DELAY_MS,
+  );
   let lastError;
 
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const response = await fetchImpl(url, {
         headers: {
@@ -86,14 +434,37 @@ async function fetchResponse(url, options = {}) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const error = new Error(`HTTP ${response.status}`);
+        error.retryable =
+          response.status === 408 ||
+          response.status === 425 ||
+          response.status === 429 ||
+          response.status >= 500;
+        const retryAfterHeader = response.headers.get("retry-after");
+        const retryAfter = Number(retryAfterHeader);
+        if (
+          retryAfterHeader !== null &&
+          retryAfterHeader.trim() !== "" &&
+          Number.isFinite(retryAfter) &&
+          retryAfter >= 0
+        ) {
+          error.retryAfterMs = retryAfter * 1_000;
+        }
+        throw error;
       }
 
       return response;
     } catch (error) {
       lastError = error;
-      if (attempt < 2) {
-        await sleepImpl(600);
+      const retryable = !(error instanceof Error) || error.retryable !== false;
+      if (!retryable) throw error;
+      if (attempt < attempts && retryable) {
+        const exponentialDelay = retryBaseDelayMs * 2 ** (attempt - 1);
+        const requestedDelay =
+          error instanceof Error && Number.isFinite(error.retryAfterMs)
+            ? error.retryAfterMs
+            : exponentialDelay;
+        await sleepImpl(Math.min(requestedDelay, MAX_RETRY_DELAY_MS));
       }
     }
   }
@@ -148,19 +519,30 @@ function lawApiUrl(endpoint, parameters) {
   return url;
 }
 
-function articleMap(lawBody) {
+export function articleMap(lawBody) {
   const units = toArray(lawBody?.조문?.조문단위);
   return Object.fromEntries(
     units.map((unit, index) => {
       const key = String(unit?.조문키 || unit?.조문번호 || index + 1);
+      const normalized = normalizeArticleUnit(unit);
       return [
         key,
         {
           label: cleanText(unit?.조문내용 || `조문 ${key}`).slice(0, 140),
-          hash: fingerprint(unit),
+          hash: fingerprint(normalized),
         },
       ];
     }),
+  );
+}
+
+function legacyArticleHashes(lawBody) {
+  const units = toArray(lawBody?.조문?.조문단위);
+  return Object.fromEntries(
+    units.map((unit, index) => [
+      String(unit?.조문키 || unit?.조문번호 || index + 1),
+      fingerprint(unit),
+    ]),
   );
 }
 
@@ -187,6 +569,8 @@ async function collectLaw(source, options) {
   }
 
   const versions = [];
+  const legacyFingerprintVersions = [];
+  const semanticFingerprintVersions = [];
   const bodyCache = new Map();
   for (const row of rows) {
     let response = bodyCache.get(String(row.법령일련번호));
@@ -205,32 +589,75 @@ async function collectLaw(source, options) {
       throw new Error(`${source.exactName} 본문 구조를 확인할 수 없습니다.`);
     }
 
-    const stableBody = {
-      기본정보: pick(lawBody.기본정보, [
-        "법령명_한글",
-        "공포번호",
-        "제개정구분",
-        "법령ID",
-        "법종구분",
-        "시행일자",
-        "공포일자",
-      ]),
+    const articles = articleMap(lawBody);
+    const legacyHashes = legacyArticleHashes(lawBody);
+    const stableBasicInformation = pick(lawBody.기본정보, [
+      "법령명_한글",
+      "공포번호",
+      "제개정구분",
+      "법령ID",
+      "법종구분",
+      "시행일자",
+      "공포일자",
+    ]);
+    const legacyStableBody = {
+      기본정보: stableBasicInformation,
       개정문: lawBody.개정문,
       조문: lawBody.조문,
       부칙: lawBody.부칙,
       제개정이유: lawBody.제개정이유,
     };
+    const semanticStableBody = {
+      기본정보: stableBasicInformation,
+      개정문: flattenTextContent(lawBody.개정문, ["개정문내용"]),
+      조문: Object.fromEntries(
+        Object.entries(articles).map(([key, article]) => [key, article.hash]),
+      ),
+      부칙: normalizeAppendices(lawBody.부칙),
+      제개정이유: flattenTextContent(lawBody.제개정이유, ["제개정이유내용"]),
+    };
 
-    versions.push({
+    const knownEffectiveDates = rows
+      .filter((candidate) => candidate.법령일련번호 === row.법령일련번호)
+      .map((candidate) => candidate.시행일자);
+
+    const versionIdentity = {
       id: `${row.법령일련번호}:${row.시행일자 || "unknown"}`,
       state: row.현행연혁코드,
       effectiveDate: String(row.시행일자 || ""),
       promulgationDate: String(row.공포일자 || ""),
       promulgationNumber: String(row.공포번호 || ""),
       revisionType: String(row.제개정구분명 || ""),
-      documentHash: fingerprint(stableBody),
-      articles: articleMap(lawBody),
+    };
+    const documentHash = fingerprint(legacyStableBody);
+    const semanticDocumentHash = fingerprint(semanticStableBody);
+    const stageEffectiveDates = extractStageEffectiveDates(lawBody, {
+      promulgationDate: row.공포일자,
+      promulgationNumber: row.공포번호,
+      knownEffectiveDates,
     });
+    versions.push({
+      ...versionIdentity,
+      stageEffectiveDateAlgorithm: STAGE_EFFECTIVE_DATE_ALGORITHM,
+      stageEffectiveDates,
+      documentHash,
+      semanticDocumentHash,
+      articleHashAlgorithm: "legal-semantic-text-v1",
+      articles,
+    });
+    legacyFingerprintVersions.push({
+      ...versionIdentity,
+      documentHash,
+      articleHashes: legacyHashes,
+    });
+    semanticFingerprintVersions.push(semanticVersionFingerprintPayload({
+      versionIdentity,
+      documentHash: semanticDocumentHash,
+      articleHashes: Object.fromEntries(
+        Object.entries(articles).map(([key, value]) => [key, value.hash]),
+      ),
+      stageEffectiveDates,
+    }));
   }
 
   return {
@@ -238,14 +665,10 @@ async function collectLaw(source, options) {
     name: source.name,
     type: source.type,
     officialUrl: source.officialUrl,
-    fingerprint: fingerprint(
-      versions.map(({ articles, ...version }) => ({
-        ...version,
-        articleHashes: Object.fromEntries(
-          Object.entries(articles).map(([key, value]) => [key, value.hash]),
-        ),
-      })),
-    ),
+    fingerprint: fingerprint(legacyFingerprintVersions),
+    contentHashAlgorithm: "legal-semantic-text-v1",
+    stageEffectiveDateAlgorithm: STAGE_EFFECTIVE_DATE_ALGORITHM,
+    contentFingerprint: fingerprint(semanticFingerprintVersions),
     versions,
   };
 }
@@ -446,6 +869,14 @@ function describeSourceChange(previous, current) {
     const oldVersions = new Map((previous.versions || []).map((item) => [item.id, item]));
     const newVersions = new Map((current.versions || []).map((item) => [item.id, item]));
     const details = [];
+    if (
+      previous.stageEffectiveDateAlgorithm !==
+      current.stageEffectiveDateAlgorithm
+    ) {
+      details.push(
+        `단계 시행일 추출 기준 변경: ${previous.stageEffectiveDateAlgorithm || "이전 버전 미기록"} → ${current.stageEffectiveDateAlgorithm || "미상"}`,
+      );
+    }
 
     for (const [id, version] of newVersions) {
       if (!oldVersions.has(id)) {
@@ -455,6 +886,26 @@ function describeSourceChange(previous, current) {
         continue;
       }
       const oldVersion = oldVersions.get(id);
+      const oldStageDates = new Set(
+        (oldVersion.stageEffectiveDates || [])
+          .map((stage) => String(stage?.effectiveDate || ""))
+          .filter(Boolean),
+      );
+      const newStageDates = new Set(
+        (version.stageEffectiveDates || [])
+          .map((stage) => String(stage?.effectiveDate || ""))
+          .filter(Boolean),
+      );
+      for (const effectiveDate of newStageDates) {
+        if (!oldStageDates.has(effectiveDate)) {
+          details.push(`단계 시행일 추가: ${effectiveDate}`);
+        }
+      }
+      for (const effectiveDate of oldStageDates) {
+        if (!newStageDates.has(effectiveDate)) {
+          details.push(`단계 시행일 제외: ${effectiveDate}`);
+        }
+      }
       if (oldVersion.documentHash !== version.documentHash) {
         const articles = changedArticles(oldVersion, version);
         details.push(
@@ -499,7 +950,18 @@ export function compareSnapshots(previousSnapshot, currentSnapshot) {
   const ids = new Set([...Object.keys(previous), ...Object.keys(current)]);
 
   return [...ids]
-    .filter((id) => previous[id]?.fingerprint !== current[id]?.fingerprint)
+    .filter((id) => {
+      const oldSource = previous[id];
+      const newSource = current[id];
+      if (!oldSource || !newSource) return true;
+      const canUseSemanticFingerprint =
+        oldSource.contentHashAlgorithm === newSource.contentHashAlgorithm &&
+        oldSource.contentFingerprint &&
+        newSource.contentFingerprint;
+      return canUseSemanticFingerprint
+        ? oldSource.contentFingerprint !== newSource.contentFingerprint
+        : oldSource.fingerprint !== newSource.fingerprint;
+    })
     .map((id) => {
       const source = current[id] || previous[id];
       return {
@@ -641,6 +1103,8 @@ export async function runMonitor(options) {
         oc: options.oc || process.env.LAW_OPEN_API_OC?.trim() || "test",
         fetchImpl: options.fetchImpl,
         sleepImpl: options.sleepImpl,
+        fetchAttempts: options.fetchAttempts,
+        retryBaseDelayMs: options.retryBaseDelayMs,
       });
       console.log(`확인 완료: ${source.name}`);
     } catch (error) {

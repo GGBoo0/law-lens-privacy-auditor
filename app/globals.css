@@ -120,6 +120,69 @@ main {
   font-size: 11px;
 }
 
+.monitorBadge {
+  min-width: 230px;
+  padding: 8px 11px;
+  border: 1px solid rgba(17, 26, 45, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.46);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.monitorBadge:hover {
+  border-color: rgba(17, 26, 45, 0.28);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.monitorBadge > span:nth-of-type(2) {
+  min-width: 0;
+  display: grid;
+  line-height: 1.25;
+}
+
+.monitorBadge strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.monitorBadge small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #687286;
+  font-size: 10px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitorBadge > b {
+  margin-left: auto;
+  color: #687286;
+}
+
+.monitorBadge.healthy .liveDot {
+  background: #2f9365;
+  box-shadow: 0 0 0 5px rgba(47, 147, 101, 0.12);
+}
+
+.monitorBadge.warning .liveDot {
+  background: #c47a10;
+  box-shadow: 0 0 0 5px rgba(196, 122, 16, 0.13);
+}
+
+.monitorBadge.degraded .liveDot {
+  background: var(--coral);
+  box-shadow: 0 0 0 5px rgba(240, 106, 80, 0.14);
+}
+
+.monitorBadge.checking .liveDot {
+  background: #8c94a3;
+  box-shadow: 0 0 0 5px rgba(140, 148, 163, 0.12);
+}
+
 .liveDot {
   width: 8px;
   height: 8px;
@@ -204,6 +267,36 @@ main {
   font-size: 18px;
   line-height: 1.75;
   letter-spacing: -0.015em;
+}
+
+.betaNotice {
+  width: min(510px, 100%);
+  margin-top: 24px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid rgba(17, 26, 45, 0.14);
+  border-left: 4px solid var(--acid);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.betaNotice strong {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: white;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.betaNotice p {
+  margin: 0;
+  color: #596375;
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .proofRow {
@@ -1305,7 +1398,8 @@ main {
 
 .monitoringCard strong,
 .monitoringCard small,
-.monitoringCard em {
+.monitoringCard em,
+.monitoringCard .monitorHistory {
   display: block;
 }
 
@@ -1501,7 +1595,7 @@ footer {
   min-height: 130px;
   padding: 34px max(24px, calc((100vw - 1180px) / 2));
   display: grid;
-  grid-template-columns: 0.5fr 1.2fr auto auto;
+  grid-template-columns: 0.5fr 1.2fr 1.3fr;
   gap: 30px;
   align-items: center;
   background: #0c1425;
@@ -1524,12 +1618,213 @@ footer p {
   text-align: center;
 }
 
-footer > a {
+.footerLinks {
   justify-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 18px;
+}
+
+.footerLinks a {
   color: var(--acid);
   font-size: 11px;
   font-weight: 750;
   text-decoration: none;
+}
+
+.footerLinks a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 개인정보 안내와 이용조건은 앱과 같은 시각 언어를 유지하는 읽기 전용 문서입니다. */
+.legalPage {
+  min-height: 100vh;
+  overflow: visible;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(216, 255, 98, 0.22), transparent 26rem),
+    var(--paper);
+}
+
+.legalPage .topbar {
+  position: relative;
+}
+
+.legalPageNav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #596375;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.legalPageNav a {
+  text-decoration: none;
+}
+
+.legalPageNav a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--coral);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+.legalDocument {
+  width: min(850px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 78px 0 110px;
+}
+
+.legalDocumentHeader {
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.legalDocumentHeader .documentTag {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--acid);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.legalDocumentHeader h1 {
+  margin: 18px 0 12px;
+  font-size: clamp(38px, 5vw, 58px);
+  line-height: 1.15;
+  letter-spacing: -0.055em;
+}
+
+.legalDocumentHeader p {
+  margin: 0;
+  color: #596375;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.documentMeta {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  color: #6a7385;
+  font-size: 12px;
+}
+
+.documentNotice {
+  margin: 28px 0 0;
+  padding: 16px 18px;
+  border-left: 4px solid var(--amber);
+  background: rgba(242, 185, 75, 0.12);
+  color: #5e4a21;
+  font-size: 13px;
+}
+
+.legalDocument section {
+  padding: 34px 0;
+  border-bottom: 1px solid rgba(17, 26, 45, 0.14);
+}
+
+.legalDocument section h2 {
+  margin: 0 0 15px;
+  font-size: 22px;
+  letter-spacing: -0.035em;
+}
+
+.legalDocument section h3 {
+  margin: 22px 0 7px;
+  font-size: 15px;
+}
+
+.legalDocument section p,
+.legalDocument section li,
+.legalDocument section dd,
+.legalDocument section dt {
+  font-size: 14px;
+  line-height: 1.78;
+}
+
+.legalDocument section p {
+  margin: 0;
+  color: #505a6d;
+}
+
+.legalDocument section p + p {
+  margin-top: 12px;
+}
+
+.legalDocument ul,
+.legalDocument ol {
+  margin: 12px 0 0;
+  padding-left: 22px;
+  color: #505a6d;
+}
+
+.legalDocument li + li {
+  margin-top: 7px;
+}
+
+.legalDocument a {
+  color: #3157bd;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.dataGrid {
+  margin: 18px 0 0;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  border-top: 1px solid rgba(17, 26, 45, 0.2);
+}
+
+.dataGrid dt,
+.dataGrid dd {
+  margin: 0;
+  padding: 14px;
+  border-bottom: 1px solid rgba(17, 26, 45, 0.13);
+}
+
+.dataGrid dt {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.monitoringCard .monitorHistory {
+  margin-top: 5px;
+  color: #66756f;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.dataGrid dd {
+  color: #505a6d;
+}
+
+.documentActions {
+  margin-top: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.documentActions a {
+  padding: 11px 15px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.documentActions a:first-child {
+  background: var(--ink);
+  color: white;
 }
 
 /* 핵심 정보는 12px 미만으로 내려가지 않도록 보정합니다. */
@@ -1570,7 +1865,7 @@ footer > a {
 .methodCards span,
 .methodCards p,
 footer p,
-footer > a {
+.footerLinks a {
   font-size: 12px;
 }
 
@@ -1618,8 +1913,12 @@ footer > a {
   }
 
   footer .brand,
-  footer > a {
+  .footerLinks {
     justify-self: center;
+  }
+
+  .footerLinks {
+    justify-content: center;
   }
 }
 
@@ -1636,6 +1935,14 @@ footer > a {
 
   .topMeta {
     font-size: 12px;
+  }
+
+  .monitorBadge {
+    min-width: 0;
+  }
+
+  .monitorBadge small {
+    display: none;
   }
 
   .hero {
@@ -1668,6 +1975,24 @@ footer > a {
 
   .analyzerCard {
     padding: 22px 18px;
+  }
+
+  .legalDocument {
+    width: min(100% - 28px, 850px);
+    padding: 52px 0 80px;
+  }
+
+  .dataGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dataGrid dt {
+    padding-bottom: 3px;
+    border-bottom: 0;
+  }
+
+  .dataGrid dd {
+    padding-top: 3px;
   }
 
   .coverageStrip {
@@ -1761,9 +2086,34 @@ footer > a {
 
 @media (max-width: 430px) {
   .topMeta {
-    max-width: 150px;
+    max-width: 190px;
     text-align: right;
     line-height: 1.35;
+  }
+
+  .monitorBadge {
+    padding: 7px 9px;
+  }
+
+  .monitorBadge strong {
+    font-size: 11px;
+  }
+
+  .monitorBadge > b {
+    display: none;
+  }
+
+  .betaNotice {
+    grid-template-columns: 1fr;
+  }
+
+  .betaNotice strong {
+    justify-self: start;
+  }
+
+  .legalPageNav {
+    gap: 9px;
+    font-size: 11px;
   }
 
   .hero h1 {
