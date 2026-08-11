@@ -14,7 +14,7 @@
     "legal:init": "node scripts/check-legal-updates.mjs --initialize",
     "test:live": "npm run build && node --test tests/live-url.test.mjs",
     "qa:50": "npm run build && node tests/qa-50.mjs",
-    "qa:50:gate": "npm run build && node tests/qa-50.mjs --min-verified=35 --max-wrong-source=0",
+    "qa:50:gate": "npm run build && node tests/qa-50.mjs --min-verified=40 --max-wrong-source=0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern node_modules.partial-backup",
     "db:generate": "drizzle-kit generate",
     "db:local": "wrangler d1 migrations apply site-creator-d1 --local --config wrangler.jsonc"

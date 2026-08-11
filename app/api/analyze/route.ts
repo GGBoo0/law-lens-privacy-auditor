@@ -345,7 +345,13 @@ function extractTitle(html: string) {
   return stripHtml(h1 || title || "").slice(0, 140);
 }
 
-type PolicyCandidate = { url: URL; text: string; score: number };
+type PolicyCandidateSource = "anchor" | "frame" | "embedded" | "redirect";
+type PolicyCandidate = {
+  url: URL;
+  text: string;
+  score: number;
+  source?: PolicyCandidateSource;
+};
 
 function decodeEmbeddedUrl(value: string) {
   return decodeEntities(value)
@@ -360,10 +366,15 @@ function scorePolicyCandidate(
   url: URL,
   text: string,
   baseUrl: URL,
-  source: "anchor" | "frame" | "embedded",
+  source: PolicyCandidateSource,
 ) {
   const haystack = `${text} ${url.pathname} ${url.search}`.toLowerCase();
-  let score = source === "frame" ? 4 : source === "embedded" ? 1 : 0;
+  let score =
+    source === "frame" || source === "redirect"
+      ? 4
+      : source === "embedded"
+        ? 1
+        : 0;
   if (/개인정보\s*처리\s*방침/.test(haystack)) score += 18;
   if (/개인정보\s*보호\s*정책/.test(haystack)) score += 15;
   if (/privacy[\s_-]*policy/.test(haystack)) score += 15;
@@ -386,7 +397,7 @@ function extractLinks(html: string, baseUrl: URL) {
   const addCandidate = (
     rawUrl: string,
     text: string,
-    source: "anchor" | "frame" | "embedded",
+    source: PolicyCandidateSource,
   ) => {
     if (!rawUrl || /^(?:#|javascript:|mailto:|tel:|data:)/i.test(rawUrl)) return;
     try {
@@ -397,9 +408,25 @@ function extractLinks(html: string, baseUrl: URL) {
       if (score < 6) return;
       const key = url.toString();
       const existing = links.get(key);
-      if (!existing || existing.score < score) {
-        links.set(key, { url, text, score });
+      if (!existing) {
+        links.set(key, { url, text, score, source });
+        return;
       }
+      const sourcePriority: Record<PolicyCandidateSource, number> = {
+        frame: 4,
+        redirect: 3,
+        anchor: 2,
+        embedded: 1,
+      };
+      links.set(key, {
+        url,
+        text: score > existing.score ? text : existing.text,
+        score: Math.max(score, existing.score),
+        source:
+          sourcePriority[source] > sourcePriority[existing.source || "embedded"]
+            ? source
+            : existing.source,
+      });
     } catch {
       // Ignore malformed page-authored links.
     }
@@ -462,7 +489,184 @@ function extractLinks(html: string, baseUrl: URL) {
     }
   }
 
+  for (const rawUrl of extractClientRedirectTargets(html)) {
+    const redirectContext = `${rawUrl} ${baseUrl.pathname} ${baseUrl.search} ${extractTitle(html)}`;
+    if (!/privacy|policy|개인정보|처리방침/i.test(redirectContext)) continue;
+    addCandidate(rawUrl, "client-side privacy redirect", "redirect");
+  }
+
   return [...links.values()].sort((a, b) => b.score - a.score);
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function decodeJavascriptString(value: string) {
+  return decodeEmbeddedUrl(value)
+    .replace(/\\u([\da-f]{4})/gi, (_, code: string) =>
+      String.fromCodePoint(Number.parseInt(code, 16)),
+    )
+    .replace(/\\x([\da-f]{2})/gi, (_, code: string) =>
+      String.fromCodePoint(Number.parseInt(code, 16)),
+    )
+    .replace(/\\r\\n|\\n|\\r|\\t/g, " ")
+    .replace(/\\(["'\\])/g, "$1");
+}
+
+function evaluateRedirectConcatenation(
+  expression: string,
+  variables: Map<string, string>,
+) {
+  const parts = expression.split("+").map((part) => part.trim());
+  if (parts.length === 0 || parts.length > 12) return null;
+
+  let value = "";
+  for (const part of parts) {
+    const literal = /^(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')$/.exec(
+      part,
+    );
+    const resolved = literal
+      ? decodeJavascriptString(literal[1] ?? literal[2] ?? "")
+      : variables.get(part);
+    if (resolved === undefined) return null;
+    value += resolved;
+    if (value.length > 2_048) return null;
+  }
+  return value;
+}
+
+function extractClientRedirectTargets(html: string) {
+  const targets = new Set<string>();
+  const add = (value: string | undefined) => {
+    if (value && value.length <= 2_048) targets.add(decodeJavascriptString(value));
+  };
+
+  let inspected = 0;
+  for (const match of html.matchAll(/<meta\b([^>]*)>/gi)) {
+    if (++inspected > 120) break;
+    const attributes = match[1];
+    if (!/\bhttp-equiv\s*=\s*["']?refresh\b/i.test(attributes)) continue;
+    const content =
+      /\bcontent\s*=\s*"([^"]+)"/i.exec(attributes)?.[1] ||
+      /\bcontent\s*=\s*'([^']+)'/i.exec(attributes)?.[1];
+    add(/(?:^|;)\s*url\s*=\s*["']?([^"';]+)["']?/i.exec(content || "")?.[1]);
+  }
+
+  inspected = 0;
+  const staticRedirectPattern =
+    /(?:window\.)?location\.(?:replace|assign)\(\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')\s*\)|(?:window\.)?location(?:\.href)?\s*=\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')/gi;
+  for (const match of html.matchAll(staticRedirectPattern)) {
+    if (++inspected > 40) break;
+    add(match[1] || match[2] || match[3] || match[4]);
+  }
+
+  inspected = 0;
+  const functionRedirectPattern =
+    /(?:window\.)?location\.(?:replace|assign)\(\s*([A-Za-z_$][\w$]*)\(\s*([A-Za-z_$][\w$]*)\s*\)\s*\)/g;
+  for (const call of html.matchAll(functionRedirectPattern)) {
+    if (++inspected > 12) break;
+    const functionName = call[1];
+    const argumentName = call[2];
+    const defaultPattern = new RegExp(
+      `(?:const|let|var)\\s+${escapeRegExp(argumentName)}\\s*=\\s*(?:[^;]{0,500}?\\?[^:;]{0,240}:\\s*)?["']([^"']{1,48})["']\\s*;`,
+    );
+    const defaultValue = defaultPattern.exec(html)?.[1];
+    if (!defaultValue) continue;
+
+    const functionPattern = new RegExp(
+      `function\\s+${escapeRegExp(functionName)}\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)\\s*\\{([\\s\\S]{0,1600}?)\\}`,
+    );
+    const functionMatch = functionPattern.exec(html);
+    if (!functionMatch) continue;
+
+    const variables = new Map<string, string>([
+      [functionMatch[1], decodeJavascriptString(defaultValue)],
+    ]);
+    for (const constant of functionMatch[2].matchAll(
+      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')\s*;/g,
+    )) {
+      if (variables.size >= 8) break;
+      variables.set(
+        constant[1],
+        decodeJavascriptString(constant[2] ?? constant[3] ?? ""),
+      );
+    }
+    const returnExpression = /\breturn\s+([^;]{1,800});/.exec(
+      functionMatch[2],
+    )?.[1];
+    if (!returnExpression) continue;
+    add(evaluateRedirectConcatenation(returnExpression, variables) || undefined);
+  }
+
+  return [...targets];
+}
+
+function extractHydratedPolicyText(html: string) {
+  let selectedPolicy = "";
+  const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let scriptMatch: RegExpExecArray | null;
+  let inspectedScripts = 0;
+  let inspectedBytes = 0;
+
+  while (
+    (scriptMatch = scriptPattern.exec(html)) &&
+    inspectedScripts < 80 &&
+    inspectedBytes < MAX_METADATA_BYTES &&
+    !selectedPolicy
+  ) {
+    inspectedScripts++;
+    const attributes = scriptMatch[1];
+    const script = scriptMatch[2];
+    inspectedBytes += script.length;
+    if (
+      !/__NUXT__|__NEXT_DATA__|self\.__next_f|application\/json/i.test(
+        `${attributes} ${script.slice(0, 2_000)}`,
+      ) ||
+      !/privacy|policy|개인정보|\\uac1c\\uc778\\uc815\\ubcf4/i.test(script)
+    ) {
+      continue;
+    }
+
+    const stringPattern = /"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'/g;
+    let stringMatch: RegExpExecArray | null;
+    let inspectedStrings = 0;
+    while (
+      (stringMatch = stringPattern.exec(script)) &&
+      inspectedStrings < 4_000 &&
+      !selectedPolicy
+    ) {
+      inspectedStrings++;
+      const decoded = decodeJavascriptString(
+        stringMatch[1] ?? stringMatch[2] ?? "",
+      );
+      if (
+        decoded.length < 500 ||
+        !/<(?:article|div|h[1-6]|p|table|ol|ul)\b/i.test(decoded) ||
+        !/개인정보\s*처리\s*방침|개인정보\s*보호\s*정책|privacy\s*policy/i.test(
+          decoded,
+        )
+      ) {
+        continue;
+      }
+      const text = stripHtml(decoded);
+      if (text.length >= 500) {
+        // Hydration payloads can retain old or unrelated service policies.
+        // Select one complete document in source order instead of blending
+        // multiple legal texts into a synthetic policy.
+        selectedPolicy = text.slice(0, MAX_POLICY_CHARS);
+      }
+    }
+  }
+
+  return selectedPolicy;
+}
+
+function extractPolicyText(html: string) {
+  const visibleText = stripHtml(html);
+  const hydratedText = extractHydratedPolicyText(html);
+  if (!hydratedText) return visibleText;
+  return `${visibleText}\n${hydratedText}`.trim().slice(0, MAX_POLICY_CHARS);
 }
 
 function looksLikePolicy(text: string, url: URL) {
@@ -496,6 +700,18 @@ function looksLikePolicy(text: string, url: URL) {
     contentSignals >= 2 &&
     (urlSignal || Boolean(policyHeading && policyHeading.index < 3200))
   );
+}
+
+function looksLikePolicyShell(html: string, url: URL) {
+  const title = extractTitle(html);
+  const titleSignal =
+    /개인정보\s*처리\s*방침|개인정보\s*보호\s*정책|privacy\s*policy/i.test(
+      title,
+    );
+  const urlSignal = /privacy|개인정보|처리방침/i.test(
+    `${url.pathname}${url.search}`,
+  );
+  return titleSignal || urlSignal;
 }
 
 function knownPolicyHints(inputUrl: URL) {
@@ -824,6 +1040,66 @@ async function discoverSoopPolicy(inputUrl: URL) {
   };
 }
 
+async function discoverYeogiPolicy(inputUrl: URL) {
+  if (
+    !hostnameMatches(inputUrl, "yeogi.com") &&
+    !hostnameMatches(inputUrl, "goodchoice.kr")
+  ) {
+    return null;
+  }
+
+  const landingUrl = new URL("https://www.yeogi.com/policy/terms");
+  const landing = await fetchHtml(landingUrl);
+  const scriptPattern = /<script\b[^>]*\bsrc\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>/gi;
+  let scriptMatch: RegExpExecArray | null;
+  let policyScriptUrl: URL | null = null;
+  let inspected = 0;
+  while ((scriptMatch = scriptPattern.exec(landing.html)) && inspected < 80) {
+    inspected++;
+    const rawUrl = scriptMatch[1] || scriptMatch[2] || scriptMatch[3];
+    if (!rawUrl || !/\/pages\/policy\/terms-[\w.-]+\.js(?:\?|$)/i.test(rawUrl)) {
+      continue;
+    }
+    const candidate = normalizeAndAssertPublicUrl(new URL(rawUrl, landing.finalUrl));
+    if (!hostnameMatches(candidate, "yeogi.com")) continue;
+    policyScriptUrl = candidate;
+    break;
+  }
+  if (!policyScriptUrl) return null;
+
+  const script = await fetchMetadataText(policyScriptUrl);
+  const versions = [
+    ...script.text.matchAll(/["'](privacy_policy-\d{4}-\d{2}-\d{2})["']/g),
+  ].map((match) => match[1]);
+  const todayInKorea = new Date(Date.now() + 9 * 60 * 60 * 1_000)
+    .toISOString()
+    .slice(0, 10);
+  const currentVersion = [...new Set(versions)]
+    .filter((version) => version.slice("privacy_policy-".length) <= todayInKorea)
+    .sort((left, right) => right.localeCompare(left))[0];
+  if (!currentVersion) return null;
+
+  const contentUrl = new URL(
+    `/term_project/contents/privacy_policy/${currentVersion}.html`,
+    landing.finalUrl,
+  );
+  const fetched = await fetchHtml(contentUrl);
+  const text = extractPolicyText(fetched.html);
+  if (!looksLikePolicy(text, fetched.finalUrl)) return null;
+  return {
+    html: fetched.html,
+    text,
+    url: fetched.finalUrl,
+    title: "여기어때 개인정보 처리방침",
+    path: uniquePath([
+      inputUrl.toString(),
+      landing.finalUrl.toString(),
+      script.finalUrl.toString(),
+      fetched.finalUrl.toString(),
+    ]),
+  };
+}
+
 async function discoverKnownDynamicPolicy(inputUrl: URL) {
   const adapter = hostnameMatches(inputUrl, "toss.im")
     ? discoverTossPolicy
@@ -845,7 +1121,10 @@ async function discoverKnownDynamicPolicy(inputUrl: URL) {
                   : hostnameMatches(inputUrl, "sooplive.co.kr") ||
                       hostnameMatches(inputUrl, "sooplive.com")
                     ? discoverSoopPolicy
-                    : null;
+                    : hostnameMatches(inputUrl, "yeogi.com") ||
+                        hostnameMatches(inputUrl, "goodchoice.kr")
+                      ? discoverYeogiPolicy
+                      : null;
   if (!adapter) return null;
   try {
     return await adapter(inputUrl);
@@ -950,7 +1229,14 @@ async function discoverPolicy(inputUrl: URL) {
     const item = queue.shift();
     if (!item) break;
 
-    const normalized = normalizeAndAssertPublicUrl(item.url);
+    let normalized: URL;
+    try {
+      normalized = normalizeAndAssertPublicUrl(item.url);
+    } catch {
+      // Page-authored candidates are untrusted. Ignore private, malformed, or
+      // non-standard destinations without aborting the remaining discovery.
+      continue;
+    }
     const key = normalized.toString();
     if (visited.has(key)) continue;
     visited.add(key);
@@ -960,7 +1246,7 @@ async function discoverPolicy(inputUrl: URL) {
       const fetched = await fetchHtml(normalized);
       const finalKey = fetched.finalUrl.toString();
       visited.add(finalKey);
-      const text = stripHtml(fetched.html);
+      const text = extractPolicyText(fetched.html);
       const path = [...item.path, finalKey];
 
       if (
@@ -1002,10 +1288,13 @@ async function discoverPolicy(inputUrl: URL) {
       for (const candidate of candidates) {
         if (visited.has(candidate.url.toString())) continue;
         if (!isPolicyContextMatch(inputUrl, candidate.url, false)) continue;
+        const policyContinuation =
+          looksLikePolicyShell(fetched.html, fetched.finalUrl) &&
+          (candidate.source === "frame" || candidate.source === "redirect");
         queue.push({
           url: candidate.url,
           depth: item.depth + 1,
-          score: candidate.score,
+          score: candidate.score + (policyContinuation ? 40 : 0),
           path,
         });
       }

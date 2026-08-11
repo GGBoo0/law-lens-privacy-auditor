@@ -634,6 +634,381 @@ test("keeps table headers attached to values and rejects unrelated public-suffix
   }
 });
 
+test("follows a bounded locale-aware client redirect to a same-organization policy", async () => {
+  const originalFetch = globalThis.fetch;
+  const fetchedUrls = [];
+  const policyBody = `
+    <h1>개인정보처리방침</h1>
+    <p>주식회사 예시는 회원관리와 서비스 제공을 위해 이름과 이메일을 처리합니다.</p>
+    <p>개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다.</p>
+    <p>개인정보의 제3자 제공과 처리 위탁에 관한 사항을 안내합니다.</p>
+    <p>파기 절차와 방법에 따라 전자파일은 복구할 수 없도록 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@acme.co.kr이며 안전성 확보조치로 암호화를 시행합니다.</p>
+    <p>${"개인정보를 투명하고 안전하게 처리하기 위한 상세 안내입니다. ".repeat(20)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    fetchedUrls.push(url.href);
+    if (url.hostname === "shop.acme.co.kr" && url.pathname === "/") {
+      return new Response('<a href="/privacy.html">개인정보처리방침</a>', {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.hostname === "shop.acme.co.kr" && url.pathname === "/privacy.html") {
+      return new Response(
+        `<title>개인정보처리방침</title><script>
+          function getPolicyUrlByLanguage(language) {
+            const bucketUrl = 'https://cdn.acme.co.kr';
+            return bucketUrl + '/terms/user/' + language + '/privacy.html';
+          }
+          const language = /locale/.test(document.cookie) ? RegExp.$1 : 'ko';
+          window.location.replace(getPolicyUrlByLanguage(language));
+        </script>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    if (
+      url.hostname === "cdn.acme.co.kr" &&
+      url.pathname === "/terms/user/ko/privacy.html"
+    ) {
+      return new Response(policyBody, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://shop.acme.co.kr" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(
+      response.status,
+      200,
+      JSON.stringify({ result, fetchedUrls }),
+    );
+    assert.equal(
+      result.policyUrl,
+      "https://cdn.acme.co.kr/terms/user/ko/privacy.html",
+    );
+    assert.ok(
+      fetchedUrls.includes("https://cdn.acme.co.kr/terms/user/ko/privacy.html"),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("ignores a page-authored non-standard-port candidate and continues discovery", async () => {
+  const originalFetch = globalThis.fetch;
+  const fetchedUrls = [];
+  const policyBody = `
+    <h1>개인정보처리방침</h1>
+    <p>주식회사 예시는 회원관리와 서비스 제공을 위해 이름과 이메일을 처리합니다.</p>
+    <p>개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다.</p>
+    <p>개인정보 제3자 제공과 처리 위탁에 관한 사항을 안내합니다.</p>
+    <p>파기 절차와 방법에 따라 전자파일을 영구 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@acme.co.kr이며 안전성 확보조치로 암호화를 시행합니다.</p>
+    <p>${"개인정보를 투명하고 안전하게 처리하기 위한 상세 안내입니다. ".repeat(20)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    fetchedUrls.push(url.href);
+    if (url.hostname === "shop.acme.co.kr" && url.pathname === "/") {
+      return new Response(
+        `<a href="https://shop.acme.co.kr:8080/privacy">개인정보처리방침</a>
+         <a href="/privacy">개인정보처리방침</a>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    if (
+      url.hostname === "shop.acme.co.kr" &&
+      url.port === "" &&
+      url.pathname === "/privacy"
+    ) {
+      return new Response(policyBody, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://shop.acme.co.kr" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(response.status, 200, JSON.stringify({ result, fetchedUrls }));
+    assert.equal(result.policyUrl, "https://shop.acme.co.kr/privacy");
+    assert.ok(!fetchedUrls.some((url) => new URL(url).port === "8080"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("resolves the active Yeogi policy document without executing its app bundle", async () => {
+  const originalFetch = globalThis.fetch;
+  const fetchedUrls = [];
+  const policyBody = `
+    <h1>여기어때 개인정보 처리방침</h1>
+    <p>회사는 회원관리와 예약 서비스 제공을 위해 이름과 이메일을 처리합니다.</p>
+    <p>처리하는 개인정보 항목과 개인정보 처리 및 보유 기간을 안내합니다.</p>
+    <p>개인정보 제3자 제공과 처리 위탁에 관한 사항을 안내합니다.</p>
+    <p>파기 절차와 방법에 따라 전자파일을 영구 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@yeogi.com이며 안전성 확보조치로 암호화를 시행합니다.</p>
+    <p>${"개인정보를 투명하고 안전하게 처리하기 위한 상세 안내입니다. ".repeat(20)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    fetchedUrls.push(url.href);
+    if (url.href === "https://www.yeogi.com/policy/terms") {
+      return new Response(
+        '<script src="https://static.yeogi.com/_next/static/chunks/pages/policy/terms-build.js"></script>',
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    if (
+      url.href ===
+      "https://static.yeogi.com/_next/static/chunks/pages/policy/terms-build.js"
+    ) {
+      return new Response(
+        'items:[{label:"예정",value:"privacy_policy-2099-01-01"},{label:"2026.04.01",value:"privacy_policy-2026-04-01"},{label:"2026.06.23",value:"privacy_policy-2026-06-23"}]',
+        {
+          status: 200,
+          headers: { "content-type": "application/javascript; charset=utf-8" },
+        },
+      );
+    }
+    if (
+      url.href ===
+      "https://www.yeogi.com/term_project/contents/privacy_policy/privacy_policy-2026-06-23.html"
+    ) {
+      return new Response(policyBody, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://www.goodchoice.kr" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(response.status, 200, JSON.stringify({ result, fetchedUrls }));
+    assert.equal(
+      result.policyUrl,
+      "https://www.yeogi.com/term_project/contents/privacy_policy/privacy_policy-2026-06-23.html",
+    );
+    assert.ok(
+      !fetchedUrls.includes(
+        "https://www.yeogi.com/term_project/contents/privacy_policy/privacy_policy-2026-04-01.html",
+      ),
+    );
+    assert.ok(
+      !fetchedUrls.includes(
+        "https://www.yeogi.com/term_project/contents/privacy_policy/privacy_policy-2099-01-01.html",
+      ),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("extracts policy markup from bounded framework hydration data", async () => {
+  const originalFetch = globalThis.fetch;
+  const policyMarkup = `
+    <h1>개인정보처리방침</h1>
+    <p>주식회사 예시는 회원관리와 서비스 제공을 위해 이름과 이메일을 처리합니다.</p>
+    <p>처리하는 개인정보 항목과 개인정보 처리 및 보유 기간을 안내합니다.</p>
+    <p>개인정보의 제3자 제공과 개인정보 처리 위탁에 관한 사항을 안내합니다.</p>
+    <p>개인정보 파기 절차와 방법에 따라 전자파일을 영구 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@acme.co.kr이며 안전성 확보조치로 암호화를 시행합니다.</p>
+    <p>${"개인정보를 안전하고 투명하게 처리하기 위한 상세 안내입니다. ".repeat(20)}</p>
+  `;
+  const hiddenHistoricalPolicy = `
+    <h1>개인정보처리방침 이전 버전</h1>
+    <p>${"이전 버전 개인정보 처리방침은 분석 대상과 섞이면 안 됩니다. ".repeat(160)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    if (url.hostname === "privacy.acme.co.kr" && url.pathname === "/privacy") {
+      return new Response(
+        `<title>개인정보처리방침</title><div id="__nuxt"></div>
+         <script>window.__NUXT__={data:[{bindData:${JSON.stringify(policyMarkup)}},{history:${JSON.stringify(hiddenHistoricalPolicy)}}]}</script>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://privacy.acme.co.kr/privacy" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(response.status, 200, JSON.stringify(result));
+    assert.equal(result.policyUrl, "https://privacy.acme.co.kr/privacy");
+    assert.ok(result.textLength > 500);
+    assert.ok(
+      result.textLength < hiddenHistoricalPolicy.length,
+      "현재 방침과 숨은 이전 버전을 하나의 문서로 합치지 않아야 합니다.",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("does not trust an unregistered external iframe from a policy-looking shell", async () => {
+  const originalFetch = globalThis.fetch;
+  const fetchedUrls = [];
+  const policyBody = `
+    <h1>개인정보처리방침</h1>
+    <p>주식회사 뮤직은 회원관리와 음악 서비스 제공을 위해 이름과 이메일을 처리합니다.</p>
+    <p>처리하는 개인정보 항목과 개인정보 처리 및 보유 기간을 안내합니다.</p>
+    <p>개인정보의 제3자 제공과 개인정보 처리 위탁에 관한 사항을 안내합니다.</p>
+    <p>개인정보 파기 절차 및 방법에 따라 전자파일은 영구 삭제합니다.</p>
+    <p>정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다.</p>
+    <p>개인정보 보호책임자는 privacy@music.co.kr이며 안전성 확보조치로 접근권한을 관리합니다.</p>
+    <p>${"개인정보 처리의 투명성을 위한 상세 안내입니다. ".repeat(20)}</p>
+  `;
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(
+      input instanceof URL
+        ? input.href
+        : typeof input === "string"
+          ? input
+          : input.url,
+    );
+    fetchedUrls.push(url.href);
+    if (url.hostname === "music.acme.co.kr" && url.pathname === "/") {
+      return new Response(
+        '<a href="/terms/privacy.html">개인정보처리방침</a>',
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    if (
+      url.hostname === "music.acme.co.kr" &&
+      url.pathname === "/terms/privacy.html"
+    ) {
+      return new Response(
+        `<title>개인정보처리방침 | ACME Music</title>
+         <a href="https://evil-vendor.co.kr/privacy-policy">개인정보처리방침</a>
+         <iframe src="https://privacy.content-vendor.co.kr/policy?service=music"></iframe>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      );
+    }
+    if (url.hostname === "privacy.content-vendor.co.kr") {
+      return new Response(policyBody, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    if (url.hostname === "evil-vendor.co.kr") {
+      return new Response(policyBody.replaceAll("주식회사 뮤직", "관련 없는 회사"), {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await fetchWorker(
+      new Request("http://localhost/api/analyze", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: "https://music.acme.co.kr" }),
+      }),
+    );
+    const result = await response.json();
+    assert.equal(response.status, 422, JSON.stringify({ result, fetchedUrls }));
+    assert.equal(result.code, "policy_not_found");
+    assert.ok(
+      !fetchedUrls.some((url) => new URL(url).hostname === "evil-vendor.co.kr"),
+    );
+    assert.ok(
+      !fetchedUrls.some(
+        (url) => new URL(url).hostname === "privacy.content-vendor.co.kr",
+      ),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test(
   "terminates safely on a large unfinished table without overlapping rescans",
   { timeout: 2_000 },
