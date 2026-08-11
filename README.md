@@ -22,6 +22,7 @@
 
 ## 주요 기능
 
+- 모바일·태블릿·데스크톱에 맞춘 반응형 분석 대시보드와 자체 호스팅 Pretendard 가변 서체
 - 회사 홈페이지 또는 처리방침 URL에서 링크·포함 문서·공통 경로·사이트맵 탐색
 - 공식 출처 레지스트리와 현대차·기아·카카오뱅크·TMAP·Wavve·TVING·SOOP 등의 공개 콘텐츠 데이터 지원
 - 타사 채용·제휴 문서를 방침으로 오인하지 않도록 입력 회사와 후보 출처의 도메인·문맥 검증
@@ -142,6 +143,7 @@ URL 입력을 받는 크롤링 서비스의 SSRF와 프롬프트 인젝션 위�
 | 영역 | 기술 |
 | --- | --- |
 | 프론트엔드 | Next.js 16, React 19, TypeScript |
+| UI·타이포그래피 | 반응형 CSS, Pretendard Variable 자체 호스팅 |
 | 빌드·런타임 | Vinext, Vite, Cloudflare Workers |
 | 분석 | TypeScript 규칙 엔진, 정규표현식, 휴리스틱 |
 | 테스트 | Node.js Test Runner, 서버 렌더링·API 통합 테스트 |

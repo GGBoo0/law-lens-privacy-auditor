@@ -625,6 +625,9 @@ export default function Home() {
 
   return (
     <main>
+      <a className="skipLink" href="#analyzer">
+        분석 입력으로 건너뛰기
+      </a>
       <header className="topbar">
         <a className="brand" href="#top" aria-label="법령렌즈 처음으로">
           <span className="brandMark" aria-hidden="true">
@@ -653,7 +656,7 @@ export default function Home() {
 
       <section className="hero" id="top">
         <div className="heroCopy">
-          <div className="eyebrow">PRIVACY POLICY RISK SCANNER</div>
+          <div className="eyebrow">KOREAN PRIVACY COMPLIANCE · 2026</div>
           <h1>
             개인정보처리방침,
             <br />
@@ -687,7 +690,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="analyzerCard">
+        <div className="analyzerCard" id="analyzer" tabIndex={-1}>
           <div className="cardHeader">
             <span className="stepPill">01</span>
             <div>
@@ -774,37 +777,46 @@ export default function Home() {
               </div>
             )}
 
-            <fieldset className="contextPicker">
-              <legend>서비스 맥락 보정 <small>선택사항</small></legend>
-              <p>
-                알고 있는 사실을 표시하면 방침에 해당 내용이 빠졌는지 함께
-                확인합니다. 본문 신호가 명확하면 ‘비해당’ 선택으로 숨기지 않습니다.
-              </p>
-              <div>
-                {contextOptions.map((option) => (
-                  <label key={option.key}>
-                    <span>
-                      <strong>{option.label}</strong>
-                      <small>{option.help}</small>
-                    </span>
-                    <select
-                      value={contextOverrides[option.key]}
-                      onChange={(event) =>
-                        setContextOverrides((current) => ({
-                          ...current,
-                          [option.key]: event.target.value as ContextChoice,
-                        }))
-                      }
-                      aria-label={`${option.label} 적용 여부`}
-                    >
-                      <option value="auto">문서 자동 판단</option>
-                      <option value="yes">해당함</option>
-                      <option value="no">해당 없음</option>
-                    </select>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
+            <details className="contextDetails">
+              <summary>
+                <span>
+                  <strong>정확도를 높이는 서비스 맥락</strong>
+                  <small>알고 있는 사실이 있을 때만 선택하세요.</small>
+                </span>
+                <em>선택사항 · 9개</em>
+              </summary>
+              <fieldset className="contextPicker">
+                <legend>서비스 맥락 보정</legend>
+                <p>
+                  알고 있는 사실을 표시하면 방침에 해당 내용이 빠졌는지 함께
+                  확인합니다. 본문 신호가 명확하면 ‘비해당’ 선택으로 숨기지 않습니다.
+                </p>
+                <div>
+                  {contextOptions.map((option) => (
+                    <label key={option.key}>
+                      <span>
+                        <strong>{option.label}</strong>
+                        <small>{option.help}</small>
+                      </span>
+                      <select
+                        value={contextOverrides[option.key]}
+                        onChange={(event) =>
+                          setContextOverrides((current) => ({
+                            ...current,
+                            [option.key]: event.target.value as ContextChoice,
+                          }))
+                        }
+                        aria-label={`${option.label} 적용 여부`}
+                      >
+                        <option value="auto">문서 자동 판단</option>
+                        <option value="yes">해당함</option>
+                        <option value="no">해당 없음</option>
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </details>
 
             {error && (
               <div className="errorBox" role="alert">
@@ -850,16 +862,22 @@ export default function Home() {
             </p>
           </form>
 
-          <div className="privacyNote">
-            <span aria-hidden="true">●</span>
-            유료 브라우저나 외부 AI API로 전송하지 않습니다. 공식 사이트의 공개
-            문서와 공개 데이터만 읽으며 입력 내용은 요청 중 규칙 분석에만 사용하고
-            앱 데이터베이스에 저장하지 않습니다. URL은 IP 리터럴·내부 호스트·이동
-            주소를 검사하고 공개 인터넷 경로만 사용합니다. 남용 방지를 위해 원본
-            네트워크 주소 대신 비밀키 기반 HMAC-SHA-256으로 매일 달라지는
-            IPv4 또는 IPv6 /64 가명키, 1분 요청 횟수와 만료 시각을 저장합니다. 가명키를 익명정보라고
-            단정하지 않으며 만료 기록은 다음 분석 요청 때 정리합니다.
-          </div>
+          <details className="privacyNote">
+            <summary>
+              <span aria-hidden="true">●</span>
+              입력 데이터와 보안 처리 방식
+            </summary>
+            <p>
+              유료 브라우저나 외부 AI API로 전송하지 않습니다. 공식 사이트의 공개
+              문서와 공개 데이터만 읽으며 입력 내용은 요청 중 규칙 분석에만 사용하고
+              앱 데이터베이스에 저장하지 않습니다. URL은 IP 리터럴·내부 호스트·이동
+              주소를 검사하고 공개 인터넷 경로만 사용합니다. 남용 방지를 위해 원본
+              네트워크 주소 대신 비밀키 기반 HMAC-SHA-256으로 매일 달라지는
+              IPv4 또는 IPv6 /64 가명키, 1분 요청 횟수와 만료 시각을 저장합니다.
+              가명키를 익명정보라고 단정하지 않으며 만료 기록은 다음 분석 요청 때
+              정리합니다.
+            </p>
+          </details>
         </div>
       </section>
 
@@ -1038,7 +1056,7 @@ export default function Home() {
                     <p>누락 가능성·불명확성·사실 확인 순서로 정렬했습니다.</p>
                   </div>
                 </div>
-                <div className="filterRow" aria-label="결과 필터">
+                <div className="filterRow" role="group" aria-label="결과 필터">
                   {(
                     [
                       ["all", "전체"],

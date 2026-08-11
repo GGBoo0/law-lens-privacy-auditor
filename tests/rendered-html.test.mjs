@@ -148,8 +148,12 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /개인정보처리방침 리스크 분석/);
   assert.match(html, /위험 신호 분석하기/);
   assert.match(html, /샘플 원문으로 바로 분석/);
+  assert.match(html, /href="#analyzer"/);
+  assert.match(html, /id="analyzer" tabindex="-1"/);
   assert.match(html, /aria-controls="input-panel-url"/);
   assert.match(html, /서비스 맥락 보정/);
+  assert.match(html, /class="contextDetails"/);
+  assert.match(html, /입력 데이터와 보안 처리 방식/);
   assert.match(html, /자동화된 결정/);
   assert.match(html, /공개 베타/);
   assert.match(html, /법률 검토를 돕는 자동 점검/);
@@ -159,6 +163,24 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /http:\/\/localhost\/og\.png/);
   assert.doesNotMatch(html, developmentPreviewMeta);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
+});
+
+test("ships the responsive self-hosted 2026 interface", () => {
+  const css = readFileSync(
+    new URL("../app/modern-ui.css", import.meta.url),
+    "utf8",
+  );
+  const font = readFileSync(
+    new URL("../public/fonts/PretendardVariable.woff2", import.meta.url),
+  );
+
+  assert.match(css, /@font-face/);
+  assert.match(css, /overflow-x:\s*clip/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+  assert.match(css, /\.filterRow[\s\S]*overflow-x:\s*auto/);
+  assert.match(css, /@media print[\s\S]*\.reportSection\s*{[\s\S]*width:\s*100%;[\s\S]*padding:\s*0/);
+  assert.doesNotMatch(css, /#7a8699|#748096|#98a2b3/i);
+  assert.equal(font.subarray(0, 4).toString("ascii"), "wOF2");
 });
 
 test("publishes readable privacy and terms pages for the public beta", async () => {
