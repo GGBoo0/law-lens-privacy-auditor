@@ -35,82 +35,132 @@ function baselineWithReviewedChange(changeId, reviewedAt = "2026-08-12") {
   };
 }
 
-test("ruleset remains current until the day before an unreviewed change takes effect", () => {
+test("reviewed staged rules keep the ruleset current until the next pending change", () => {
   const freshness = evaluateLegalRulesetFreshness("2026-08-19");
 
   assert.equal(freshness.status, "current_with_scheduled_review");
-  assert.equal(freshness.validThrough, "2026-08-19");
-  assert.equal(freshness.reviewRequiredBy, "2026-08-20");
+  assert.equal(freshness.validThrough, "2026-09-10");
+  assert.equal(freshness.reviewRequiredBy, "2026-09-11");
   assert.equal(freshness.overdueLegalReview, false);
   assert.equal(freshness.warnings.length, 0);
   assert.equal(
-    freshness.changes[0].lifecycleStatus,
-    "scheduled_review_pending",
+    freshness.changes.find(
+      (change) => change.changeId === "pipa-decree-36121-2026-08-20",
+    )?.lifecycleStatus,
+    "scheduled_reviewed",
   );
 });
 
 test("an unreviewed semantic change becomes overdue on its effective date and stays overdue", () => {
-  for (const asOf of ["2026-08-20", "2026-08-21"]) {
+  for (const asOf of ["2026-09-11", "2026-09-12"]) {
     const freshness = evaluateLegalRulesetFreshness(asOf);
 
     assert.equal(freshness.status, "review_overdue", asOf);
     assert.equal(freshness.overdueLegalReview, true, asOf);
     assert.equal(
       freshness.effectiveUnreviewedChanges[0].changeId,
-      "pipa-decree-36121-2026-08-20",
+      "pipa-21445-2026-09-11",
       asOf,
     );
-    assert.deepEqual(freshness.affectedCategoryKeys, ["data_portability"], asOf);
+    assert.deepEqual(
+      freshness.affectedCategoryKeys,
+      ["privacy_officer", "security_measures"],
+      asOf,
+    );
+    const pending = freshness.changes.find(
+      (change) => change.changeId === "pipa-21445-2026-09-11",
+    );
     assert.equal(
-      freshness.changes[0].lifecycleStatus,
+      pending?.lifecycleStatus,
       "effective_review_overdue",
       asOf,
     );
-    assert.match(freshness.changes[0].status, /시행됨.*판단 유보/, asOf);
-    assert.match(freshness.changes[0].baselineStatus, /시행 전/, asOf);
+    assert.match(pending?.status ?? "", /시행됨.*판단 유보/, asOf);
+    assert.match(pending?.baselineStatus ?? "", /시행 전/, asOf);
     assert.equal(freshness.warnings[0].safeHandling, "impacted_findings_deferred");
   }
 });
 
-test("the first scheduled data-portability change defers the rights conclusion on its effective date", () => {
+test("the reviewed data-portability rule activates on 2026-08-20 without a global hold", () => {
   const policy =
     "개인정보 처리 목적은 회원관리입니다. 처리하는 개인정보 항목은 이름과 이메일입니다. 보유 기간은 탈퇴 시까지이며 전자파일은 복구할 수 없게 삭제합니다. 정보주체는 고객센터에서 열람, 정정·삭제, 처리정지와 동의철회를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com이며 접근권한 관리와 암호화를 적용합니다. 본 방침은 2026년 8월 1일부터 시행합니다.";
 
-  const result = analyzePrivacyPolicy(policy, {
-    legalAsOfDate: "2026-08-20",
+  const before = analyzePrivacyPolicy(policy, {
+    legalAsOfDate: "2026-08-19",
+    contextOverrides: { dataPortability: "yes" },
   });
-  const rights = result.findings.find(
-    (finding) => finding.id === "present-rights",
+  assert.equal(
+    before.findings.some((finding) => finding.id === "data-portability-disclosure"),
+    false,
   );
 
-  assert.equal(result.legalBaseline.overdueLegalReview, true);
-  assert.equal(rights?.legalJudgmentStatus, "deferred_pending_legal_review");
-  assert.deepEqual(rights?.legalReviewWarning?.impactCategories, [
-    "data_portability",
-  ]);
-  assert.match(result.headline, /판단을 유보/);
-  assert.equal(result.grade, "판단유보");
-  assert.ok(result.legalBaseline.deferredFindingCount >= 1);
+  const effective = analyzePrivacyPolicy(policy, {
+    legalAsOfDate: "2026-08-20",
+    contextOverrides: { dataPortability: "yes" },
+  });
+  const portability = effective.findings.find(
+    (finding) => finding.id === "data-portability-disclosure",
+  );
+
+  assert.equal(effective.legalBaseline.overdueLegalReview, false);
+  assert.equal(portability?.severity, "medium");
+  assert.equal(portability?.findingType, "factual_verification");
+  assert.equal(portability?.requiresFactualVerification, true);
+  assert.equal(portability?.legalJudgmentStatus, undefined);
+  assert.ok(effective.detectedSignals.includes("본인전송요구 · 사용자 확인"));
+
+  const disclosed = analyzePrivacyPolicy(
+    `${policy} 본인전송요구는 홈페이지 개인정보 메뉴에서 신청하고 개인정보를 직접 내려받을 수 있습니다.`,
+    {
+      legalAsOfDate: "2026-08-20",
+      contextOverrides: { dataPortability: "yes" },
+    },
+  );
+  assert.equal(
+    disclosed.findings.some(
+      (finding) => finding.id === "data-portability-disclosure",
+    ),
+    false,
+  );
+  assert.equal(
+    disclosed.coverage.find((item) => item.label === "본인전송요구")?.state,
+    "present",
+  );
+
+  const conflicting = analyzePrivacyPolicy(
+    `${policy} 본인전송요구 적용 대상이 아닙니다. 다만 홈페이지에서 본인전송요구를 신청하고 개인정보를 내려받을 수 있습니다.`,
+    { legalAsOfDate: "2026-08-20" },
+  );
+  assert.ok(
+    conflicting.findings.some(
+      (finding) => finding.id === "data-portability-context-conflict",
+    ),
+  );
 });
 
 test("a semantic review only counts when it names the active ruleset version", () => {
   const reviewedBaseline = baselineWithReviewedChange(
-    "pipa-decree-36121-2026-08-20",
+    "pipa-21445-2026-09-11",
   );
   const reviewed = evaluateLegalRulesetFreshness(
-    "2026-08-20",
+    "2026-09-11",
     reviewedBaseline,
   );
 
   assert.equal(reviewed.overdueLegalReview, false);
-  assert.equal(reviewed.validThrough, "2026-09-10");
-  assert.equal(reviewed.reviewRequiredBy, "2026-09-11");
-  assert.equal(reviewed.changes[0].lifecycleStatus, "effective_reviewed");
+  assert.equal(reviewed.validThrough, "2027-02-19");
+  assert.equal(reviewed.reviewRequiredBy, "2027-02-20");
+  assert.equal(
+    reviewed.changes.find(
+      (change) => change.changeId === "pipa-21445-2026-09-11",
+    )?.lifecycleStatus,
+    "effective_reviewed",
+  );
 
   const wrongVersionBaseline = {
     ...reviewedBaseline,
     upcomingChanges: reviewedBaseline.upcomingChanges.map((change) =>
-      change.changeId === "pipa-decree-36121-2026-08-20"
+      change.changeId === "pipa-21445-2026-09-11"
         ? {
             ...change,
             review: {
@@ -122,12 +172,14 @@ test("a semantic review only counts when it names the active ruleset version", (
     ),
   };
   const wrongVersion = evaluateLegalRulesetFreshness(
-    "2026-08-20",
+    "2026-09-11",
     wrongVersionBaseline,
   );
   assert.equal(wrongVersion.overdueLegalReview, true);
   assert.equal(
-    wrongVersion.changes[0].lifecycleStatus,
+    wrongVersion.changes.find(
+      (change) => change.changeId === "pipa-21445-2026-09-11",
+    )?.lifecycleStatus,
     "effective_review_overdue",
   );
 });
@@ -532,13 +584,13 @@ test("the committed registry validates and leaves only official future versions 
     generatedAt: "2026-08-11T01:00:00.000Z",
   });
   assert.equal(manifest.effectivePendingCount, 0);
-  assert.equal(manifest.pendingCount, 4);
-  assert.ok(
+  assert.equal(manifest.pendingCount, 3);
+  assert.equal(
     manifest.pendingChanges.some(
-      (change) =>
-        change.sourceId === "pipa-decree" &&
-        change.effectiveFrom === "2026-08-20",
+      (change) => change.versionId === "283503:20260820",
     ),
+    false,
+    "the reviewed 2026-08-20 portability rule must leave the pending queue",
   );
   assert.ok(
     manifest.pendingChanges.some(

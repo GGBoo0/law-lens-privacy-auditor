@@ -16,6 +16,7 @@ type ContextKey =
   | "outsourcing"
   | "overseas"
   | "foreignController"
+  | "dataPortability"
   | "children"
   | "cookies"
   | "ecommerce"
@@ -236,6 +237,7 @@ const contextOptions: Array<{
   { key: "children", label: "만 14세 미만", help: "아동 회원이나 이용자가 있음" },
   { key: "overseas", label: "국외 이전", help: "해외 서버·클라우드를 사용함" },
   { key: "foreignController", label: "해외 사업자", help: "국외 사업자가 국내 정보를 직접 처리함" },
+  { key: "dataPortability", label: "본인전송요구(8/20~)", help: "시행령상 대규모 처리자·지정 공공시스템 운영기관 등에 해당함" },
   { key: "ai", label: "생성형 AI", help: "프롬프트·결과물·모델 학습을 처리함" },
   { key: "automatedDecision", label: "자동화된 결정", help: "사람 개입 없이 권리·의무를 결정함" },
 ];
@@ -429,6 +431,7 @@ export default function Home() {
     outsourcing: "auto",
     overseas: "auto",
     foreignController: "auto",
+    dataPortability: "auto",
     children: "auto",
     cookies: "auto",
     ecommerce: "auto",

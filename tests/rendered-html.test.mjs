@@ -153,6 +153,7 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /aria-controls="input-panel-url"/);
   assert.match(html, /서비스 맥락 보정/);
   assert.match(html, /class="contextDetails"/);
+  assert.match(html, /본인전송요구\(8\/20~\)/);
   assert.match(html, /입력 데이터와 보안 처리 방식/);
   assert.match(html, /자동화된 결정/);
   assert.match(html, /공개 베타/);
@@ -310,7 +311,7 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
   assert.equal(result.legalBaseline.date, "2026-08-11");
   assert.equal(result.legalBaseline.verifiedAt, "2026-08-11");
-  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.11-r3");
+  assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.11-r4");
   assert.equal(result.legalBaseline.monitoring.enabled, true);
   assert.equal(result.legalBaseline.monitoring.sourceCount, 11);
   assert.match(result.documentHash, /^[a-f0-9]{64}$/);
@@ -331,13 +332,12 @@ test("analyzes pasted policy text without external services", async () => {
         change.impactCategories.includes("privacy_officer"),
     ),
   );
-  assert.ok(
+  assert.equal(
     result.legalBaseline.upcomingChanges.some(
-      (change) =>
-        change.effectiveFrom === "2026-08-20" &&
-        change.lifecycleStatus === "scheduled_review_pending" &&
-        change.impactCategories.includes("data_portability"),
+      (change) => change.effectiveFrom === "2026-08-20",
     ),
+    false,
+    "the reviewed portability amendment should not remain in the live pending queue",
   );
   assert.equal(result.analysisEngine.mode, "local_rules");
   assert.equal(result.analysisEngine.aiUsed, false);
@@ -511,6 +511,50 @@ test("cites the current e-commerce retention decree when the signal appears", as
         basis.article === "제6조",
     ),
   );
+});
+
+test("does not activate sector rule packs from explicit absence statements", async () => {
+  const text =
+    "주식회사 테스트는 개인정보 처리 목적을 회원관리로 정합니다. 처리하는 개인정보 항목은 이름과 이메일입니다. 개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다. 파기 절차 및 방법에 따라 전자파일은 영구 삭제합니다. 정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com, 02-1234-5678로 연락할 수 있습니다. 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다. 개인정보를 제3자에게 제공하지 않으며 처리 업무를 위탁하지 않습니다. 회사는 결제 기능을 제공하지 않습니다. 위치정보를 처리하지 않습니다. 신용정보를 처리하지 않습니다. 본 방침은 2026년 8월 1일부터 시행됩니다.";
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  const ids = new Set(result.findings.map((finding) => finding.id));
+  assert.ok(!ids.has("ecommerce-retention"));
+  assert.ok(!ids.has("location-sector"));
+  assert.ok(!ids.has("credit-sector"));
+  assert.ok(!result.detectedSignals.includes("전자상거래"));
+  assert.ok(!result.detectedSignals.includes("개인위치정보"));
+  assert.ok(!result.detectedSignals.includes("개인신용정보"));
+});
+
+test("preserves affirmative sector signals when denials and actual use coexist", async () => {
+  const text =
+    "주식회사 테스트는 개인정보 처리 목적을 회원관리와 상품 공급으로 정합니다. 처리하는 개인정보 항목은 이름과 이메일입니다. 개인정보 처리 및 보유 기간은 회원 탈퇴 시까지입니다. 파기 절차 및 방법에 따라 전자파일은 영구 삭제합니다. 정보주체는 열람, 정정, 삭제, 처리정지와 동의 철회를 요청할 수 있습니다. 개인정보 보호책임자는 privacy@example.com, 02-1234-5678로 연락할 수 있습니다. 안전성 확보조치로 접근권한 관리와 암호화를 시행합니다. 개인정보를 제3자에게 제공하지 않으며 처리 업무를 위탁하지 않습니다. 회사는 결제 기능을 제공하지 않습니다. 다만 상품 주문과 배송 서비스를 제공합니다. 위치정보를 처리하지 않지만 GPS 기반 위치기반 서비스를 제공합니다. 신용정보를 처리하지 않지만 대출 심사를 위해 신용평점을 조회합니다. 본 방침은 2026년 8월 1일부터 시행됩니다.";
+  const response = await fetchWorker(
+    new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  const ids = new Set(result.findings.map((finding) => finding.id));
+  assert.ok(ids.has("ecommerce-retention"));
+  assert.ok(ids.has("location-sector"));
+  assert.ok(ids.has("credit-sector"));
+  assert.ok(result.detectedSignals.includes("전자상거래"));
+  assert.ok(result.detectedSignals.includes("개인위치정보"));
+  assert.ok(result.detectedSignals.includes("개인신용정보"));
 });
 
 test("keeps table headers attached to values and rejects unrelated public-suffix domains", async () => {

@@ -42,7 +42,7 @@ export type LegalImpactCategory = keyof typeof LEGAL_IMPACT_CATEGORIES;
 
 export const LEGAL_BASELINE = {
   verifiedAt: "2026-08-11",
-  rulesetVersion: "KR-PRIVACY-2026.08.11-r3",
+  rulesetVersion: "KR-PRIVACY-2026.08.11-r4",
   lifecycle: {
     schemaVersion: LEGAL_UPDATE_CONTRACT.schemaVersion,
     timeZone: "Asia/Seoul",
@@ -146,14 +146,14 @@ export const LEGAL_BASELINE = {
       effectiveFrom: "2026-08-20",
       detectedAt: "2026-08-05",
       changeKind: "semantic",
-      status: "시행 전 · 적용 대상은 본인전송요구 방법 반영 필요",
+      status: "시행 전 · 조건부 본인전송요구 규칙 반영 완료",
       url: "https://www.law.go.kr/lsRvsDocListP.do?lsId=011468",
       impactCategories: ["data_portability"],
       review: {
-        status: "pending",
-        reviewedAt: null,
-        reviewedRulesetVersion: null,
-        outcome: null,
+        status: "reviewed",
+        reviewedAt: "2026-08-11",
+        reviewedRulesetVersion: "KR-PRIVACY-2026.08.11-r4",
+        outcome: "rule_updated",
       },
     },
     {
