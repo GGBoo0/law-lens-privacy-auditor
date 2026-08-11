@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "rulesetVersion": "KR-PRIVACY-2026.08.11-r3",
+  "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "reviewedAt": "2026-08-11",
   "reviews": [
     {
@@ -86,6 +86,13 @@
       "documentHash": "8430e63cd401f5a20db24ef237f96e9a7c186a29c84d9a44fe3df0578dda5c6f",
       "effectiveDate": "2026-08-13",
       "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "283503:20260820",
+      "documentHash": "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
+      "effectiveDate": "2026-08-20",
+      "outcome": "rule_updated"
     },
     {
       "sourceId": "credit-information-act",

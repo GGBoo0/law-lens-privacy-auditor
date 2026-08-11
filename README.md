@@ -82,10 +82,11 @@ npm run qa:50
 
 ## 법령 기준
 
-규칙셋 `KR-PRIVACY-2026.08.11-r3`는 2026년 8월 11일 국가법령정보센터와 개인정보보호위원회의 공식 원문을 기준으로 검증했습니다.
+규칙셋 `KR-PRIVACY-2026.08.11-r4`는 2026년 8월 11일 국가법령정보센터와 개인정보보호위원회의 공식 원문을 기준으로 검증했습니다. 2026년 8월 20일 시행되는 본인전송요구 확대는 적용 대상 여부를 먼저 확인한 뒤 행사 방법을 점검하는 조건부 규칙으로 반영되어, 시행일부터 자동 활성화됩니다.
 
 - [개인정보 보호법 제15조·제17조·제21조·제22조의2·제23조·제24조·제26조·제28조의8·제29조·제30조·제35조~제37조의2](https://law.go.kr/LSW/lsInfoP.do?lsiSeq=270351)
 - [개인정보 보호법 시행령 제31조](https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=900079801)
+- [개인정보 보호법 시행령 제42조의2·제42조의4·제42조의6 (2026.08.20 시행)](https://www.law.go.kr/LSW/lsInfoP.do?ancYnChk=0&chrClsCd=010202&efYd=20260820&lsiSeq=283503&urlMode=lsEfInfoR&viewCls=lsRvsDocInfoR)
 - [개인정보 보호법 시행령 제44조의4](https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1033216053)
 - [개인정보 처리방침 평가에 관한 고시](https://www.law.go.kr/admRulLsInfoP.do?admRulSeq=2100000236594)
 - [개인정보 처리방침 작성지침 2026.04](https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=D010030020&nttId=12018)

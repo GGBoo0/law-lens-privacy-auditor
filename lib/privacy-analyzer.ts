@@ -16,6 +16,7 @@ export type ContextKey =
   | "outsourcing"
   | "overseas"
   | "foreignController"
+  | "dataPortability"
   | "children"
   | "cookies"
   | "ecommerce"
@@ -98,6 +99,7 @@ function impactCategoriesForFinding(id: string): LegalImpactCategory[] {
     // 관련 시행령 검토가 끝나지 않은 동안 권리 항목의 충족/누락 결론도 유보합니다.
     return ["data_subject_rights", "data_portability"];
   }
+  if (id.startsWith("data-portability")) return ["data_portability"];
   if (id.startsWith("third-party") || id === "vague-third-party") {
     return ["third_party_provision"];
   }
@@ -132,6 +134,28 @@ const labels: Record<Severity, string> = {
 
 function matches(text: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(text));
+}
+
+function withoutMatches(text: string, patterns: RegExp[]) {
+  return patterns.reduce((remainder, pattern) => {
+    const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+    return remainder.replace(new RegExp(pattern.source, flags), " ");
+  }, text);
+}
+
+/**
+ * Sector keywords often appear in explicit non-use statements such as
+ * "위치정보를 처리하지 않습니다". Remove those bounded statements before
+ * deciding that a sector is actually active. If an affirmative clause also
+ * exists, only the denial span is removed and the positive signal remains.
+ */
+function hasAffirmativeSignal(
+  text: string,
+  signalPatterns: RegExp[],
+  absencePatterns: RegExp[],
+) {
+  if (!matches(text, signalPatterns)) return false;
+  return matches(withoutMatches(text, absencePatterns), signalPatterns);
 }
 
 function subjectParticle(value: string) {
@@ -509,6 +533,97 @@ export function analyzePrivacyPolicy(
         confidence: "높음",
       });
       addCoverage(check.title, "present", "관련 문구 확인");
+    }
+  }
+
+  // 대통령령 제36121호는 2026-08-20부터 본인전송요구 대상과 범위를
+  // 확대합니다. 회사 규모·처리 인원·공공시스템 해당 여부는 처리방침만으로
+  // 확정할 수 없으므로, 시행일 이후 명시 신호 또는 사용자 확인이 있을 때만
+  // 조건부로 행사 방법을 점검합니다.
+  if (legalFreshness.asOfDate >= "2026-08-20") {
+    const portabilityPatterns = [
+      /본인\s*전송\s*요구/i,
+      /개인정보(?:의)?\s*전송\s*요구/i,
+      /정보주체[^.\n]{0,60}(?:개인정보|정보)[^.\n]{0,45}(?:내려받|다운로드|전송)/i,
+      /data\s+portability|right\s+to\s+(?:data\s+)?portability/i,
+    ];
+    const noPortabilityPatterns = [
+      /본인\s*전송\s*요구\s*(?:적용\s*)?대상(?:이|에)?\s*(?:아니|아님|아닙|없)/i,
+      /본인\s*전송\s*요구[^.\n]{0,45}(?:대상|적용)[^.\n]{0,20}(?:아니|아님|아닙|없)/i,
+      /개인정보(?:의)?\s*전송\s*요구[^.\n]{0,45}(?:제공|지원|처리)하지\s*않/i,
+      /(?:data\s+portability|right\s+to\s+(?:data\s+)?portability)[^.\n]{0,35}(?:not\s+applicable|does\s+not\s+apply)/i,
+    ];
+    const portabilityDetected = hasAffirmativeSignal(
+      compact,
+      portabilityPatterns,
+      noPortabilityPatterns,
+    );
+    const portabilityDenied = matches(compact, noPortabilityPatterns);
+    const portabilityChoice = contextChoice("dataPortability");
+
+    if (
+      portabilityDenied &&
+      (portabilityDetected || portabilityChoice === "yes")
+    ) {
+      add({
+        id: "data-portability-context-conflict",
+        category: "정보주체 권리",
+        title: "본인전송요구 적용 여부가 사용자 입력과 충돌합니다",
+        severity: "medium",
+        summary:
+          "본인전송요구 비대상·미지원 문구와 실제 제공 정황 또는 사용자 입력이 함께 확인됩니다. 평균매출액, 처리 인원, 공공시스템 해당 여부와 실제 제공 절차를 확인해야 합니다.",
+        evidence: excerpt(compact, noPortabilityPatterns),
+        recommendation:
+          "시행령상 적용 기준을 먼저 확인하고, 적용 대상이면 본인전송요구의 범위와 실제 행사 채널을 처리방침에 반영하세요.",
+        legalBasis: [
+          SOURCES.pipa30,
+          SOURCES.pipaTransfer,
+          SOURCES.pipaTransferDecree,
+        ],
+        confidence: "보통",
+        requiresFactualVerification: true,
+      });
+      addCoverage("본인전송요구", "conditional", "적용 여부 문구와 사용자 입력이 충돌");
+    } else if (
+      contextActive("dataPortability", portabilityDetected) &&
+      !portabilityDenied
+    ) {
+      signals.push(signalLabel("본인전송요구", portabilityDetected));
+      const portabilityScope = portabilityDetected
+        ? sectionScope(text, portabilityPatterns, 2200) || compact
+        : "";
+      const hasExerciseMethod = matches(portabilityScope, [
+        /홈페이지|웹사이트|온라인|내려받|다운로드|전자우편|이메일|고객센터|신청서|모바일\s*앱|메뉴|대리인/i,
+        /website|online|download|e-?mail|customer\s+(?:center|service)|application\s+form|mobile\s+app|representative/i,
+      ]);
+      if (!portabilityDetected || !hasExerciseMethod) {
+        add({
+          id: "data-portability-disclosure",
+          category: "정보주체 권리",
+          title: "적용 대상인 경우 본인전송요구 안내를 보완해야 합니다",
+          severity: "medium",
+          summary:
+            "2026년 8월 20일부터 일정 규모 이상의 개인정보처리자와 지정 공공시스템 운영기관 등은 본인전송요구에 대응해야 합니다. 적용 대상 여부와 실제 행사 방법이 처리방침에서 충분히 확인되지 않습니다.",
+          evidence: portabilityDetected
+            ? excerpt(portabilityScope, portabilityPatterns)
+            : undefined,
+          recommendation:
+            "먼저 시행령 제42조의2의 적용 기준을 확인하고, 대상이면 전송 가능한 정보의 범위, 홈페이지 다운로드 등 행사 방법, 접수 채널과 제한 사유를 권리 안내에 연결하세요.",
+          legalBasis: [
+            SOURCES.pipa30,
+            SOURCES.pipaTransfer,
+            SOURCES.pipaTransferDecree,
+          ],
+          confidence: portabilityDetected ? "보통" : "낮음",
+          findingType: "factual_verification",
+          requiresFactualVerification: true,
+        });
+        addCoverage("본인전송요구", "conditional", "적용 대상·행사 방법 교차확인 필요");
+      } else {
+        addCoverage("본인전송요구", "present", "권리와 행사 방법 문구 확인");
+      }
+    } else {
+      addInactiveConditionalCoverage("본인전송요구", "dataPortability");
     }
   }
 
@@ -1428,7 +1543,13 @@ export function analyzePrivacyPolicy(
     /개인위치정보|정밀\s*위치|GPS|위치기반\s*서비스|실시간\s*위치/i,
     /geolocation|precise\s+location/i,
   ];
-  if (matches(compact, locationPatterns)) {
+  const noLocationPatterns = [
+    /(?:개인)?위치정보[^.\n]{0,40}(?:수집|이용|처리|제공|공유|추적)하지\s*않/i,
+    /(?:정밀\s*위치|GPS|위치기반\s*서비스|실시간\s*위치)[^.\n]{0,40}(?:사용|이용|제공|운영|처리)하지\s*않/i,
+    /(?:개인)?위치정보\s*(?:없음|해당\s*없음)/i,
+    /(?:do\s+not|does\s+not|don't|doesn't)[^.\n]{0,45}(?:geolocation|precise\s+location)/i,
+  ];
+  if (hasAffirmativeSignal(compact, locationPatterns, noLocationPatterns)) {
     signals.push("개인위치정보");
     add({
       id: "location-sector",
@@ -1449,7 +1570,12 @@ export function analyzePrivacyPolicy(
     /개인신용정보|신용평점|신용평가|대출정보|연체정보/i,
     /credit\s+(?:information|score|rating)/i,
   ];
-  if (matches(compact, creditPatterns)) {
+  const noCreditPatterns = [
+    /(?:개인신용정보|신용평점|신용평가|대출정보|연체정보)[^.\n]{0,40}(?:수집|이용|처리|조회|제공)하지\s*않/i,
+    /(?:개인신용정보|신용정보)\s*(?:없음|해당\s*없음)/i,
+    /(?:do\s+not|does\s+not|don't|doesn't)[^.\n]{0,45}credit\s+(?:information|score|rating)/i,
+  ];
+  if (hasAffirmativeSignal(compact, creditPatterns, noCreditPatterns)) {
     signals.push("개인신용정보");
     add({
       id: "credit-sector",
@@ -1470,7 +1596,16 @@ export function analyzePrivacyPolicy(
     /주문|배송|결제|청약철회|통신판매|전자상거래/i,
     /order|shipping|payment|e-?commerce/i,
   ];
-  const ecommerceDetected = matches(compact, ecommercePatterns);
+  const noEcommercePatterns = [
+    /(?:주문|배송|결제|청약철회|통신판매|전자상거래)[^.\n]{0,45}(?:기능|서비스)?[^.\n]{0,20}(?:제공|지원|운영|처리|사용|이용)하지\s*않/i,
+    /(?:주문|배송|결제|통신판매|전자상거래)\s*(?:없음|해당\s*없음)/i,
+    /(?:do\s+not|does\s+not|don't|doesn't)[^.\n]{0,45}(?:offer|provide|operate|process|support)[^.\n]{0,30}(?:order|shipping|payment|e-?commerce)/i,
+  ];
+  const ecommerceDetected = hasAffirmativeSignal(
+    compact,
+    ecommercePatterns,
+    noEcommercePatterns,
+  );
   if (contextActive("ecommerce", ecommerceDetected)) {
     signals.push(signalLabel("전자상거래", ecommerceDetected));
     const statutoryPeriods =

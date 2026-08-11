@@ -43,6 +43,7 @@ const contextKeys: ContextKey[] = [
   "outsourcing",
   "overseas",
   "foreignController",
+  "dataPortability",
   "children",
   "cookies",
   "ecommerce",
@@ -131,6 +132,16 @@ async function loadRuntimeLegalManifest() {
     return runtimeLegalManifestCache.value;
   }
 
+  // Test and offline QA runs must be deterministic and must not inherit the
+  // currently deployed status branch while a new ruleset is being validated.
+  if (process.env.LAW_LENS_TEST_RUNTIME_MANIFEST === "bundled") {
+    runtimeLegalManifestCache = {
+      expiresAt: now + LEGAL_RUNTIME_MANIFEST_CACHE_MS,
+      value: fallbackRuntimeLegalManifest,
+    };
+    return fallbackRuntimeLegalManifest;
+  }
+
   let value: unknown;
   let cacheMilliseconds = LEGAL_RUNTIME_MANIFEST_CACHE_MS;
   try {
@@ -150,12 +161,10 @@ async function loadRuntimeLegalManifest() {
     // analyzer conservatively defers every legal conclusion.
     value =
       runtimeLegalManifestCache?.value ??
-      (process.env.LAW_LENS_TEST_RUNTIME_MANIFEST === "bundled"
-        ? fallbackRuntimeLegalManifest
-        : {
-            unavailable: true,
-            reason: "live legal runtime manifest could not be loaded",
-          });
+      {
+        unavailable: true,
+        reason: "live legal runtime manifest could not be loaded",
+      };
     cacheMilliseconds = 30_000;
   }
 
