@@ -12,6 +12,12 @@ process.env.LAW_LENS_TEST_RUNTIME_MANIFEST = "bundled";
 const ruleCorpus = JSON.parse(
   readFileSync(new URL("./fixtures/rule-corpus.json", import.meta.url), "utf8"),
 );
+const accuracyStatus = JSON.parse(
+  readFileSync(new URL("../data/legal-accuracy-status.json", import.meta.url), "utf8"),
+);
+const accuracyEvaluationConfig = JSON.parse(
+  readFileSync(new URL("../data/legal-evaluation/config.json", import.meta.url), "utf8"),
+);
 
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
@@ -158,7 +164,9 @@ test("server-renders the finished Korean product", async () => {
   assert.match(html, /자동화된 결정/);
   assert.match(html, /공개 베타/);
   assert.match(html, /법률 검토를 돕는 자동 점검/);
+  assert.match(html, /법률 판단 정확도는 전문가 평가 전/);
   assert.match(html, /공식 소스 확인 중/);
+  assert.match(html, /href="\/methodology"/);
   assert.match(html, /href="\/privacy"/);
   assert.match(html, /href="\/terms"/);
   assert.match(html, /http:\/\/localhost\/og\.png/);
@@ -196,6 +204,7 @@ test("publishes readable privacy and terms pages for the public beta", async () 
   assert.match(privacyHtml, /HMAC-SHA-256/);
   assert.match(privacyHtml, /익명정보라고 단정하지 않습니다/);
   assert.match(privacyHtml, /외부 AI API나 유료 브라우저 API로/);
+  assert.match(privacyHtml, /href="\/methodology"/);
 
   const termsResponse = await fetchWorker(
     new Request("http://localhost/terms", {
@@ -207,6 +216,49 @@ test("publishes readable privacy and terms pages for the public beta", async () 
   assert.match(termsHtml, /이용조건·문의/);
   assert.match(termsHtml, /분석 결과는 위법 여부를 확정하지 않으며/);
   assert.match(termsHtml, /금지되는 이용/);
+  assert.match(termsHtml, /평가 방법과 정확도 상태/);
+
+  const methodologyResponse = await fetchWorker(
+    new Request("http://localhost/methodology", {
+      headers: { accept: "text/html", host: "localhost" },
+    }),
+  );
+  assert.equal(methodologyResponse.status, 200);
+  const methodologyHtml = await methodologyResponse.text();
+  assert.match(methodologyHtml, /평가 방법과 정확도 상태/);
+  assert.match(methodologyHtml, /URL 자동 발견 QA/);
+  assert.match(methodologyHtml, /예상한 공식 출처/);
+  assert.match(methodologyHtml, /URL 자동 발견 QA 결과/);
+  assert.match(methodologyHtml, /현재 상태는 <strong>전문가 평가 전/);
+  assert.match(methodologyHtml, /법률 판단 정확도는 아직 숫자로 제공하지 않습니다/);
+  assert.doesNotMatch(methodologyHtml, /법률 판단 정확도(?:는|:)?\s*84%/);
+});
+
+test("does not publish numeric legal-judgment metrics before expert validation", () => {
+  assert.equal(accuracyStatus.schemaVersion, 1);
+  assert.equal(accuracyStatus.status, "not_expert_validated");
+  assert.equal(
+    accuracyStatus.evaluationPhase,
+    accuracyEvaluationConfig.status,
+  );
+  assert.equal(accuracyStatus.label, "전문가 평가 전");
+  assert.equal(accuracyStatus.expertReview.reviewerCount, 0);
+  assert.equal(accuracyStatus.expertReview.evaluatedAt, null);
+  assert.equal(accuracyStatus.metrics, null);
+  assert.equal(accuracyStatus.urlDiscoveryQa.verifiedSourceRatePercent, 84);
+  assert.equal(accuracyStatus.urlDiscoveryQa.wrongSourceCount, 0);
+  assert.equal("legalJudgmentAccuracyPercent" in accuracyStatus, false);
+  assert.equal(accuracyEvaluationConfig.status, "calibration_pending");
+  assert.equal(accuracyEvaluationConfig.certified, false);
+  assert.equal(accuracyEvaluationConfig.currentState.metrics, null);
+  assert.equal(
+    accuracyStatus.expertReview.corpusDocumentCount,
+    accuracyEvaluationConfig.currentState.expertReviewedPolicies,
+  );
+  assert.equal(
+    accuracyStatus.expertReview.adjudicatedUnitCount,
+    accuracyEvaluationConfig.currentState.adjudicatedUnits,
+  );
 });
 
 test("reports legal-monitor degradation through the health endpoint", async () => {

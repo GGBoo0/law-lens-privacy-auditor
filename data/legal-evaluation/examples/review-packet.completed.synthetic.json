@@ -1,0 +1,81 @@
+{
+  "recordType": "legal_evaluation_review_packet",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "packetId": "synthetic-review-packet-a-001",
+  "reviewerId": "synthetic-reviewer-a",
+  "corpusVersion": "synthetic-corpus-v1",
+  "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+  "legalAsOfDate": "2026-08-11",
+  "runtimeManifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "privateArtifact": true,
+  "instructions": {
+    "decisionValues": [
+      "confirmed_disclosure",
+      "possible_missing_disclosure",
+      "ambiguity_or_inconsistency",
+      "factual_verification",
+      "insufficient_evidence"
+    ],
+    "note": "Complete decision and reviewerConfidence independently, then export only the reviewerAnnotation fields defined by the schema. Never publish text, contexts, or sourceUrl."
+  },
+  "items": [
+    {
+      "annotationId": "synthetic-packet-ann-a-001",
+      "caseId": "synthetic-packet-case-001",
+      "track": "policyOnly",
+      "ruleId": "third_party_disclosure",
+      "ruleTitle": "Third-party disclosure",
+      "family": "third_party_provision",
+      "reviewerId": "synthetic-reviewer-a",
+      "synthetic": true,
+      "eligibleForMetrics": false,
+      "documentCompleteness": "fullDocument",
+      "evaluationTextSha256": "sha256:a819760b063586f668f8c8fc686029d488b5b6916ad7edbe4eafb8dc03cb2219",
+      "sourceUrl": "https://example.com/privacy",
+      "legalAsOfDate": "2026-08-11",
+      "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+      "guidelineVersion": "gold-v1-draft",
+      "reviewMode": {
+        "independent": true,
+        "blindToSystemOutput": true,
+        "systemOutputViewed": false
+      },
+      "text": "This is a synthetic privacy policy used only to verify the legal accuracy review data contract. It states that a provider may share personal data with a partner for service operations but intentionally omits the recipient name. It does not describe a real person, company, or processing activity.",
+      "contexts": {
+        "thirdParty": "yes"
+      },
+      "decision": {
+        "applicability": "applicable",
+        "goldLabel": "possible_missing_disclosure",
+        "severity": "high",
+        "defectCodes": [
+          "missing_recipient"
+        ],
+        "evidence": [
+          {
+            "kind": "absence_trace",
+            "checkedSections": [
+              "third-party disclosure"
+            ],
+            "checkedFields": [
+              "recipient"
+            ],
+            "support": "direct"
+          }
+        ],
+        "legalBases": [
+          {
+            "sourceId": "pipa",
+            "article": "Personal Information Protection Act Article 17",
+            "url": "https://www.law.go.kr/lsInfoP.do?lsId=011357",
+            "fit": "direct"
+          }
+        ],
+        "requiresFactualVerification": false,
+        "rationale": "Synthetic expert judgment for testing the completed review-packet conversion contract."
+      },
+      "reviewerConfidence": "medium"
+    }
+  ]
+}

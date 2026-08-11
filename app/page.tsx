@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import accuracyStatus from "../data/legal-accuracy-status.json";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
@@ -674,7 +675,8 @@ export default function Home() {
             <p>
               이 결과는 법률 검토를 돕는 자동 점검이며 위법 여부의 확정이나
               변호사의 법률 자문이 아닙니다. 중요한 조치는 원문·실제 처리 현황과
-              전문가 검토를 함께 확인하세요.
+              전문가 검토를 함께 확인하세요. 법률 판단 정확도는 전문가 평가 전이며
+              숫자로 제공하지 않습니다. <a href="/methodology">평가 방법 보기</a>
             </p>
           </div>
           <div className="proofRow">
@@ -1034,11 +1036,20 @@ export default function Home() {
               <strong>{result.analysisEngine.aiUsed ? "사용" : "없음"}</strong>
             </div>
             <div>
-              <span>검증 상태</span>
-              <strong>{result.analysisEngine.evaluationStatus}</strong>
+              <span>법률 판단 정확도</span>
+              <strong>{accuracyStatus.label}</strong>
             </div>
             <details>
-              <summary>무료 분석의 한계</summary>
+              <summary>분석 정확도와 무료 분석의 한계</summary>
+              <p>현재 분석 실행 상태: {result.analysisEngine.evaluationStatus}</p>
+              <p>{accuracyStatus.summary}</p>
+              <p>
+                URL 자동 발견 QA {accuracyStatus.urlDiscoveryQa.verifiedSourceCount}/
+                {accuracyStatus.urlDiscoveryQa.sampleSize}(
+                {accuracyStatus.urlDiscoveryQa.verifiedSourceRatePercent}%)는 공식 방침을
+                찾는 능력만 측정하며 법률 판단 정확도와 별개입니다. {" "}
+                <a href="/methodology">평가 방법 확인</a>
+              </p>
               <ul>
                 {result.analysisEngine.limitations.map((limitation) => (
                   <li key={limitation}>{limitation}</li>
@@ -1394,6 +1405,7 @@ export default function Home() {
           대체하지 않습니다.
         </p>
         <nav className="footerLinks" aria-label="서비스 정보">
+          <a href="/methodology">평가 방법·정확도</a>
           <a href="/privacy">개인정보 처리 안내</a>
           <a href="/terms">이용조건·문의</a>
           <a

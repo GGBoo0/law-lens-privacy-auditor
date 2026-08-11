@@ -1,0 +1,52 @@
+{
+  "recordType": "legal_evaluation_reviewer_annotation",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "corpusVersion": "synthetic-corpus-v1",
+  "runtimeManifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "annotationId": "synthetic-ann-b-001",
+  "caseId": "synthetic-case-001",
+  "track": "policyOnly",
+  "ruleId": "third_party_disclosure",
+  "reviewerId": "synthetic-reviewer-b",
+  "synthetic": true,
+  "eligibleForMetrics": false,
+  "reviewMode": {
+    "independent": true,
+    "blindToSystemOutput": true,
+    "systemOutputViewed": false
+  },
+  "documentCompleteness": "fullDocument",
+  "evaluationTextSha256": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "legalAsOfDate": "2026-08-11",
+  "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+  "guidelineVersion": "gold-v1-draft",
+  "decision": {
+    "applicability": "unknown",
+    "goldLabel": "factual_verification",
+    "severity": "low",
+    "defectCodes": [
+      "third_party_applicability_unverified"
+    ],
+    "evidence": [
+      {
+        "kind": "span",
+        "quote": "제휴사에 필요한 범위에서 정보를 제공할 수 있습니다.",
+        "start": 120,
+        "end": 149,
+        "support": "partial"
+      }
+    ],
+    "legalBases": [
+      {
+        "sourceId": "pipa",
+        "article": "개인정보 보호법 제17조 및 제30조",
+        "url": "https://www.law.go.kr/lsInfoP.do?lsId=011357",
+        "fit": "contextual"
+      }
+    ],
+    "requiresFactualVerification": true,
+    "rationale": "합성 예시에서는 실제 제3자 제공 여부를 확인할 자료가 부족하다고 가정했다. 이 라벨은 전문가 결과가 아니며 평가 지표에서 제외된다."
+  },
+  "reviewerConfidence": "low"
+}

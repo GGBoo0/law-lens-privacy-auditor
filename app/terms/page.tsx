@@ -16,7 +16,8 @@ export default function TermsPage() {
           </span>
           <span>법령렌즈</span>
         </Link>
-        <nav className="legalPageNav" aria-label="정책 문서">
+        <nav className="legalPageNav" aria-label="서비스 안내 문서">
+          <Link href="/methodology">평가 방법</Link>
           <Link href="/privacy">개인정보</Link>
           <Link href="/terms" aria-current="page">
             이용조건·문의
@@ -104,6 +105,9 @@ export default function TermsPage() {
             법령렌즈는 자동 분석 결과의 완전성, 특정 목적 적합성이나 법률적 결론을
             보증하지 않습니다. 다만 오류를 숨기지 않고 근거 문구, 불확실성, 엔진
             버전과 공식 출처를 표시하며 재현 가능한 개선을 위해 노력합니다.
+            법령 최신성, URL 자동 발견 QA와 법률 판단 정확도의 구분은
+            <Link href="/methodology"> 평가 방법과 정확도 상태</Link>에서 확인할 수
+            있습니다.
           </p>
         </section>
 
@@ -125,6 +129,7 @@ export default function TermsPage() {
           </p>
           <div className="documentActions">
             <Link href="/">분석 화면으로</Link>
+            <Link href="/methodology">평가 방법·정확도</Link>
             <a
               href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
               target="_blank"

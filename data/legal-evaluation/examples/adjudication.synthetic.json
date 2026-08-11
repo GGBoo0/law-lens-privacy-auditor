@@ -1,0 +1,56 @@
+{
+  "recordType": "legal_evaluation_adjudication",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "corpusVersion": "synthetic-corpus-v1",
+  "runtimeManifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "adjudicationId": "synthetic-adjudication-001",
+  "caseId": "synthetic-case-001",
+  "track": "policyOnly",
+  "ruleId": "third_party_disclosure",
+  "evaluationTextSha256": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "inputAnnotationIds": [
+    "synthetic-ann-a-001",
+    "synthetic-ann-b-001"
+  ],
+  "adjudicationMode": "thirdExpert",
+  "adjudicatorId": "synthetic-reviewer-c",
+  "preservesOriginalAnnotations": true,
+  "synthetic": true,
+  "eligibleForMetrics": false,
+  "disagreementTypes": [
+    "applicability",
+    "goldLabel",
+    "severity",
+    "evidence",
+    "legalBasis"
+  ],
+  "finalDecision": {
+    "applicability": "unknown",
+    "goldLabel": "factual_verification",
+    "severity": "low",
+    "defectCodes": [
+      "third_party_applicability_unverified"
+    ],
+    "evidence": [
+      {
+        "kind": "span",
+        "quote": "제휴사에 필요한 범위에서 정보를 제공할 수 있습니다.",
+        "start": 120,
+        "end": 149,
+        "support": "partial"
+      }
+    ],
+    "legalBases": [
+      {
+        "sourceId": "pipa",
+        "article": "개인정보 보호법 제17조 및 제30조",
+        "url": "https://www.law.go.kr/lsInfoP.do?lsId=011357",
+        "fit": "contextual"
+      }
+    ],
+    "requiresFactualVerification": true,
+    "rationale": "합성 예시의 제공 가능성 문구만으로 실제 적용 여부를 확정하지 않고 사실 확인으로 조정한 예시다. 실제 전문가 결론이 아니다."
+  },
+  "resolutionRationale": "두 독립 라벨이 적용 여부와 위험도를 다르게 보았다는 합성 시나리오다. 운영 데이터에서는 원본 라벨을 보존하고 제3 전문가가 근거를 기록한다."
+}
