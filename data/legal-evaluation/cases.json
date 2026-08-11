@@ -1,0 +1,10 @@
+{
+  "recordType": "legal_evaluation_case_manifest",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "status": "calibration_pending",
+  "containsExpertLabels": false,
+  "containsFullPolicyText": false,
+  "caseCount": 0,
+  "cases": []
+}

@@ -32,5 +32,8 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+      - name: Validate legal accuracy evaluation state
+        run: npm run accuracy:gate
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high

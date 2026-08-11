@@ -299,6 +299,12 @@ main {
   line-height: 1.65;
 }
 
+.betaNotice a {
+  color: inherit;
+  font-weight: 800;
+  text-underline-offset: 3px;
+}
+
 .proofRow {
   margin-top: 46px;
   display: flex;
@@ -1024,6 +1030,17 @@ main {
   margin: 8px 0 0;
   padding-left: 17px;
   line-height: 1.55;
+}
+
+.engineStrip details p {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+
+.engineStrip details a {
+  color: inherit;
+  font-weight: 800;
+  text-underline-offset: 3px;
 }
 
 .reportLayout {
@@ -1804,6 +1821,16 @@ footer p {
 
 .dataGrid dd {
   color: #505a6d;
+}
+
+.methodologyGrid dd strong {
+  color: var(--ink);
+}
+
+.methodologyFacts {
+  padding: 16px 18px 16px 40px !important;
+  border: 1px solid rgba(17, 26, 45, 0.12);
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .documentActions {

@@ -1,0 +1,55 @@
+{
+  "recordType": "legal_evaluation_reviewer_annotation",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "corpusVersion": "synthetic-corpus-v1",
+  "runtimeManifestHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "annotationId": "synthetic-packet-ann-a-001",
+  "caseId": "synthetic-packet-case-001",
+  "track": "policyOnly",
+  "ruleId": "third_party_disclosure",
+  "reviewerId": "synthetic-reviewer-a",
+  "synthetic": true,
+  "eligibleForMetrics": false,
+  "reviewMode": {
+    "independent": true,
+    "blindToSystemOutput": true,
+    "systemOutputViewed": false
+  },
+  "documentCompleteness": "fullDocument",
+  "evaluationTextSha256": "sha256:a819760b063586f668f8c8fc686029d488b5b6916ad7edbe4eafb8dc03cb2219",
+  "legalAsOfDate": "2026-08-11",
+  "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+  "guidelineVersion": "gold-v1-draft",
+  "decision": {
+    "applicability": "applicable",
+    "goldLabel": "possible_missing_disclosure",
+    "severity": "high",
+    "defectCodes": [
+      "missing_recipient"
+    ],
+    "evidence": [
+      {
+        "kind": "absence_trace",
+        "checkedSections": [
+          "third-party disclosure"
+        ],
+        "checkedFields": [
+          "recipient"
+        ],
+        "support": "direct"
+      }
+    ],
+    "legalBases": [
+      {
+        "sourceId": "pipa",
+        "article": "Personal Information Protection Act Article 17",
+        "url": "https://www.law.go.kr/lsInfoP.do?lsId=011357",
+        "fit": "direct"
+      }
+    ],
+    "requiresFactualVerification": false,
+    "rationale": "Synthetic expert judgment for testing the completed review-packet conversion contract."
+  },
+  "reviewerConfidence": "medium"
+}

@@ -1,0 +1,1135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://law-lens.example/schemas/legal-evaluation-v1.json",
+  "title": "Law Lens legal accuracy evaluation data contract",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/evaluationConfig"
+    },
+    {
+      "$ref": "#/$defs/caseManifest"
+    },
+    {
+      "$ref": "#/$defs/reviewerAnnotation"
+    },
+    {
+      "$ref": "#/$defs/reviewerAnnotationBatch"
+    },
+    {
+      "$ref": "#/$defs/adjudication"
+    },
+    {
+      "$ref": "#/$defs/reviewPacket"
+    }
+  ],
+  "$defs": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "runtimeManifestHash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 of the canonical runtime legal manifest used to pin the governing legal-source snapshot."
+    },
+    "status": {
+      "enum": [
+        "calibration_pending",
+        "calibrating",
+        "labeling",
+        "adjudicating",
+        "certified"
+      ]
+    },
+    "split": {
+      "enum": [
+        "calibration",
+        "development",
+        "lockedTest"
+      ]
+    },
+    "documentCompleteness": {
+      "enum": [
+        "fullDocument",
+        "partial"
+      ]
+    },
+    "track": {
+      "enum": [
+        "policyOnly",
+        "contextAssisted"
+      ]
+    },
+    "applicability": {
+      "enum": [
+        "applicable",
+        "notApplicable",
+        "unknown"
+      ]
+    },
+    "goldLabel": {
+      "enum": [
+        "confirmed_disclosure",
+        "possible_missing_disclosure",
+        "ambiguity_or_inconsistency",
+        "factual_verification",
+        "insufficient_evidence"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "pass",
+        "na"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceUrl",
+        "policyUrl",
+        "retrievedAt",
+        "documentSha256"
+      ],
+      "properties": {
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "policyUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "policyEffectiveAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "documentSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 of the raw fetched source bytes before text extraction or normalization. This is provenance metadata, not the analyzer-input hash."
+        },
+        "extractionVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "metricEligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "omissionRules",
+        "spanLocalRules",
+        "reason"
+      ],
+      "properties": {
+        "omissionRules": {
+          "type": "boolean"
+        },
+        "spanLocalRules": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "publicCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Opaque public proof record. Company, source URL, sector, and split stay private until the locked evaluation is frozen and released.",
+      "required": [
+        "caseId",
+        "documentCompleteness",
+        "evaluationTextSha256",
+        "legalAsOfDate",
+        "rulesetVersion",
+        "guidelineVersion",
+        "synthetic"
+      ],
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "documentCompleteness": {
+          "$ref": "#/$defs/documentCompleteness"
+        },
+        "evaluationTextSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "rulesetVersion": {
+          "type": "string"
+        },
+        "guidelineVersion": {
+          "type": "string"
+        },
+        "synthetic": {
+          "type": "boolean"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "companyId",
+        "sector",
+        "split",
+        "track",
+        "documentCompleteness",
+        "source",
+        "evaluationTextSha256",
+        "corpusRef",
+        "legalAsOfDate",
+        "rulesetVersion",
+        "guidelineVersion",
+        "metricEligibility",
+        "synthetic"
+      ],
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "companyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sector": {
+          "type": "string",
+          "minLength": 1
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "track": {
+          "$ref": "#/$defs/track"
+        },
+        "documentCompleteness": {
+          "$ref": "#/$defs/documentCompleteness"
+        },
+        "partialScope": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "evaluationTextSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 of the exact UTF-8 text passed to analyzePrivacyPolicy after private-corpus loading. It must be verified independently from source.documentSha256."
+        },
+        "corpusRef": {
+          "type": "string",
+          "description": "Opaque reference into a private corpus; never a public repository path containing policy text."
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "rulesetVersion": {
+          "type": "string"
+        },
+        "guidelineVersion": {
+          "type": "string"
+        },
+        "metricEligibility": {
+          "$ref": "#/$defs/metricEligibility"
+        },
+        "synthetic": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "documentCompleteness": {
+                "const": "partial"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "partialScope"
+            ],
+            "properties": {
+              "metricEligibility": {
+                "properties": {
+                  "omissionRules": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "documentCompleteness": {
+                "const": "fullDocument"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "metricEligibility": {
+                "properties": {
+                  "omissionRules": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "spanEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "quote",
+        "start",
+        "end",
+        "support"
+      ],
+      "properties": {
+        "kind": {
+          "const": "span"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "support": {
+          "enum": [
+            "direct",
+            "partial",
+            "none"
+          ]
+        }
+      }
+    },
+    "absenceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "checkedSections",
+        "checkedFields",
+        "support"
+      ],
+      "properties": {
+        "kind": {
+          "const": "absence_trace"
+        },
+        "checkedSections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "checkedFields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "support": {
+          "enum": [
+            "direct",
+            "partial",
+            "none"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/spanEvidence"
+        },
+        {
+          "$ref": "#/$defs/absenceEvidence"
+        }
+      ]
+    },
+    "legalBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "article",
+        "url",
+        "fit"
+      ],
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "article": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "fit": {
+          "enum": [
+            "direct",
+            "contextual",
+            "incorrect"
+          ]
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicability",
+        "goldLabel",
+        "severity",
+        "defectCodes",
+        "evidence",
+        "legalBases",
+        "requiresFactualVerification",
+        "rationale"
+      ],
+      "properties": {
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "goldLabel": {
+          "$ref": "#/$defs/goldLabel"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity"
+        },
+        "defectCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "legalBases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/legalBasis"
+          }
+        },
+        "requiresFactualVerification": {
+          "type": "boolean"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "reviewMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent",
+        "blindToSystemOutput",
+        "systemOutputViewed"
+      ],
+      "properties": {
+        "independent": {
+          "const": true
+        },
+        "blindToSystemOutput": {
+          "const": true
+        },
+        "systemOutputViewed": {
+          "const": false
+        }
+      }
+    },
+    "reviewerConfidence": {
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "reviewerAnnotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "corpusVersion",
+        "runtimeManifestHash",
+        "annotationId",
+        "caseId",
+        "track",
+        "ruleId",
+        "reviewerId",
+        "synthetic",
+        "eligibleForMetrics",
+        "reviewMode",
+        "documentCompleteness",
+        "evaluationTextSha256",
+        "legalAsOfDate",
+        "rulesetVersion",
+        "guidelineVersion",
+        "decision",
+        "reviewerConfidence"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_reviewer_annotation"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string"
+        },
+        "corpusVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeManifestHash": {
+          "$ref": "#/$defs/runtimeManifestHash"
+        },
+        "annotationId": {
+          "type": "string"
+        },
+        "caseId": {
+          "type": "string"
+        },
+        "track": {
+          "$ref": "#/$defs/track"
+        },
+        "ruleId": {
+          "type": "string"
+        },
+        "reviewerId": {
+          "type": "string"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "eligibleForMetrics": {
+          "type": "boolean"
+        },
+        "reviewMode": {
+          "$ref": "#/$defs/reviewMode"
+        },
+        "documentCompleteness": {
+          "$ref": "#/$defs/documentCompleteness"
+        },
+        "evaluationTextSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 of the exact UTF-8 evaluation text labeled by this reviewer. It binds the annotation to one immutable document version without exporting the text itself."
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "rulesetVersion": {
+          "type": "string"
+        },
+        "guidelineVersion": {
+          "type": "string"
+        },
+        "decision": {
+          "$ref": "#/$defs/decision"
+        },
+        "reviewerConfidence": {
+          "$ref": "#/$defs/reviewerConfidence"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "synthetic": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eligibleForMetrics": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reviewerAnnotationBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Label-only export container for one reviewer's completed annotations. It must retain each annotation's evaluationTextSha256 while excluding policy text, contexts, and source URLs.",
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "reviewerId",
+        "corpusVersion",
+        "runtimeManifestHash",
+        "annotations"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_reviewer_annotation_batch"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "corpusVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeManifestHash": {
+          "$ref": "#/$defs/runtimeManifestHash"
+        },
+        "annotations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/reviewerAnnotation"
+          }
+        }
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "corpusVersion",
+        "runtimeManifestHash",
+        "adjudicationId",
+        "caseId",
+        "track",
+        "ruleId",
+        "evaluationTextSha256",
+        "inputAnnotationIds",
+        "adjudicationMode",
+        "adjudicatorId",
+        "preservesOriginalAnnotations",
+        "synthetic",
+        "eligibleForMetrics",
+        "disagreementTypes",
+        "finalDecision",
+        "resolutionRationale"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_adjudication"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string"
+        },
+        "corpusVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeManifestHash": {
+          "$ref": "#/$defs/runtimeManifestHash"
+        },
+        "adjudicationId": {
+          "type": "string"
+        },
+        "caseId": {
+          "type": "string"
+        },
+        "track": {
+          "$ref": "#/$defs/track"
+        },
+        "ruleId": {
+          "type": "string"
+        },
+        "evaluationTextSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$",
+          "description": "SHA-256 of the exact UTF-8 evaluation text to which the adjudication applies."
+        },
+        "inputAnnotationIds": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "adjudicationMode": {
+          "enum": [
+            "agreementConfirmation",
+            "jointConsensus",
+            "thirdExpert"
+          ]
+        },
+        "adjudicatorId": {
+          "type": "string"
+        },
+        "preservesOriginalAnnotations": {
+          "const": true
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "eligibleForMetrics": {
+          "type": "boolean"
+        },
+        "disagreementTypes": {
+          "type": "array",
+          "minItems": 0,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "applicability",
+              "goldLabel",
+              "severity",
+              "evidence",
+              "legalBasis"
+            ]
+          }
+        },
+        "finalDecision": {
+          "$ref": "#/$defs/decision"
+        },
+        "resolutionRationale": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "synthetic": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eligibleForMetrics": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reviewPacketItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Private blinded-review work item. After review, copy only the annotation fields into reviewerAnnotation and omit text, contexts, titles, and other private work material.",
+      "required": [
+        "annotationId",
+        "caseId",
+        "track",
+        "ruleId",
+        "reviewerId",
+        "synthetic",
+        "eligibleForMetrics",
+        "documentCompleteness",
+        "evaluationTextSha256",
+        "legalAsOfDate",
+        "rulesetVersion",
+        "guidelineVersion",
+        "reviewMode",
+        "text",
+        "contexts",
+        "decision",
+        "reviewerConfidence"
+      ],
+      "properties": {
+        "annotationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "track": {
+          "$ref": "#/$defs/track"
+        },
+        "ruleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ruleTitle": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string"
+        },
+        "reviewerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "eligibleForMetrics": {
+          "type": "boolean"
+        },
+        "documentCompleteness": {
+          "$ref": "#/$defs/documentCompleteness"
+        },
+        "evaluationTextSha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "rulesetVersion": {
+          "type": "string"
+        },
+        "guidelineVersion": {
+          "type": "string"
+        },
+        "reviewMode": {
+          "$ref": "#/$defs/reviewMode"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 120,
+          "description": "Private analyzer-input text. Never copy this field into reviewerAnnotation or a public case manifest."
+        },
+        "contexts": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "auto",
+              "yes",
+              "no"
+            ]
+          }
+        },
+        "decision": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/decision"
+            }
+          ]
+        },
+        "reviewerConfidence": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/reviewerConfidence"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "synthetic": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "eligibleForMetrics": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reviewPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Private blinded-review packet. A completed item converts to reviewerAnnotation by copying annotationId, caseId, track, ruleId, reviewerId, synthetic, eligibleForMetrics, reviewMode, documentCompleteness, evaluationTextSha256, legalAsOfDate, rulesetVersion, guidelineVersion, decision, and reviewerConfidence; recordType, schemaVersion, evaluationId, corpusVersion, and runtimeManifestHash come from the packet. No other item field may be copied.",
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "packetId",
+        "reviewerId",
+        "corpusVersion",
+        "rulesetVersion",
+        "legalAsOfDate",
+        "runtimeManifestHash",
+        "privateArtifact",
+        "instructions",
+        "items"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_review_packet"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string"
+        },
+        "packetId": {
+          "type": "string"
+        },
+        "reviewerId": {
+          "type": "string"
+        },
+        "corpusVersion": {
+          "type": "string"
+        },
+        "rulesetVersion": {
+          "type": "string"
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "runtimeManifestHash": {
+          "$ref": "#/$defs/runtimeManifestHash"
+        },
+        "privateArtifact": {
+          "const": true
+        },
+        "instructions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decisionValues",
+            "note"
+          ],
+          "properties": {
+            "decisionValues": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/goldLabel"
+              }
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/reviewPacketItem"
+          }
+        }
+      }
+    },
+    "caseManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "status",
+        "containsExpertLabels",
+        "containsFullPolicyText",
+        "caseCount",
+        "cases"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_case_manifest"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "containsExpertLabels": {
+          "const": false,
+          "description": "Public case manifests are metadata-only and must never carry reviewer or adjudicated labels."
+        },
+        "containsFullPolicyText": {
+          "const": false,
+          "description": "Full policy text remains in the private corpus and review packets only."
+        },
+        "caseCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/publicCase"
+          }
+        }
+      }
+    },
+    "evaluationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordType",
+        "schemaVersion",
+        "evaluationId",
+        "status",
+        "certified",
+        "legalContext",
+        "corpus",
+        "review",
+        "labels",
+        "metrics",
+        "minimumSampleRequirements",
+        "provisionalReleaseGate",
+        "currentState"
+      ],
+      "properties": {
+        "recordType": {
+          "const": "legal_evaluation_config"
+        },
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "evaluationId": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "certified": {
+          "type": "boolean"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "casesFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "casesPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goldFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goldPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "annotationsFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "annotationsPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adjudicationsFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adjudicationsPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeManifestFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "legalContext": {
+          "type": "object"
+        },
+        "corpus": {
+          "type": "object"
+        },
+        "review": {
+          "type": "object"
+        },
+        "labels": {
+          "type": "object"
+        },
+        "metrics": {
+          "type": "object"
+        },
+        "minimumSampleRequirements": {
+          "type": "object"
+        },
+        "provisionalReleaseGate": {
+          "type": "object"
+        },
+        "currentState": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

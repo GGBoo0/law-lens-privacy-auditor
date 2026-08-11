@@ -16,7 +16,8 @@ export default function PrivacyPage() {
           </span>
           <span>법령렌즈</span>
         </Link>
-        <nav className="legalPageNav" aria-label="정책 문서">
+        <nav className="legalPageNav" aria-label="서비스 안내 문서">
+          <Link href="/methodology">평가 방법</Link>
           <Link href="/privacy" aria-current="page">
             개인정보
           </Link>
@@ -143,6 +144,7 @@ export default function PrivacyPage() {
           </p>
           <div className="documentActions">
             <Link href="/">분석 화면으로</Link>
+            <Link href="/methodology">평가 방법·정확도</Link>
             <a
               href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
               target="_blank"

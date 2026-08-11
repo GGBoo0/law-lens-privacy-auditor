@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/ci.yml/badge.svg)](https://github.com/GGBoo0/law-lens-privacy-auditor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-0c1425.svg)](./LICENSE)
-[![Ruleset](https://img.shields.io/badge/ruleset-KR--PRIVACY--2026.08.11--r3-c8ff00)](./lib/legal-baseline.ts)
+[![Ruleset](https://img.shields.io/badge/ruleset-KR--PRIVACY--2026.08.11--r4-c8ff00)](./lib/legal-baseline.ts)
 
 **[라이브 데모 사용하기](https://law-lens-privacy-kr.zzboof.chatgpt.site)** · **[피드백 남기기](https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose)**
 
@@ -68,6 +68,30 @@ flowchart LR
 화면의 숫자는 `(문구 확인 1점 + 조건부 확인 0.5점) ÷ 자동 평가대상 기재요소`로 계산하는 **자동탐지 기재 충족도**입니다. 법률 준수율·위반 확률·개인정보위 공식 평가점수가 아니며, 결과의 중심은 기재 적정성·가독성·접근성·실제 운영 일치의 네 평가축입니다.
 
 오탐 방지를 위해 법령 요소에서 만든 긍정·부정 예제 코퍼스로 회귀 테스트합니다. 이 코퍼스는 엔진의 규칙 안정성을 확인하는 자료이며, 변호사·개인정보 전문가가 이중 검토한 통계적 정확도 데이터셋은 아닙니다.
+
+### 법률 판단 정확도 평가 상태
+
+현재 상태는 **전문가 평가 전(`calibration_pending`)**입니다. URL 자동 발견률 84%와 화면의 자동탐지 기재 충족도는 법률 판단 정확도가 아니며, 전문가 골든셋의 정밀도·재현율·F1은 아직 산출하지 않습니다.
+
+평가 체계 자체는 문서 SHA-256, 고정 법령 기준일·규칙셋·runtime 법령 manifest SHA-256, 문서×canonical rule 단위 라벨, 전문가 2인의 독립 검토와 조정본을 분리해 기록하도록 구축했습니다. 라벨과 조정본의 문서·법령 해시가 현재 평가 입력과 다르면 실행을 중단합니다. 주요 지표는 규칙별 균형 F1, 고위험 결과의 엄격 재현율, 원문 근거 연결률이며 `누락 가능성` 정밀도와 위험 과대평가를 별도 안전지표로 봅니다. 일부 발췌문, 미조정 라벨, 개발자가 만든 합성 예제와 표본 부족 규칙은 성능 수치에서 제외합니다.
+
+최초 100개 이상의 전문가 조정 문서와 규칙별 최소 표본이 확보되기 전에는 성능 임계치가 배포 합격처럼 작동하지 않습니다. 지금 공개 CI는 데이터 계약·재현성·미검증 상태의 정직한 표시만 강제합니다. 성능 게이트는 원문과 조정 라벨을 공개 저장소에 올리지 않고, 접근통제된 평가 환경에서 locked test를 제공할 때만 활성화합니다. 자세한 계약과 검토 절차는 [`docs/legal-accuracy-evaluation.md`](./docs/legal-accuracy-evaluation.md)와 [라이브 평가 방법 페이지](https://law-lens-privacy-kr.zzboof.chatgpt.site/methodology)에서 확인할 수 있습니다.
+
+```bash
+# 공개 상태 계약 검사: 현재는 metrics=null인 calibration_pending이 정상입니다.
+npm run accuracy:gate
+
+# 비공개 사례가 준비된 뒤 검토자별 blind 패킷 생성
+npm run accuracy:prepare -- --reviewer expert-a --cases work/legal-evaluation/cases.json
+npm run accuracy:prepare -- --reviewer expert-b --cases work/legal-evaluation/cases.json
+
+# 두 검토자가 패킷의 decision·reviewerConfidence를 완성한 뒤 전체 원문을 제외한 비공개 라벨 파일로 변환
+npm run accuracy:export-annotations -- --packet work/legal-evaluation/review-expert-a.json
+npm run accuracy:export-annotations -- --packet work/legal-evaluation/review-expert-b.json
+
+# 조정본까지 준비되면 보호된 로컬·CI 환경에서 평가
+npm run accuracy:evaluate -- --config data/legal-evaluation/config.json --cases work/legal-evaluation/cases.json --annotations work/legal-evaluation/annotations/expert-a.json,work/legal-evaluation/annotations/expert-b.json --adjudications work/legal-evaluation/adjudications/final.json
+```
 
 ### URL 자동 탐색 QA
 
@@ -216,7 +240,8 @@ proxy.ts                   전역 보안 헤더와 CSP nonce
 - [ ] 표 제목과 필수 열의 의미 단위 검사
 - [x] 조건부 적용·부정문·법정 요소별 긍정/부정 코퍼스 회귀 테스트
 - [x] 공통 경로·사이트맵·공식 공개 데이터 기반 URL 탐색
-- [ ] 규칙별 정밀도·재현율을 측정하는 익명 평가 코퍼스 확장
+- [x] 전문가 이중검토용 라벨 스키마·기본 지표 runner·공개 상태 CI 게이트 구축
+- [ ] 필드별 합의도·신뢰구간 구현과 전문가 조정 문서 100개 이상 확보 후 locked-test 성능 게이트 활성화
 - [ ] 이전 처리방침과 변경사항 비교
 - [ ] PDF 처리방침 텍스트 추출
 - [ ] 회원가입·쿠키 동작과 처리방침의 불일치 검사

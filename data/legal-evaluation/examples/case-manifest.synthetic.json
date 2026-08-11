@@ -1,0 +1,20 @@
+{
+  "recordType": "legal_evaluation_case_manifest",
+  "schemaVersion": "1.0.0",
+  "evaluationId": "kr-privacy-policy-rule-engine-v1",
+  "status": "calibration_pending",
+  "containsExpertLabels": false,
+  "containsFullPolicyText": false,
+  "caseCount": 1,
+  "cases": [
+    {
+      "caseId": "synthetic-packet-case-001",
+      "documentCompleteness": "fullDocument",
+      "evaluationTextSha256": "sha256:a819760b063586f668f8c8fc686029d488b5b6916ad7edbe4eafb8dc03cb2219",
+      "legalAsOfDate": "2026-08-11",
+      "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+      "guidelineVersion": "gold-v1-draft",
+      "synthetic": true
+    }
+  ]
+}
