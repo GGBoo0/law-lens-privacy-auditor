@@ -287,8 +287,13 @@ test("pins the exact analyzer and legal source files used by the template", () =
   assert.equal(status.pins.rulesetVersion, LEGAL_BASELINE.rulesetVersion);
   assert.equal(status.pins.analyzerVersion, LEGAL_BASELINE.rulesetVersion);
   for (const [pinName, relativePath] of Object.entries(filePins)) {
-    const bytes = readFileSync(new URL(relativePath, import.meta.url));
-    const actual = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
+    const normalizedText = readFileSync(
+      new URL(relativePath, import.meta.url),
+      "utf8",
+    ).replace(/\r\n?/g, "\n");
+    const actual = `sha256:${createHash("sha256")
+      .update(normalizedText, "utf8")
+      .digest("hex")}`;
     assert.equal(status.pins[pinName], actual, `${pinName} is stale`);
   }
 });
