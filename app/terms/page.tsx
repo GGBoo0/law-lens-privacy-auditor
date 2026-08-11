@@ -18,6 +18,7 @@ export default function TermsPage() {
         </Link>
         <nav className="legalPageNav" aria-label="서비스 안내 문서">
           <Link href="/methodology">평가 방법</Link>
+          <Link href="/calibration">사전 교정</Link>
           <Link href="/privacy">개인정보</Link>
           <Link href="/terms" aria-current="page">
             이용조건·문의
@@ -34,8 +35,8 @@ export default function TermsPage() {
             의사결정 지원 도구입니다.
           </p>
           <div className="documentMeta">
-            <span>시행일 2026년 8월 11일</span>
-            <span>버전: 공개 베타 1.0</span>
+            <span>시행일 2026년 8월 12일</span>
+            <span>버전: 공개 베타 1.1</span>
           </div>
           <div className="documentNotice" role="note">
             분석 결과는 위법 여부를 확정하지 않으며 변호사, 개인정보 보호책임자
@@ -49,11 +50,19 @@ export default function TermsPage() {
             <li>공개 웹사이트에서 개인정보처리방침 후보를 발견하고 추출합니다.</li>
             <li>공식 검증일 기준 규칙과 문장 패턴으로 기재 여부를 점검합니다.</li>
             <li>원문 근거, 관련 법령, 수정 제안과 사실 확인 필요 항목을 제공합니다.</li>
+            <li>
+              개발자가 분석 결과의 맞음·오탐·판단 유보와 놓친 항목을 기기 안에서
+              기록하는 사전 교정 작업대를 제공합니다.
+            </li>
           </ul>
           <p>
             실제 수집 화면, 네트워크 전송, 동의 절차, 삭제 이행이나 내부 업무는
             처리방침만으로 확인할 수 없습니다. 결과에 표시된 법령 버전과 공식
             원문을 중요한 결정 전에 다시 확인해야 합니다.
+          </p>
+          <p>
+            개발자 사전 교정은 규칙 개선을 위한 자가 점검이며 전문가 평가, 법률
+            자문 또는 공개 가능한 정확도 측정값이 아닙니다.
           </p>
         </section>
 

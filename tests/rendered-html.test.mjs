@@ -370,6 +370,16 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.11-r4");
   assert.equal(result.legalBaseline.monitoring.enabled, true);
   assert.equal(result.legalBaseline.monitoring.sourceCount, 11);
+  assert.equal(result.legalBaseline.runtimeManifest.status, "valid");
+  assert.equal(result.legalBaseline.runtimeManifest.source, "bundled");
+  assert.match(
+    result.legalBaseline.runtimeManifest.canonicalSha256,
+    /^[a-f0-9]{64}$/,
+  );
+  assert.match(
+    result.legalBaseline.runtimeManifest.legalStateSha256,
+    /^[a-f0-9]{64}$/,
+  );
   assert.match(result.documentHash, /^[a-f0-9]{64}$/);
   assert.equal(result.scoreMethod.label, "자동탐지 기재 충족도");
   assert.match(result.scoreMethod.meaning, /공식 평가점수가 아니라/);

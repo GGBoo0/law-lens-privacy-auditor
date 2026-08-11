@@ -1,0 +1,693 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://law-lens.example/schemas/developer-calibration-v1.json",
+  "title": "Law Lens developer self-calibration data contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "aggregateVersion",
+    "datasetId",
+    "datasetRevision",
+    "reviewMode",
+    "validationLevel",
+    "createdAt",
+    "updatedAt",
+    "sectorPlan",
+    "pins",
+    "legalCohort",
+    "slots",
+    "aggregate"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "aggregateVersion": {
+      "const": "1.0.0"
+    },
+    "datasetId": {
+      "type": "string",
+      "pattern": "^devcal-[a-z0-9][a-z0-9-]{2,63}$"
+    },
+    "datasetRevision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "reviewMode": {
+      "const": "developer_self_review"
+    },
+    "validationLevel": {
+      "const": "not_expert_validated"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sectorPlan": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "$ref": "#/$defs/sectorPlanItem"
+      }
+    },
+    "pins": {
+      "$ref": "#/$defs/pins"
+    },
+    "legalCohort": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/legalCohort"
+        }
+      ]
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "items": {
+        "$ref": "#/$defs/slot"
+      }
+    },
+    "aggregate": {
+      "$ref": "#/$defs/aggregate"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "opaqueId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$"
+    },
+    "sector": {
+      "enum": [
+        "commerce",
+        "finance",
+        "online_platform",
+        "telecom",
+        "healthcare",
+        "education"
+      ]
+    },
+    "sectorPlanItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sector",
+        "requiredSlotCount"
+      ],
+      "properties": {
+        "sector": {
+          "$ref": "#/$defs/sector"
+        },
+        "requiredSlotCount": {
+          "const": 4
+        }
+      }
+    },
+    "pins": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "analyzerVersion",
+        "rulesetVersion",
+        "analyzerSourceSha256",
+        "ruleCatalogSha256",
+        "legalRuntimeManifestSha256",
+        "legalSourceSnapshotSha256"
+      ],
+      "properties": {
+        "analyzerVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "rulesetVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "analyzerSourceSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "ruleCatalogSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "legalRuntimeManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "legalSourceSnapshotSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "legalCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeLegalStateSha256",
+        "rulesetVersion"
+      ],
+      "properties": {
+        "runtimeLegalStateSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "rulesetVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        }
+      }
+    },
+    "sourcePins": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceDocumentSha256",
+        "analysisInputSha256",
+        "analyzerOutputSha256",
+        "analyzerVersion",
+        "rulesetVersion",
+        "legalAsOfDate",
+        "runtimeManifestCanonicalSha256",
+        "runtimeLegalStateSha256",
+        "runtimeManifestSource",
+        "runtimeManifestStatus",
+        "runtimeManifestGeneratedAt",
+        "retrievedAt",
+        "analyzedAt"
+      ],
+      "properties": {
+        "sourceDocumentSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analysisInputSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analyzerOutputSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "analyzerVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "rulesetVersion": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"
+        },
+        "legalAsOfDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "runtimeManifestCanonicalSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "runtimeLegalStateSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "runtimeManifestSource": {
+          "enum": [
+            "live",
+            "bundled"
+          ]
+        },
+        "runtimeManifestStatus": {
+          "const": "valid"
+        },
+        "runtimeManifestGeneratedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "analyzedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "evidenceAnchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "anchorSha256"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "anchorSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "evidenceAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "anchors"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "supported",
+            "unsupported",
+            "uncertain"
+          ]
+        },
+        "anchors": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/evidenceAnchor"
+          }
+        }
+      }
+    },
+    "legalBasisRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "provisionId"
+      ],
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$"
+        },
+        "provisionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9가-힣._() -]{1,80}$"
+        }
+      }
+    },
+    "legalBasisAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "basisRefs"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "supported",
+            "unsupported",
+            "uncertain"
+          ]
+        },
+        "basisRefs": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/$defs/legalBasisRef"
+          }
+        }
+      }
+    },
+    "findingReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "findingId",
+        "ruleId",
+        "decision",
+        "reasonCodes",
+        "severityFit",
+        "evidenceAssessment",
+        "legalBasisAssessment"
+      ],
+      "properties": {
+        "findingId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$"
+        },
+        "decision": {
+          "enum": [
+            "confirmed",
+            "false_positive",
+            "uncertain"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "severityFit": {
+          "enum": [
+            "appropriate",
+            "overstated",
+            "understated",
+            "uncertain"
+          ]
+        },
+        "evidenceAssessment": {
+          "$ref": "#/$defs/evidenceAssessment"
+        },
+        "legalBasisAssessment": {
+          "$ref": "#/$defs/legalBasisAssessment"
+        }
+      }
+    },
+    "manualMissedFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "missedFindingId",
+        "ruleId",
+        "severity",
+        "reasonCodes",
+        "evidenceAssessment",
+        "legalBasisAssessment"
+      ],
+      "properties": {
+        "missedFindingId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$"
+        },
+        "severity": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "reasonCodes": {
+          "$ref": "#/$defs/reasonCodes"
+        },
+        "evidenceAssessment": {
+          "$ref": "#/$defs/evidenceAssessment"
+        },
+        "legalBasisAssessment": {
+          "$ref": "#/$defs/legalBasisAssessment"
+        }
+      }
+    },
+    "reasonCodes": {
+      "type": "array",
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "disclosure_present",
+          "rule_not_applicable",
+          "evidence_mismatch",
+          "legal_basis_mismatch",
+          "severity_overstated",
+          "insufficient_context",
+          "source_incomplete",
+          "requires_domain_expertise",
+          "legal_change_pending",
+          "missing_rule_output",
+          "wrong_pass_classification",
+          "severity_understated",
+          "finding_type_mismatch"
+        ]
+      }
+    },
+    "caseReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "reviewMode",
+        "validationLevel",
+        "documentCompleteness",
+        "omissionCheckCompleted",
+        "analyzerFindingCount",
+        "sourcePins",
+        "reviewedAt",
+        "findingReviews",
+        "manualMissedFindings"
+      ],
+      "properties": {
+        "caseId": {
+          "$ref": "#/$defs/opaqueId"
+        },
+        "reviewMode": {
+          "const": "developer_self_review"
+        },
+        "validationLevel": {
+          "const": "not_expert_validated"
+        },
+        "documentCompleteness": {
+          "enum": [
+            "full",
+            "partial",
+            "unknown"
+          ]
+        },
+        "omissionCheckCompleted": {
+          "type": "boolean"
+        },
+        "analyzerFindingCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "sourcePins": {
+          "$ref": "#/$defs/sourcePins"
+        },
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "findingReviews": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/$defs/findingReview"
+          }
+        },
+        "manualMissedFindings": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/manualMissedFinding"
+          }
+        }
+      }
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slotId",
+        "sector",
+        "status",
+        "caseReview"
+      ],
+      "properties": {
+        "slotId": {
+          "type": "string",
+          "pattern": "^slot-[0-9]{2}$"
+        },
+        "sector": {
+          "$ref": "#/$defs/sector"
+        },
+        "status": {
+          "enum": [
+            "unassigned",
+            "in_review",
+            "completed"
+          ]
+        },
+        "caseReview": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/caseReview"
+            }
+          ]
+        }
+      }
+    },
+    "countTriplet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supported",
+        "unsupported",
+        "uncertain"
+      ],
+      "properties": {
+        "supported": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsupported": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uncertain": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "rate": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "aggregateVersion",
+        "datasetRevision",
+        "calibrationCounts",
+        "calibrationRates"
+      ],
+      "properties": {
+        "aggregateVersion": {
+          "const": "1.0.0"
+        },
+        "datasetRevision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "calibrationCounts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "totalSlots",
+            "unassignedSlots",
+            "inReviewSlots",
+            "completedSlots",
+            "findingDecisions",
+            "confirmed",
+            "falsePositive",
+            "uncertain",
+            "evidenceAssessments",
+            "legalBasisAssessments",
+            "manualMissedFindings",
+            "omissionEligibleSlotsWithMisses",
+            "omissionEligibleCompletedSlots"
+          ],
+          "properties": {
+            "totalSlots": {
+              "const": 24
+            },
+            "unassignedSlots": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            },
+            "inReviewSlots": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            },
+            "completedSlots": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            },
+            "findingDecisions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "confirmed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "falsePositive": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uncertain": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidenceAssessments": {
+              "$ref": "#/$defs/countTriplet"
+            },
+            "legalBasisAssessments": {
+              "$ref": "#/$defs/countTriplet"
+            },
+            "manualMissedFindings": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "omissionEligibleSlotsWithMisses": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            },
+            "omissionEligibleCompletedSlots": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 24
+            }
+          }
+        },
+        "calibrationRates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "slotCompletionRate",
+            "findingConfirmationRate",
+            "falsePositiveRate",
+            "uncertainDecisionRate",
+            "evidenceSupportRate",
+            "legalBasisSupportRate",
+            "omissionCheckedSlotMissRate"
+          ],
+          "properties": {
+            "slotCompletionRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "findingConfirmationRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "falsePositiveRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "uncertainDecisionRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "evidenceSupportRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "legalBasisSupportRate": {
+              "$ref": "#/$defs/rate"
+            },
+            "omissionCheckedSlotMissRate": {
+              "$ref": "#/$defs/rate"
+            }
+          }
+        }
+      }
+    }
+  }
+}

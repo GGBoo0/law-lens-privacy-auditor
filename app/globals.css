@@ -1669,16 +1669,28 @@ footer p {
 }
 
 .legalPageNav {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
+  overflow-x: auto;
   color: #596375;
   font-size: 12px;
   font-weight: 750;
+  scrollbar-width: none;
+  white-space: nowrap;
 }
 
 .legalPageNav a {
+  min-height: 44px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
   text-decoration: none;
+}
+
+.legalPageNav::-webkit-scrollbar {
+  display: none;
 }
 
 .legalPageNav a[aria-current="page"] {
@@ -2139,8 +2151,9 @@ footer p,
   }
 
   .legalPageNav {
+    max-width: calc(100% - 104px);
     gap: 9px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .hero h1 {
