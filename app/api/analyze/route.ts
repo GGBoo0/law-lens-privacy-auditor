@@ -37,6 +37,7 @@ const LEGAL_RUNTIME_MANIFEST_CACHE_MS = 5 * 60 * 1000;
 let runtimeLegalManifestCache: {
   expiresAt: number;
   value: unknown;
+  source: "live" | "bundled" | "unavailable";
 } | null = null;
 const contextKeys: ContextKey[] = [
   "thirdParty",
@@ -126,10 +127,51 @@ async function documentHash(text: string) {
     .join("");
 }
 
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+function runtimeChangeIdentity(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const change = value as Record<string, unknown>;
+  const review =
+    change.review && typeof change.review === "object" && !Array.isArray(change.review)
+      ? (change.review as Record<string, unknown>)
+      : {};
+  return {
+    changeId: change.changeId ?? null,
+    sourceId: change.sourceId ?? null,
+    versionId: change.versionId ?? null,
+    documentHash: change.documentHash ?? null,
+    effectiveFrom: change.effectiveFrom ?? null,
+    impactCategories: Array.isArray(change.impactCategories)
+      ? [...change.impactCategories].map(String).sort()
+      : [],
+    lifecycleStatus: change.lifecycleStatus ?? null,
+    isEffective: change.isEffective === true,
+    reviewIsCurrent: change.reviewIsCurrent === true,
+    review: {
+      status: review.status ?? null,
+      reviewedRulesetVersion: review.reviewedRulesetVersion ?? null,
+      outcome: review.outcome ?? null,
+    },
+  };
+}
+
 async function loadRuntimeLegalManifest() {
   const now = Date.now();
   if (runtimeLegalManifestCache && runtimeLegalManifestCache.expiresAt > now) {
-    return runtimeLegalManifestCache.value;
+    return runtimeLegalManifestCache;
   }
 
   // Test and offline QA runs must be deterministic and must not inherit the
@@ -138,11 +180,13 @@ async function loadRuntimeLegalManifest() {
     runtimeLegalManifestCache = {
       expiresAt: now + LEGAL_RUNTIME_MANIFEST_CACHE_MS,
       value: fallbackRuntimeLegalManifest,
+      source: "bundled",
     };
-    return fallbackRuntimeLegalManifest;
+    return runtimeLegalManifestCache;
   }
 
   let value: unknown;
+  let source: "live" | "bundled" | "unavailable" = "live";
   let cacheMilliseconds = LEGAL_RUNTIME_MANIFEST_CACHE_MS;
   try {
     const response = await fetch(LEGAL_RUNTIME_MANIFEST_URL, {
@@ -159,31 +203,69 @@ async function loadRuntimeLegalManifest() {
     // Reuse the last live value only while its own 36-hour freshness gate
     // permits it. A cold start with no live manifest passes invalid data so the
     // analyzer conservatively defers every legal conclusion.
-    value =
-      runtimeLegalManifestCache?.value ??
-      {
+    if (runtimeLegalManifestCache) {
+      value = runtimeLegalManifestCache.value;
+      source = runtimeLegalManifestCache.source;
+    } else {
+      value = {
         unavailable: true,
         reason: "live legal runtime manifest could not be loaded",
       };
+      source = "unavailable";
+    }
     cacheMilliseconds = 30_000;
   }
 
   runtimeLegalManifestCache = {
     expiresAt: now + cacheMilliseconds,
     value,
+    source,
   };
-  return value;
+  return runtimeLegalManifestCache;
 }
 
 async function buildAnalysis(
   text: string,
-  meta: Parameters<typeof analyzePrivacyPolicy>[1],
+  meta: NonNullable<Parameters<typeof analyzePrivacyPolicy>[1]>,
 ) {
-  const runtimeLegalManifest =
-    meta.runtimeLegalManifest ?? (await loadRuntimeLegalManifest());
+  const loadedRuntimeManifest =
+    meta.runtimeLegalManifest === undefined
+      ? await loadRuntimeLegalManifest()
+      : {
+          value: meta.runtimeLegalManifest,
+          source: "bundled" as const,
+        };
+  const runtimeLegalManifest = loadedRuntimeManifest.value;
+  const analysis = analyzePrivacyPolicy(text, { ...meta, runtimeLegalManifest });
+  const runtimeManifestCanonicalSha256 = await documentHash(
+    canonicalJson(runtimeLegalManifest),
+  );
+  const runtimeLegalStateSha256 = await documentHash(
+    canonicalJson({
+      rulesetVersion: analysis.legalBaseline.rulesetVersion,
+      status: analysis.legalBaseline.runtimeManifest.status,
+      changes: analysis.legalBaseline.upcomingChanges
+        .map(runtimeChangeIdentity)
+        .filter((change) => change !== null)
+        .sort((left, right) => {
+          const leftKey = canonicalJson(left);
+          const rightKey = canonicalJson(right);
+          return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+        }),
+    }),
+  );
   return {
-    ...analyzePrivacyPolicy(text, { ...meta, runtimeLegalManifest }),
+    ...analysis,
     documentHash: await documentHash(text),
+    legalBaseline: {
+      ...analysis.legalBaseline,
+      runtimeManifest: {
+        ...analysis.legalBaseline.runtimeManifest,
+        source: loadedRuntimeManifest.source,
+        canonicalSha256: runtimeManifestCanonicalSha256,
+        legalStateSha256: runtimeLegalStateSha256,
+      },
+    },
   };
 }
 

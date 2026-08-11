@@ -8,7 +8,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import accuracyStatus from "../data/legal-accuracy-status.json";
+import { storeCalibrationTransferDraft } from "../lib/developer-calibration-transfer";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
@@ -415,6 +417,7 @@ function monitorBadge(status: LegalMonitorStatus | null): MonitorBadge {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [mode, setMode] = useState<"url" | "text">("url");
   const [url, setUrl] = useState("");
   const [policyText, setPolicyText] = useState("");
@@ -614,6 +617,20 @@ export default function Home() {
       .slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(href);
+  }
+
+  function openDeveloperCalibration() {
+    if (!result) return;
+    try {
+      storeCalibrationTransferDraft(result);
+      router.push("/calibration");
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "사전 교정으로 보낼 분석 결과를 준비하지 못했습니다.",
+      );
+    }
   }
 
   function printReport() {
@@ -932,6 +949,9 @@ export default function Home() {
               </button>
               <button className="downloadButton" onClick={downloadReport}>
                 검토 포함 JSON
+              </button>
+              <button className="downloadButton" onClick={openDeveloperCalibration}>
+                사전 교정으로 보내기
               </button>
             </div>
           </div>
@@ -1406,6 +1426,7 @@ export default function Home() {
         </p>
         <nav className="footerLinks" aria-label="서비스 정보">
           <a href="/methodology">평가 방법·정확도</a>
+          <a href="/calibration">개발자 사전 교정</a>
           <a href="/privacy">개인정보 처리 안내</a>
           <a href="/terms">이용조건·문의</a>
           <a

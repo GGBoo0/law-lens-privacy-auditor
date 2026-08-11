@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0.0",
+  "aggregateVersion": "1.0.0",
+  "datasetId": "devcal-initial-24",
+  "datasetRevision": 0,
+  "reviewMode": "developer_self_review",
+  "validationLevel": "not_expert_validated",
+  "createdAt": "2026-08-11T15:00:00.000Z",
+  "updatedAt": "2026-08-11T15:00:00.000Z",
+  "sectorPlan": [
+    { "sector": "commerce", "requiredSlotCount": 4 },
+    { "sector": "finance", "requiredSlotCount": 4 },
+    { "sector": "online_platform", "requiredSlotCount": 4 },
+    { "sector": "telecom", "requiredSlotCount": 4 },
+    { "sector": "healthcare", "requiredSlotCount": 4 },
+    { "sector": "education", "requiredSlotCount": 4 }
+  ],
+  "pins": {
+    "analyzerVersion": "KR-PRIVACY-2026.08.11-r4",
+    "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
+    "analyzerSourceSha256": "sha256:a4567d554b87cbb095635ce90ccd4f4ad8eeebacb7df0155aa378b11c493c2a9",
+    "ruleCatalogSha256": "sha256:3959fe16238a181f0356662e2376ad0d8064afde6802ab862683a0bf6e6ad62d",
+    "legalRuntimeManifestSha256": "sha256:3e9c8177780848d9613afc29ebe27220be6360942c15bba4d8d0c88aa8167639",
+    "legalSourceSnapshotSha256": "sha256:4afd5b5447c42e61f82d478f19130462ba4048698f93a815322b1e8d9362a5ed"
+  },
+  "legalCohort": null,
+  "slots": [
+    { "slotId": "slot-01", "sector": "commerce", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-02", "sector": "commerce", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-03", "sector": "commerce", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-04", "sector": "commerce", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-05", "sector": "finance", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-06", "sector": "finance", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-07", "sector": "finance", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-08", "sector": "finance", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-09", "sector": "online_platform", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-10", "sector": "online_platform", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-11", "sector": "online_platform", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-12", "sector": "online_platform", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-13", "sector": "telecom", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-14", "sector": "telecom", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-15", "sector": "telecom", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-16", "sector": "telecom", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-17", "sector": "healthcare", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-18", "sector": "healthcare", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-19", "sector": "healthcare", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-20", "sector": "healthcare", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-21", "sector": "education", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-22", "sector": "education", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-23", "sector": "education", "status": "unassigned", "caseReview": null },
+    { "slotId": "slot-24", "sector": "education", "status": "unassigned", "caseReview": null }
+  ],
+  "aggregate": {
+    "aggregateVersion": "1.0.0",
+    "datasetRevision": 0,
+    "calibrationCounts": {
+      "totalSlots": 24,
+      "unassignedSlots": 24,
+      "inReviewSlots": 0,
+      "completedSlots": 0,
+      "findingDecisions": 0,
+      "confirmed": 0,
+      "falsePositive": 0,
+      "uncertain": 0,
+      "evidenceAssessments": { "supported": 0, "unsupported": 0, "uncertain": 0 },
+      "legalBasisAssessments": { "supported": 0, "unsupported": 0, "uncertain": 0 },
+      "manualMissedFindings": 0,
+      "omissionEligibleSlotsWithMisses": 0,
+      "omissionEligibleCompletedSlots": 0
+    },
+    "calibrationRates": {
+      "slotCompletionRate": 0,
+      "findingConfirmationRate": null,
+      "falsePositiveRate": null,
+      "uncertainDecisionRate": null,
+      "evidenceSupportRate": null,
+      "legalBasisSupportRate": null,
+      "omissionCheckedSlotMissRate": null
+    }
+  }
+}

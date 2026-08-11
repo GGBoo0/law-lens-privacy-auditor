@@ -25,6 +25,7 @@ export default function MethodologyPage() {
           <Link href="/methodology" aria-current="page">
             평가 방법
           </Link>
+          <Link href="/calibration">사전 교정</Link>
           <Link href="/privacy">개인정보</Link>
           <Link href="/terms">이용조건·문의</Link>
         </nav>
@@ -101,6 +102,11 @@ export default function MethodologyPage() {
             문서와 같은 법령 기준으로 공정하게 비교할 수 있도록 준비합니다. 현재
             분석 결과는 공식 기준에 따른 사전 점검 자료로만 사용해야 합니다.
           </p>
+          <p>
+            <Link href="/calibration">개발자 사전 교정</Link>은 실제 분석 결과 24건을
+            직접 살펴 오탐과 놓친 항목을 찾는 준비 단계입니다. 이 기록은 전문가가
+            만든 정답 데이터와 섞지 않으며 법률 판단 정확도 수치에도 사용하지 않습니다.
+          </p>
         </section>
 
         <section aria-labelledby="future-metrics">
@@ -153,6 +159,7 @@ export default function MethodologyPage() {
           </ol>
           <div className="documentActions">
             <Link href="/">분석 화면으로</Link>
+            <Link href="/calibration">개발자 사전 교정</Link>
             <Link href="/privacy">개인정보 처리 안내</Link>
             <Link href="/terms">이용조건·문의</Link>
           </div>

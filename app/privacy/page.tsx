@@ -18,6 +18,7 @@ export default function PrivacyPage() {
         </Link>
         <nav className="legalPageNav" aria-label="서비스 안내 문서">
           <Link href="/methodology">평가 방법</Link>
+          <Link href="/calibration">사전 교정</Link>
           <Link href="/privacy" aria-current="page">
             개인정보
           </Link>
@@ -34,7 +35,7 @@ export default function PrivacyPage() {
             정보, 남용 방지를 위해 제한적으로 사용하는 정보를 설명합니다.
           </p>
           <div className="documentMeta">
-            <span>시행일 2026년 8월 11일</span>
+            <span>시행일 2026년 8월 12일</span>
             <span>운영 주체: GitHub GGBoo0 · 법령렌즈 공개 베타</span>
           </div>
           <div className="documentNotice" role="note">
@@ -83,6 +84,24 @@ export default function PrivacyPage() {
               사용자가 직접 내려받은 JSON·PDF 결과는 사용자의 기기에만 남으며
               사용자가 관리합니다.
             </li>
+            <li>
+              개발자 사전 교정 기록은 서버나 D1에 보내지 않고 현재 브라우저의
+              IndexedDB에만 저장합니다. 교정용 백업에는 처리방침 원문·발견 문구·URL을
+              넣지 않습니다. 같은 회사를 반복하지 않기 위한 조직 별칭도 이 브라우저에만
+              저장하고 백업에서는 제외합니다. 다만 문서 지문과 검토 판정이 포함되므로
+              백업 파일은 비공개로 관리해야 합니다.
+            </li>
+            <li>
+              분석 화면에서 ‘사전 교정으로 보내기’를 선택하면 검토에 필요한 분석
+              요약과 짧은 발견 문구를 브라우저 세션 저장소에 임시로 두며, 교정 화면이
+              이를 읽는 즉시 삭제합니다. 이 문구는 IndexedDB나 교정용 백업에 남기지
+              않습니다.
+            </li>
+            <li>
+              브라우저 데이터 삭제, 시크릿 모드 종료 또는 기기 변경 시 사전 교정
+              기록이 사라질 수 있습니다. 필요한 기록은 사용자가 직접 JSON으로
+              백업하고 삭제합니다.
+            </li>
           </ul>
         </section>
 
@@ -113,9 +132,10 @@ export default function PrivacyPage() {
           <h2>4. 이용자의 선택과 요청</h2>
           <p>
             URL 대신 원문 붙여넣기를 선택할 수 있고, 분석 전에는 언제든 입력을
-            중단할 수 있습니다. 현재 계정이나 저장된 분석 이력이 없으므로 이를
-            조회하는 기능은 제공하지 않습니다. 개인정보 처리 관련 문의는 아래
-            공개 베타 문의 채널로 남길 수 있습니다.
+            중단할 수 있습니다. 서버 계정이나 서버에 저장된 분석 이력이 없으므로
+            운영자가 이를 조회하는 기능은 제공하지 않습니다. 사전 교정 기록은
+            작업대의 초기화 기능이나 브라우저 설정에서 직접 삭제할 수 있습니다.
+            개인정보 처리 관련 문의는 아래 공개 베타 문의 채널로 남길 수 있습니다.
           </p>
           <p>
             GitHub 문의는 공개될 수 있으므로 이름, 연락처, 비공개 URL이나 방침
