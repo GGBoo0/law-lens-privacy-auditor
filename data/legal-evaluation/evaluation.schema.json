@@ -1032,6 +1032,828 @@
         }
       }
     },
+    "evaluationLegalContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verifiedAt",
+        "timeZone",
+        "axes",
+        "interpretiveSources"
+      ],
+      "properties": {
+        "verifiedAt": {
+          "type": "string",
+          "format": "date"
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "axes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "sourceId",
+              "article",
+              "url"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "article": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        },
+        "interpretiveSources": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceId",
+              "name",
+              "role",
+              "url"
+            ],
+            "properties": {
+              "sourceId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    },
+    "evaluationCorpusConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "storageMode",
+        "commitFullDocuments",
+        "publicManifestContains",
+        "splitUnit",
+        "splitPolicy",
+        "allowedDocumentCompleteness",
+        "tracks"
+      ],
+      "properties": {
+        "storageMode": {
+          "const": "private_external"
+        },
+        "commitFullDocuments": {
+          "const": false
+        },
+        "publicManifestContains": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "splitUnit": {
+          "const": "companyId"
+        },
+        "splitPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedDocumentCompleteness": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/documentCompleteness"
+          }
+        },
+        "tracks": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/track"
+          }
+        }
+      }
+    },
+    "minimumLower95Threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumLower95"
+      ],
+      "properties": {
+        "minimumLower95": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "maximumUpper95Threshold": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observedMaxCount",
+        "maximumUpper95"
+      ],
+      "properties": {
+        "observedMaxCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximumUpper95": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "agreementThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "thresholdStatus",
+        "minimumCompletePairCoverage",
+        "maximumIncompletePairCount",
+        "maximumInvalidValueCount",
+        "maximumMissingValueCount",
+        "applicability_cohen_kappa",
+        "operational_outcome_cohen_kappa",
+        "gold_label_cohen_kappa",
+        "requires_factual_verification_cohen_kappa",
+        "severity_linear_weighted_kappa",
+        "evidence_structural_agreement_rate",
+        "defect_code_mean_jaccard",
+        "legal_basis_mean_jaccard"
+      ],
+      "properties": {
+        "thresholdStatus": {
+          "const": "provisional_unvalidated"
+        },
+        "minimumCompletePairCoverage": {
+          "const": 1
+        },
+        "maximumIncompletePairCount": {
+          "const": 0
+        },
+        "maximumInvalidValueCount": {
+          "const": 0
+        },
+        "maximumMissingValueCount": {
+          "const": 0
+        },
+        "applicability_cohen_kappa": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "operational_outcome_cohen_kappa": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "gold_label_cohen_kappa": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "requires_factual_verification_cohen_kappa": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "severity_linear_weighted_kappa": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "evidence_structural_agreement_rate": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "defect_code_mean_jaccard": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        },
+        "legal_basis_mean_jaccard": {
+          "$ref": "#/$defs/minimumLower95Threshold"
+        }
+      }
+    },
+    "evaluationReviewConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumIndependentReviewers",
+        "agreementMetrics",
+        "blindToSystemOutput",
+        "independentBeforeAdjudication",
+        "retainOriginalAnnotations",
+        "adjudicateAllDisagreements",
+        "thirdExpertRequiredWhen",
+        "calibrationCases"
+      ],
+      "properties": {
+        "minimumIndependentReviewers": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "agreementMetrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "decisionKappa",
+            "fieldLevelAgreement",
+            "pairingPolicy",
+            "confidenceIntervalMethod",
+            "provisionalThresholds"
+          ],
+          "properties": {
+            "decisionKappa": {
+              "const": "implemented"
+            },
+            "fieldLevelAgreement": {
+              "const": "implemented"
+            },
+            "pairingPolicy": {
+              "const": "exactly_two_independent_reviewers_before_adjudication"
+            },
+            "confidenceIntervalMethod": {
+              "const": "company_clustered_bootstrap_95"
+            },
+            "provisionalThresholds": {
+              "$ref": "#/$defs/agreementThresholds"
+            }
+          }
+        },
+        "blindToSystemOutput": {
+          "const": true
+        },
+        "independentBeforeAdjudication": {
+          "const": true
+        },
+        "retainOriginalAnnotations": {
+          "const": true
+        },
+        "adjudicateAllDisagreements": {
+          "const": true
+        },
+        "thirdExpertRequiredWhen": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "calibrationCases": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimum",
+            "recommendedMaximum",
+            "includedInFinalMetrics"
+          ],
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "recommendedMaximum": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "includedInFinalMetrics": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "evaluationLabelsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicability",
+        "goldLabel",
+        "severity"
+      ],
+      "properties": {
+        "applicability": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/applicability"
+          }
+        },
+        "goldLabel": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/goldLabel"
+          }
+        },
+        "severity": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/severity"
+          }
+        }
+      }
+    },
+    "evaluationConfidenceIntervals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationStatus",
+        "confidenceLevel",
+        "proportionMetrics",
+        "f1Metrics",
+        "minimumThresholdComparison",
+        "maximumThresholdComparison",
+        "wilson",
+        "companyClusterBootstrap"
+      ],
+      "properties": {
+        "implementationStatus": {
+          "const": "implemented"
+        },
+        "confidenceLevel": {
+          "const": 0.95
+        },
+        "proportionMetrics": {
+          "const": "wilson_95"
+        },
+        "f1Metrics": {
+          "const": "company_clustered_bootstrap_95"
+        },
+        "minimumThresholdComparison": {
+          "const": "lower95"
+        },
+        "maximumThresholdComparison": {
+          "const": "upper95"
+        },
+        "wilson": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "z",
+            "zeroDenominatorStatus"
+          ],
+          "properties": {
+            "z": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "zeroDenominatorStatus": {
+              "const": "insufficient_support"
+            }
+          }
+        },
+        "companyClusterBootstrap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "clusterUnit",
+            "method",
+            "replicates",
+            "minimumClusters",
+            "minimumValidReplicateFraction",
+            "seed",
+            "prng",
+            "quantileMethod",
+            "sortClusterIds"
+          ],
+          "properties": {
+            "clusterUnit": {
+              "const": "companyId"
+            },
+            "method": {
+              "const": "percentile"
+            },
+            "replicates": {
+              "type": "integer",
+              "minimum": 10000
+            },
+            "minimumClusters": {
+              "type": "integer",
+              "minimum": 30
+            },
+            "minimumValidReplicateFraction": {
+              "type": "number",
+              "minimum": 0.99,
+              "maximum": 1
+            },
+            "seed": {
+              "type": "string",
+              "minLength": 1
+            },
+            "prng": {
+              "const": "mulberry32_fnv1a_utf16_v1"
+            },
+            "quantileMethod": {
+              "const": "linear_r7"
+            },
+            "sortClusterIds": {
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "evaluationMetricsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary",
+        "guardrails",
+        "diagnostics",
+        "confidenceIntervals",
+        "unsupportedMetricValue",
+        "unsupportedMetricStatus"
+      ],
+      "properties": {
+        "primary": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "rule_balanced_actionable_macro_f1",
+              "high_risk_recall_strict",
+              "strict_evidence_grounding_rate",
+              "legal_basis_precision",
+              "legal_basis_recall"
+            ]
+          }
+        },
+        "guardrails": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "possible_missing_precision",
+              "unsafe_high_escalation_rate",
+              "high_overstatement_rate",
+              "partial_unsupported_omission_rate",
+              "partial_unsafe_high_rate"
+            ]
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "confidenceIntervals": {
+          "$ref": "#/$defs/evaluationConfidenceIntervals"
+        },
+        "unsupportedMetricValue": {
+          "type": "null"
+        },
+        "unsupportedMetricStatus": {
+          "const": "insufficient_support"
+        }
+      }
+    },
+    "lockedTestPerTrackRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "appliesIndependentlyToEachTrack",
+        "minimumDistinctCompanies",
+        "minimumMetricEligiblePolicies",
+        "perRuleGoldPositiveForRecall",
+        "perRulePredictedPositiveForPrecision",
+        "perRuleGoldNegativeForF1",
+        "minimumGoldPositiveCompaniesPerRule",
+        "minimumPredictedPositiveCompaniesPerRule",
+        "minimumGoldNegativeCompaniesPerRule",
+        "highRiskGoldPositiveTotal",
+        "highRiskMinimumDistinctCompanies",
+        "strictEvidenceMinimumPredictions",
+        "strictEvidenceMinimumDistinctCompanies",
+        "unsafeHighMinimumEligibleRows",
+        "unsafeHighMinimumDistinctCompanies",
+        "legalBasisMinimumPredictedCitations",
+        "legalBasisMinimumGoldCitations",
+        "legalBasisMinimumDistinctCompanies",
+        "highOverstatementMinimumEligibleRows",
+        "highOverstatementMinimumDistinctCompanies",
+        "partialDocumentMinimumEligibleRows",
+        "partialDocumentMinimumDistinctCompanies"
+      ],
+      "properties": {
+        "appliesIndependentlyToEachTrack": {
+          "const": true
+        },
+        "minimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumMetricEligiblePolicies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perRuleGoldPositiveForRecall": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perRulePredictedPositiveForPrecision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perRuleGoldNegativeForF1": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumGoldPositiveCompaniesPerRule": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumPredictedPositiveCompaniesPerRule": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumGoldNegativeCompaniesPerRule": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highRiskGoldPositiveTotal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highRiskMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "strictEvidenceMinimumPredictions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "strictEvidenceMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unsafeHighMinimumEligibleRows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "unsafeHighMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "legalBasisMinimumPredictedCitations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "legalBasisMinimumGoldCitations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "legalBasisMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highOverstatementMinimumEligibleRows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highOverstatementMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partialDocumentMinimumEligibleRows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "partialDocumentMinimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "minimumSampleRequirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expertReviewedPoliciesForCertification",
+        "recommendedPolicies",
+        "minimumDistinctCompanies",
+        "minimumSectors",
+        "lockedTestFractionMinimum",
+        "lockedTestFractionUnit",
+        "lockedTestPerTrack",
+        "perRuleGoldPositiveForRecall",
+        "perRulePredictedPositiveForPrecision",
+        "perRuleGoldNegativeForF1",
+        "highRiskGoldPositiveTotal",
+        "highRiskMinimumRuleFamilies",
+        "highRiskMaximumSingleFamilyFraction"
+      ],
+      "properties": {
+        "expertReviewedPoliciesForCertification": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "recommendedPolicies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumDistinctCompanies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumSectors": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lockedTestFractionMinimum": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "lockedTestFractionUnit": {
+          "const": "companyId"
+        },
+        "lockedTestPerTrack": {
+          "$ref": "#/$defs/lockedTestPerTrackRequirements"
+        },
+        "perRuleGoldPositiveForRecall": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perRulePredictedPositiveForPrecision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perRuleGoldNegativeForF1": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highRiskGoldPositiveTotal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highRiskMinimumRuleFamilies": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "highRiskMaximumSingleFamilyFraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "provisionalReleaseGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "active",
+        "thresholdStatus",
+        "activateOnlyWhenStatus",
+        "thresholds"
+      ],
+      "properties": {
+        "active": {
+          "type": "boolean"
+        },
+        "thresholdStatus": {
+          "const": "provisional_unvalidated"
+        },
+        "activateOnlyWhenStatus": {
+          "const": "certified"
+        },
+        "thresholds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rule_balanced_actionable_macro_f1",
+            "high_risk_recall_strict",
+            "strict_evidence_grounding_rate",
+            "possible_missing_precision",
+            "legal_basis_precision",
+            "legal_basis_recall",
+            "unsafe_high_escalation_rate",
+            "high_overstatement_rate",
+            "partial_unsupported_omission_rate",
+            "partial_unsafe_high_rate"
+          ],
+          "properties": {
+            "rule_balanced_actionable_macro_f1": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "high_risk_recall_strict": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "strict_evidence_grounding_rate": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "possible_missing_precision": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "legal_basis_precision": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "legal_basis_recall": {
+              "$ref": "#/$defs/minimumLower95Threshold"
+            },
+            "unsafe_high_escalation_rate": {
+              "$ref": "#/$defs/maximumUpper95Threshold"
+            },
+            "high_overstatement_rate": {
+              "$ref": "#/$defs/maximumUpper95Threshold"
+            },
+            "partial_unsupported_omission_rate": {
+              "$ref": "#/$defs/maximumUpper95Threshold"
+            },
+            "partial_unsafe_high_rate": {
+              "$ref": "#/$defs/maximumUpper95Threshold"
+            }
+          }
+        }
+      }
+    },
+    "evaluationCurrentState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expertReviewedPolicies",
+        "independentlyLabeledUnits",
+        "adjudicatedUnits",
+        "metrics",
+        "message"
+      ],
+      "properties": {
+        "expertReviewedPolicies": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "independentlyLabeledUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "adjudicatedUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "metrics": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "evaluationConfig": {
       "type": "object",
       "additionalProperties": false,
@@ -1058,7 +1880,8 @@
           "$ref": "#/$defs/schemaVersion"
         },
         "evaluationId": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "status": {
           "$ref": "#/$defs/status"
@@ -1067,7 +1890,8 @@
           "type": "boolean"
         },
         "purpose": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "casesFile": {
           "type": "string",
@@ -1106,30 +1930,106 @@
           "minLength": 1
         },
         "legalContext": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationLegalContext"
         },
         "corpus": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationCorpusConfig"
         },
         "review": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationReviewConfig"
         },
         "labels": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationLabelsConfig"
         },
         "metrics": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationMetricsConfig"
         },
         "minimumSampleRequirements": {
-          "type": "object"
+          "$ref": "#/$defs/minimumSampleRequirements"
         },
         "provisionalReleaseGate": {
-          "type": "object"
+          "$ref": "#/$defs/provisionalReleaseGate"
         },
         "currentState": {
-          "type": "object"
+          "$ref": "#/$defs/evaluationCurrentState"
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "certified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "certified": {
+                "const": true
+              },
+              "provisionalReleaseGate": {
+                "properties": {
+                  "active": {
+                    "const": true
+                  }
+                }
+              },
+              "currentState": {
+                "properties": {
+                  "metrics": {
+                    "type": "object",
+                    "minProperties": 1
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "certified": {
+                "const": false
+              },
+              "provisionalReleaseGate": {
+                "properties": {
+                  "active": {
+                    "const": false
+                  }
+                }
+              },
+              "currentState": {
+                "properties": {
+                  "metrics": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "certified": {
+                "const": true
+              }
+            },
+            "required": [
+              "certified"
+            ]
+          },
+          "then": {
+            "properties": {
+              "status": {
+                "const": "certified"
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

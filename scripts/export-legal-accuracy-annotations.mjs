@@ -5,7 +5,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { sha256Text } from "../lib/legal-accuracy-evaluator.mjs";
-import { assertLegalEvaluationContract } from "../lib/legal-evaluation-schema.mjs";
+import {
+  assertLegalEvaluationContract,
+  assertLegalEvaluationDecision,
+} from "../lib/legal-evaluation-schema.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REVIEWER_CONFIDENCE = new Set(["high", "medium", "low"]);
@@ -54,6 +57,10 @@ function assertCompletedDecision(item) {
   ) {
     throw new Error(`${item.annotationId}: decision does not match the review contract`);
   }
+  assertLegalEvaluationDecision(
+    decision,
+    `review decision ${item.annotationId ?? item.caseId ?? "item"}`,
+  );
 }
 
 function completedItemToAnnotation(packet, item) {

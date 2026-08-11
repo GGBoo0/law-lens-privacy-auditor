@@ -5,7 +5,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { LEGAL_BASELINE } from "../lib/legal-baseline.ts";
-import { assertLegalEvaluationContract } from "../lib/legal-evaluation-schema.mjs";
+import {
+  assertLegalEvaluationContract,
+  assertLegalEvaluationDecision,
+} from "../lib/legal-evaluation-schema.mjs";
 import { analyzePrivacyPolicy } from "../lib/privacy-analyzer.ts";
 import {
   evaluateLegalAccuracyCorpus,
@@ -136,6 +139,10 @@ function adaptContractData(config, cases, gold, annotations, adjudications) {
     if (!item.decision || typeof item.decision !== "object") {
       throw new Error(`${item.annotationId ?? item.caseId}: review is incomplete`);
     }
+    assertLegalEvaluationDecision(
+      item.decision,
+      `review decision ${item.annotationId ?? item.caseId}`,
+    );
     const contractMeta = item.__contractMeta ?? {};
     const evaluationId = item.evaluationId ?? contractMeta.evaluationId;
     const corpusVersion = item.corpusVersion ?? contractMeta.corpusVersion;
@@ -157,6 +164,10 @@ function adaptContractData(config, cases, gold, annotations, adjudications) {
     }
   }
   for (const item of adjudications) {
+    assertLegalEvaluationDecision(
+      item.finalDecision,
+      `adjudicated decision ${item.adjudicationId ?? item.caseId}`,
+    );
     if (item.evaluationId !== expectedEvaluationId) {
       throw new Error(`${item.adjudicationId}: evaluationId does not match config`);
     }
@@ -192,6 +203,12 @@ function adaptContractData(config, cases, gold, annotations, adjudications) {
       item.mode ?? item.track ?? caseById.get(item.caseId)?.track,
     ),
     ruleId: canonicalizeLegalAccuracyRuleId(item.ruleId) ?? item.ruleId,
+    structuredDecision:
+      item.decision &&
+      typeof item.decision === "object" &&
+      !Array.isArray(item.decision)
+        ? structuredClone(item.decision)
+        : item.structuredDecision ?? null,
     decision:
       typeof item.decision === "string"
         ? item.decision
@@ -217,6 +234,7 @@ function adaptContractData(config, cases, gold, annotations, adjudications) {
         expectedFindingType: decision?.goldLabel,
         expectedRequiresFactualVerification:
           decision?.requiresFactualVerification,
+        legalBases: decision?.legalBases ?? [],
         corpusVersion: item.corpusVersion,
         evaluationId: item.evaluationId,
         evaluationTextSha256: item.evaluationTextSha256,
@@ -314,6 +332,17 @@ async function loadCorpus(options) {
   const ruleIds = (config.ruleIds ?? LEGAL_ACCURACY_RULES.map((rule) => rule.id)).map(
     (ruleId) => canonicalizeLegalAccuracyRuleId(ruleId) ?? ruleId,
   );
+  const gateMode =
+    config.gate?.mode ??
+    (config.provisionalReleaseGate?.active && config.certified
+      ? "enforced"
+      : "calibration");
+  const lowerBoundThreshold = (threshold) =>
+    threshold?.minimumLower95 ??
+    (gateMode === "calibration" ? threshold?.minimumPointEstimate : undefined);
+  const upperBoundThreshold = (threshold) =>
+    threshold?.maximumUpper95 ??
+    (gateMode === "calibration" ? threshold?.maximumPointEstimate : undefined);
   return {
     ...config,
     contractSchemaVersion: config.schemaVersion,
@@ -340,11 +369,7 @@ async function loadCorpus(options) {
         1,
     },
     gate: {
-      mode:
-        config.gate?.mode ??
-        (config.provisionalReleaseGate?.active && config.certified
-          ? "enforced"
-          : "calibration"),
+      mode: gateMode,
       calibrated: config.certified === true,
       minCases:
         config.minimumSampleRequirements?.expertReviewedPoliciesForCertification,
@@ -359,25 +384,69 @@ async function loadCorpus(options) {
         config.minimumSampleRequirements?.highRiskMinimumRuleFamilies,
       maxHighRiskSingleFamilyFraction:
         config.minimumSampleRequirements?.highRiskMaximumSingleFamilyFraction,
+      minLockedTestPerTrackCompanies:
+        config.minimumSampleRequirements?.lockedTestPerTrack
+          ?.minimumDistinctCompanies,
+      supportMinimums:
+        config.minimumSampleRequirements?.lockedTestPerTrack,
       thresholds: {
-        minMacroF1:
-          config.provisionalReleaseGate?.thresholds
-            ?.rule_balanced_actionable_macro_f1?.minimumPointEstimate,
-        minHighStrictActionableRecall:
-          config.provisionalReleaseGate?.thresholds?.high_risk_recall_strict
-            ?.minimumPointEstimate,
-        minStrictEvidenceGroundingRate:
-          config.provisionalReleaseGate?.thresholds
-            ?.strict_evidence_grounding_rate?.minimumPointEstimate,
-        minPossibleMissingPrecision:
-          config.provisionalReleaseGate?.thresholds?.possible_missing_precision
-            ?.minimumPointEstimate,
-        maxUnsafeHighEscalationRate:
+        minMacroF1Lower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds
+              ?.rule_balanced_actionable_macro_f1,
+          ),
+        minHighStrictActionableRecallLower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.high_risk_recall_strict,
+          ),
+        minStrictEvidenceGroundingRateLower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds
+              ?.strict_evidence_grounding_rate,
+          ),
+        minPossibleMissingPrecisionLower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.possible_missing_precision,
+          ),
+        minLegalBasisPrecisionLower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.legal_basis_precision,
+          ),
+        minLegalBasisRecallLower95:
+          lowerBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.legal_basis_recall,
+          ),
+        maxUnsafeHighEscalationRateUpper95:
+          upperBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.unsafe_high_escalation_rate,
+          ),
+        maxUnsafeHighEscalationObservedCount:
           config.provisionalReleaseGate?.thresholds?.unsafe_high_escalation_rate
-            ?.maximumPointEstimate,
-        minCohenKappa:
-          config.provisionalReleaseGate?.thresholds?.cohen_kappa
-            ?.minimumPointEstimate,
+            ?.observedMaxCount,
+        maxHighOverstatementRateUpper95:
+          upperBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.high_overstatement_rate,
+          ),
+        maxHighOverstatementObservedCount:
+          config.provisionalReleaseGate?.thresholds?.high_overstatement_rate
+            ?.observedMaxCount,
+        maxPartialUnsupportedOmissionRateUpper95:
+          upperBoundThreshold(
+            config.provisionalReleaseGate?.thresholds
+              ?.partial_unsupported_omission_rate,
+          ),
+        maxPartialUnsupportedOmissionObservedCount:
+          config.provisionalReleaseGate?.thresholds
+            ?.partial_unsupported_omission_rate?.observedMaxCount,
+        maxPartialUnsafeHighRateUpper95:
+          upperBoundThreshold(
+            config.provisionalReleaseGate?.thresholds?.partial_unsafe_high_rate,
+          ),
+        maxPartialUnsafeHighObservedCount:
+          config.provisionalReleaseGate?.thresholds?.partial_unsafe_high_rate
+            ?.observedMaxCount,
+        fieldAgreement:
+          config.review?.agreementMetrics?.provisionalThresholds,
       },
     },
     ...adapted,
@@ -578,6 +647,7 @@ const publicReport = {
     distinctSectorCount: report.sampleIntegrity.distinctSectorCount,
     distinctDocumentCount: report.sampleIntegrity.distinctDocumentCount,
     lockedTestCaseCount: report.sampleIntegrity.lockedTestCaseCount,
+    lockedTestCompanyCount: report.sampleIntegrity.lockedTestCompanyCount,
     lockedTestFraction: report.sampleIntegrity.lockedTestFraction,
     splitViolatingCompanyCount:
       report.sampleIntegrity.splitViolatingCompanies.length,
@@ -591,6 +661,7 @@ const publicReport = {
     status: report.agreement.status,
     reviewerCount: report.agreement.reviewerCount,
     meanPairwiseKappa: report.agreement.meanPairwiseKappa,
+    fieldLevel: report.agreement.fieldLevel,
     byMode: Object.fromEntries(
       Object.entries(report.agreement.byMode).map(([mode, value]) => [
         mode,

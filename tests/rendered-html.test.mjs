@@ -231,6 +231,10 @@ test("publishes readable privacy and terms pages for the public beta", async () 
   assert.match(methodologyHtml, /URL 자동 발견 QA 결과/);
   assert.match(methodologyHtml, /현재 상태는 <strong>전문가 평가 전/);
   assert.match(methodologyHtml, /법률 판단 정확도는 아직 숫자로 제공하지 않습니다/);
+  assert.match(methodologyHtml, /전문가 판단이 일치하는가/);
+  assert.match(methodologyHtml, /사례가 충분한가/);
+  assert.match(methodologyHtml, /과하게 경고하지 않는가/);
+  assert.match(methodologyHtml, /표본 오차를 감안한/);
   assert.doesNotMatch(methodologyHtml, /법률 판단 정확도(?:는|:)?\s*84%/);
 });
 

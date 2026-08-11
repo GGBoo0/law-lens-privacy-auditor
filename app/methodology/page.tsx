@@ -68,7 +68,10 @@ export default function MethodologyPage() {
             <dt>법률 판단 정확도</dt>
             <dd>
               현재 상태는 <strong>{accuracyStatus.label}</strong>입니다. 전문가
-              골든셋 평가 지표는 미산출이며 숫자 정확도를 표시하지 않습니다.
+              가 확정한 기준 데이터로 계산한 지표는 아직 없으며 숫자 정확도를
+              표시하지 않습니다. 여기서 정확도는 전문가의 문서 검토 결과와 시스템
+              결과가 얼마나 일치하는지를 뜻하며, 실제 위법 여부를 확정하는 수치가
+              아닙니다.
             </dd>
           </dl>
         </section>
@@ -78,35 +81,65 @@ export default function MethodologyPage() {
           <p>{accuracyStatus.summary}</p>
           <ul className="methodologyFacts">
             <li>
-              개인정보 전문가 검토자: {expertReview.reviewerCount}명 · 공개 기준은
-              최소 {expertReview.requiredReviewerCount}명의 독립 검토
+              전문가 평가: 아직 시작 전(검토자 {expertReview.reviewerCount}명, 문서{" "}
+              {expertReview.corpusDocumentCount}개)
             </li>
             <li>
-              전문가 검토 문서: {expertReview.corpusDocumentCount}개 · 확정 라벨: {" "}
-              {expertReview.adjudicatedUnitCount}개
+              향후 공개 조건: 최소 {expertReview.requiredReviewerCount}명의 독립 검토와
+              의견 차이 조정
             </li>
-            <li>법률 판단 통계 지표: 미산출</li>
-            <li>전문가 평가일: 없음</li>
+            <li>법률 판단 통계 지표와 전문가 평가일: 없음</li>
           </ul>
           <p>
             현재 회귀 코퍼스는 규칙의 긍정·부정 예시가 같은 결과를 재현하는지
             확인하는 개발용 안전장치입니다. 전문가가 실제 처리방침을 독립적으로
             판정한 통계적 정확도 데이터셋과 같지 않습니다.
           </p>
+          <p>
+            <strong>지금 이 기준의 역할:</strong> 아직 전문가 평가를 받지 못하더라도
+            임의의 정확도 숫자를 만들지 못하게 막고, 나중에 평가를 받을 때 같은
+            문서와 같은 법령 기준으로 공정하게 비교할 수 있도록 준비합니다. 현재
+            분석 결과는 공식 기준에 따른 사전 점검 자료로만 사용해야 합니다.
+          </p>
         </section>
 
         <section aria-labelledby="future-metrics">
-          <h2 id="future-metrics">3. 전문가 평가 후 공개할 항목</h2>
+          <h2 id="future-metrics">3. 향후 전문가 평가에서 확인할 항목</h2>
+          <p>
+            아래 내용은 전문가가 확정한 인증 기준이 아니라, 나중에 같은 방식으로
+            공정하게 평가하기 위한 이 프로젝트의 잠정 계획입니다. 단순히 테스트 몇
+            개를 통과했다고 정확하다고 표시하지 않습니다.
+          </p>
           <ul>
-            <li>골든셋 버전, 문서 수, 확정 라벨 수와 평가일</li>
-            <li>검토자 수, 독립 검토 방식과 불일치 조정 절차</li>
-            <li>전체 및 규칙별 정밀도·재현율·F1</li>
-            <li>‘누락 가능성 높음’과 같은 고위험 결과의 오탐률</li>
-            <li>판정 유보를 포함한 라벨 정의와 제외 기준</li>
+            <li>
+              <strong>전문가 판단이 일치하는가:</strong> 전문가 2명이 서로의 답과
+              시스템 결과를 보지 않고 같은 문서를 검토합니다.
+            </li>
+            <li>
+              <strong>사례가 충분한가:</strong> 회사와 업종이 한쪽에 치우치지 않은
+              실제 처리방침을 충분히 모아 평가합니다.
+            </li>
+            <li>
+              <strong>근거가 정확한가:</strong> 지적한 원문 문구와 법적 근거가 실제
+              판단 이유를 뒷받침하는지 확인합니다.
+            </li>
+            <li>
+              <strong>중요한 문제를 놓치지 않는가:</strong> 위험도가 높은 문제를
+              제대로 찾는지 별도로 확인합니다.
+            </li>
+            <li>
+              <strong>과하게 경고하지 않는가:</strong> 문제가 아닌 내용을
+              &apos;누락 가능성 높음&apos;으로 잘못 표시하는 비율을 따로 봅니다.
+            </li>
+            <li>
+              <strong>우연히 좋아 보이는 결과가 아닌가:</strong> 표본 오차를 감안한
+              보수적인 값으로도 기준을 넘어야 통과시킵니다.
+            </li>
           </ul>
           <p>
-            이 요건이 충족되기 전에는 ‘정확도’, ‘준수율’ 또는 ‘위반 확률’처럼
-            오해할 수 있는 숫자를 법률 판단 성능으로 표시하지 않습니다.
+            통과 후에는 평가한 문서 수, 전문가 수, 평가일, 잘 찾은 정도와 잘못
+            경고한 정도를 함께 공개합니다. 그전에는 ‘정확도’, ‘준수율’ 또는 ‘위반
+            확률’처럼 오해할 수 있는 숫자를 표시하지 않습니다.
           </p>
         </section>
 

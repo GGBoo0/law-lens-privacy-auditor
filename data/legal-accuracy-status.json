@@ -4,7 +4,7 @@
   "evaluationPhase": "calibration_pending",
   "label": "전문가 평가 전",
   "asOfDate": "2026-08-11",
-  "summary": "규칙 회귀 테스트는 통과했지만 개인정보 전문가가 이중 검토한 골든셋의 정밀도·재현율·F1은 아직 산출하지 않았습니다.",
+  "summary": "개발자가 만든 예제에서 같은 결과가 반복되는지는 확인했지만, 개인정보 전문가 2명이 실제 처리방침을 각각 검토하는 정확도 평가는 아직 시작 전입니다.",
   "expertReview": {
     "reviewerCount": 0,
     "requiredReviewerCount": 2,

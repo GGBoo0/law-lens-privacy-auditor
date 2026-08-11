@@ -70,7 +70,40 @@
     "minimumIndependentReviewers": 2,
     "agreementMetrics": {
       "decisionKappa": "implemented",
-      "fieldLevelAgreement": "required_before_certification"
+      "fieldLevelAgreement": "implemented",
+      "pairingPolicy": "exactly_two_independent_reviewers_before_adjudication",
+      "confidenceIntervalMethod": "company_clustered_bootstrap_95",
+      "provisionalThresholds": {
+        "thresholdStatus": "provisional_unvalidated",
+        "minimumCompletePairCoverage": 1,
+        "maximumIncompletePairCount": 0,
+        "maximumInvalidValueCount": 0,
+        "maximumMissingValueCount": 0,
+        "applicability_cohen_kappa": {
+          "minimumLower95": 0.8
+        },
+        "operational_outcome_cohen_kappa": {
+          "minimumLower95": 0.8
+        },
+        "gold_label_cohen_kappa": {
+          "minimumLower95": 0.8
+        },
+        "requires_factual_verification_cohen_kappa": {
+          "minimumLower95": 0.8
+        },
+        "severity_linear_weighted_kappa": {
+          "minimumLower95": 0.8
+        },
+        "evidence_structural_agreement_rate": {
+          "minimumLower95": 0.8
+        },
+        "defect_code_mean_jaccard": {
+          "minimumLower95": 0.8
+        },
+        "legal_basis_mean_jaccard": {
+          "minimumLower95": 0.8
+        }
+      }
     },
     "blindToSystemOutput": true,
     "independentBeforeAdjudication": true,
@@ -111,11 +144,16 @@
     "primary": [
       "rule_balanced_actionable_macro_f1",
       "high_risk_recall_strict",
-      "strict_evidence_grounding_rate"
+      "strict_evidence_grounding_rate",
+      "legal_basis_precision",
+      "legal_basis_recall"
     ],
     "guardrails": [
       "possible_missing_precision",
-      "unsafe_high_escalation_rate"
+      "unsafe_high_escalation_rate",
+      "high_overstatement_rate",
+      "partial_unsupported_omission_rate",
+      "partial_unsafe_high_rate"
     ],
     "diagnostics": [
       "micro_precision",
@@ -129,9 +167,27 @@
       "linear_weighted_severity_kappa"
     ],
     "confidenceIntervals": {
-      "implementationStatus": "required_before_certification",
+      "implementationStatus": "implemented",
+      "confidenceLevel": 0.95,
       "proportionMetrics": "wilson_95",
-      "f1Metrics": "company_clustered_bootstrap_95"
+      "f1Metrics": "company_clustered_bootstrap_95",
+      "minimumThresholdComparison": "lower95",
+      "maximumThresholdComparison": "upper95",
+      "wilson": {
+        "z": 1.959963984540054,
+        "zeroDenominatorStatus": "insufficient_support"
+      },
+      "companyClusterBootstrap": {
+        "clusterUnit": "companyId",
+        "method": "percentile",
+        "replicates": 10000,
+        "minimumClusters": 30,
+        "minimumValidReplicateFraction": 0.99,
+        "seed": "law-lens-legal-accuracy-v1",
+        "prng": "mulberry32_fnv1a_utf16_v1",
+        "quantileMethod": "linear_r7",
+        "sortClusterIds": true
+      }
     },
     "unsupportedMetricValue": null,
     "unsupportedMetricStatus": "insufficient_support"
@@ -142,6 +198,31 @@
     "minimumDistinctCompanies": 30,
     "minimumSectors": 5,
     "lockedTestFractionMinimum": 0.3,
+    "lockedTestFractionUnit": "companyId",
+    "lockedTestPerTrack": {
+      "appliesIndependentlyToEachTrack": true,
+      "minimumDistinctCompanies": 30,
+      "minimumMetricEligiblePolicies": 30,
+      "perRuleGoldPositiveForRecall": 20,
+      "perRulePredictedPositiveForPrecision": 20,
+      "perRuleGoldNegativeForF1": 20,
+      "minimumGoldPositiveCompaniesPerRule": 10,
+      "minimumPredictedPositiveCompaniesPerRule": 10,
+      "minimumGoldNegativeCompaniesPerRule": 10,
+      "highRiskGoldPositiveTotal": 50,
+      "highRiskMinimumDistinctCompanies": 15,
+      "strictEvidenceMinimumPredictions": 100,
+      "strictEvidenceMinimumDistinctCompanies": 20,
+      "unsafeHighMinimumEligibleRows": 100,
+      "unsafeHighMinimumDistinctCompanies": 20,
+      "legalBasisMinimumPredictedCitations": 100,
+      "legalBasisMinimumGoldCitations": 100,
+      "legalBasisMinimumDistinctCompanies": 20,
+      "highOverstatementMinimumEligibleRows": 100,
+      "highOverstatementMinimumDistinctCompanies": 20,
+      "partialDocumentMinimumEligibleRows": 40,
+      "partialDocumentMinimumDistinctCompanies": 15
+    },
     "perRuleGoldPositiveForRecall": 20,
     "perRulePredictedPositiveForPrecision": 20,
     "perRuleGoldNegativeForF1": 20,
@@ -155,22 +236,38 @@
     "activateOnlyWhenStatus": "certified",
     "thresholds": {
       "rule_balanced_actionable_macro_f1": {
-        "minimumPointEstimate": 0.85
+        "minimumLower95": 0.85
       },
       "high_risk_recall_strict": {
-        "minimumPointEstimate": 0.9
+        "minimumLower95": 0.9
       },
       "strict_evidence_grounding_rate": {
-        "minimumPointEstimate": 0.95
+        "minimumLower95": 0.95
       },
       "possible_missing_precision": {
-        "minimumPointEstimate": 0.9
+        "minimumLower95": 0.9
+      },
+      "legal_basis_precision": {
+        "minimumLower95": 0.9
+      },
+      "legal_basis_recall": {
+        "minimumLower95": 0.9
       },
       "unsafe_high_escalation_rate": {
-        "maximumPointEstimate": 0
+        "observedMaxCount": 0,
+        "maximumUpper95": 0.05
       },
-      "cohen_kappa": {
-        "minimumPointEstimate": 0.8
+      "high_overstatement_rate": {
+        "observedMaxCount": 0,
+        "maximumUpper95": 0.05
+      },
+      "partial_unsupported_omission_rate": {
+        "observedMaxCount": 0,
+        "maximumUpper95": 0.1
+      },
+      "partial_unsafe_high_rate": {
+        "observedMaxCount": 0,
+        "maximumUpper95": 0.05
       }
     }
   },

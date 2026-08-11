@@ -9,7 +9,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build && node --test --test-concurrency=1 tests/rendered-html.test.mjs tests/legal-update-monitor.test.mjs tests/legal-lifecycle.test.mjs tests/legal-accuracy.test.mjs",
+    "test": "npm run build && node --test --test-concurrency=1 tests/rendered-html.test.mjs tests/legal-update-monitor.test.mjs tests/legal-lifecycle.test.mjs tests/legal-accuracy.test.mjs tests/legal-accuracy-statistics.test.mjs tests/legal-reviewer-agreement.test.mjs",
     "legal:check": "node scripts/check-legal-updates.mjs",
     "legal:init": "node scripts/check-legal-updates.mjs --initialize",
     "test:live": "npm run build && node --test tests/live-url.test.mjs",

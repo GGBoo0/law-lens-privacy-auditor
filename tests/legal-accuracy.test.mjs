@@ -18,7 +18,10 @@ import {
   sha256Text,
   validateLegalAccuracyCorpus,
 } from "../lib/legal-accuracy-evaluator.mjs";
-import { assertLegalEvaluationContract } from "../lib/legal-evaluation-schema.mjs";
+import {
+  assertLegalEvaluationContract,
+  assertLegalEvaluationDecision,
+} from "../lib/legal-evaluation-schema.mjs";
 import { LEGAL_BASELINE } from "../lib/legal-baseline.ts";
 import {
   canonicalRuleForFinding,
@@ -38,6 +41,13 @@ function finding(id, severity, findingType, evidence, factual = false) {
     severity,
     findingType,
     evidence,
+    legalBasis: [
+      {
+        sourceId: "test-law",
+        article: "제1조",
+        url: "https://example.test/law/1",
+      },
+    ],
     requiresFactualVerification: factual,
   };
 }
@@ -138,6 +148,17 @@ function createCorpus({ datasetKind = "expert", gate = { mode: "calibration" } }
           expectedFindingType:
             decision === "finding" ? "possible_missing_disclosure" : null,
           expectedRequiresFactualVerification: contextMissing,
+          legalBases:
+            decision === "finding"
+              ? [
+                  {
+                    sourceId: "test-law",
+                    article: "제1조",
+                    url: "https://example.test/law/1",
+                    fit: "direct",
+                  },
+                ]
+              : [],
           evaluationTextSha256: testCase.documentHash,
           runtimeManifestHash,
           absenceTrace:
@@ -438,9 +459,94 @@ test("scores policy-only and context-assisted judgments separately", () => {
   assert.equal(report.metrics.byMode.context_assisted.micro.tp, 2);
   assert.equal(report.special.possibleMissing.precision, 1);
   assert.equal(report.special.highStrictActionable.recall, 1);
-  assert.equal(report.evidence.strictEvidenceGroundingRate, 0);
+  assert.equal(report.special.legalBasis.precision, 1);
+  assert.equal(report.special.legalBasis.recall, 1);
+  assert.equal(report.evidence.strictEvidencePredictionCount, 0);
+  assert.equal(report.evidence.strictEvidenceGroundedCount, 0);
+  assert.equal(report.evidence.strictEvidenceGroundingRate, null);
   assert.equal(report.agreement.meanPairwiseKappa, 1);
   assert.equal(report.gate.status, "calibration");
+});
+
+test("keeps omission absence traces out of strict quote evidence scoring", () => {
+  const omissionReport = evaluateLegalAccuracyCorpus(
+    createCorpus(),
+    evaluationOptions,
+  );
+  assert.equal(omissionReport.special.possibleMissing.precision, 1);
+  assert.equal(omissionReport.evidence.strictEvidencePredictionCount, 0);
+  assert.equal(omissionReport.evidence.strictEvidenceGroundedCount, 0);
+  assert.equal(omissionReport.evidence.strictEvidenceGroundingRate, null);
+
+  const quotedCorpus = createCorpus();
+  const quote = "MISSING_PURPOSE";
+  const start = quotedCorpus.cases[0].text.indexOf(quote);
+  for (const gold of quotedCorpus.gold.filter(
+    (item) => item.caseId === "case-a" && item.ruleId === "core.purpose",
+  )) {
+    gold.expectedFindingType = "ambiguity_or_inconsistency";
+    gold.evidence = [
+      {
+        kind: "span",
+        quote,
+        start,
+        end: start + quote.length,
+        support: "direct",
+      },
+    ];
+  }
+  const quoteOptions = {
+    ...evaluationOptions,
+    analyze(text, meta) {
+      const analysis = mockAnalyzer(text, meta);
+      analysis.findings = analysis.findings.map((item) =>
+        item.id === "missing-purpose"
+          ? {
+              ...item,
+              findingType: "ambiguity_or_inconsistency",
+              evidence: quote,
+            }
+          : item,
+      );
+      return analysis;
+    },
+  };
+  const quotedReport = evaluateLegalAccuracyCorpus(quotedCorpus, quoteOptions);
+  assert.equal(quotedReport.evidence.strictEvidencePredictionCount, 2);
+  assert.equal(quotedReport.evidence.strictEvidenceGroundedCount, 2);
+  assert.equal(quotedReport.evidence.strictEvidenceGroundingRate, 1);
+});
+
+test("reports Wilson diagnostics and keeps company clusters on evaluation rows", () => {
+  const corpus = createCorpus();
+  corpus.cases.forEach((testCase, index) => {
+    testCase.companyId = `company-${index}`;
+    testCase.sector = "platform";
+    testCase.split = "lockedTest";
+  });
+  const report = evaluateLegalAccuracyCorpus(corpus, evaluationOptions);
+
+  assert.deepEqual(
+    [...new Set(report.rows.map((row) => row.companyId))].sort(),
+    ["company-0", "company-1"],
+  );
+  assert.equal(
+    report.confidenceIntervals.possibleMissingPrecision.wilson.successes,
+    3,
+  );
+  assert.equal(
+    report.confidenceIntervals.possibleMissingPrecision.wilson.total,
+    3,
+  );
+  assert.equal(
+    report.bySplit.lockedTest.confidenceIntervals.macroF1.status,
+    "not_run",
+  );
+  assert.equal(
+    report.bySplit.lockedTest.confidenceIntervals.byMode.policy_only
+      .possibleMissingPrecision.wilson.status,
+    "ok",
+  );
 });
 
 test("possible-missing precision does not treat another finding type as gold positive", () => {
@@ -562,6 +668,9 @@ test("enforced gate cannot pass without locked-test and sample integrity", () =>
   assert.ok(
     report.gate.failures.some((failure) => /confidence intervals/.test(failure)),
   );
+  assert.ok(
+    report.gate.failures.some((failure) => /complete canonical rule catalog/.test(failure)),
+  );
 });
 
 test("enforced gate requires per-rule support inside each evaluation mode", () => {
@@ -606,6 +715,37 @@ test("enforced gate requires per-rule support inside each evaluation mode", () =
       /locked-test policy_only per-rule support/.test(failure),
     ),
   );
+  assert.ok(
+    report.gate.failures.some((failure) => /confidence intervals/.test(failure)),
+    "configuration flags must not substitute for computed confidence bounds",
+  );
+  assert.ok(
+    report.gate.failures.some((failure) =>
+      /field-level reviewer agreement coverage is incomplete/.test(failure),
+    ),
+  );
+});
+
+test("counts high-severity overstatement against a lower-risk expert finding", () => {
+  const corpus = createCorpus();
+  const baseline = evaluateLegalAccuracyCorpus(corpus, evaluationOptions);
+  const target = corpus.gold.find(
+    (item) =>
+      item.caseId === "case-a" &&
+      item.mode === "policy_only" &&
+      item.ruleId === "core.purpose",
+  );
+  target.expectedSeverity = "medium";
+  target.expectedFindingType = "ambiguity_or_inconsistency";
+  const report = evaluateLegalAccuracyCorpus(corpus, evaluationOptions);
+  assert.equal(
+    report.special.highOverstatement.count,
+    baseline.special.highOverstatement.count + 1,
+  );
+  assert.equal(
+    report.special.highOverstatement.support,
+    baseline.special.highOverstatement.support + 1,
+  );
 });
 
 test("scores only eligible expert-adjudicated rows and excludes partial omissions", () => {
@@ -629,6 +769,10 @@ test("scores only eligible expert-adjudicated rows and excludes partial omission
   assert.equal(partialReport.metrics.micro.tp, 0);
   assert.equal(partialReport.validation.excludedGoldItemCount, 0);
   assert.ok(partialReport.validation.guardrailOnlyGoldItemCount >= 3);
+  assert.equal(partialReport.special.partialUnsupportedOmission.support, 4);
+  assert.equal(partialReport.special.partialUnsupportedOmission.count, 3);
+  assert.equal(partialReport.special.partialUnsafeHigh.support, 4);
+  assert.equal(partialReport.special.partialUnsafeHigh.count, 2);
 
   const partialNegative = createCorpus();
   partialNegative.cases[0].documentScope = "partial";
@@ -854,6 +998,19 @@ test("private expert contracts run end to end with document and legal-manifest p
   assert.equal(report.analysisRunCount, 1);
   assert.equal(report.validation.expertAdjudicatedGoldItemCount, 36);
   assert.equal(report.rulesetVersion, LEGAL_BASELINE.rulesetVersion);
+  assert.equal(report.agreement.fieldLevel.coverage.expectedPairCount, 36);
+  assert.equal(report.agreement.fieldLevel.coverage.complete, true);
+  assert.equal(report.agreement.fieldLevel.invalidPairCount, 0);
+  assert.equal(
+    report.agreement.fieldLevel.bySplit.calibration.byMode.policy_only.coverage
+      .expectedPairCount,
+    36,
+  );
+  assert.equal(
+    report.agreement.fieldLevel.bySplit.calibration.byMode.policy_only.coverage
+      .complete,
+    true,
+  );
 });
 
 test("CLI case overrides resolve from the repository root", (t) => {
@@ -1093,7 +1250,7 @@ test("public pending contract rejects fabricated metrics, certification, raw tex
     assert.notEqual(result.status, 0, scenario.name);
     assert.match(
       result.stderr,
-      /Invalid (?:public pending contract|public case manifest)/,
+      /Invalid (?:evaluation config|public pending contract|public case manifest)/,
       scenario.name,
     );
   }
@@ -1275,6 +1432,68 @@ test("runtime schema validation rejects malformed expert decisions", () => {
   assert.throws(
     () => assertLegalEvaluationContract(leakingDecision, "adjudication"),
     /Invalid adjudication/,
+  );
+
+  const contradictory = structuredClone(adjudication.finalDecision);
+  contradictory.goldLabel = "confirmed_disclosure";
+  contradictory.severity = "high";
+  assert.throws(
+    () => assertLegalEvaluationDecision(contradictory, "contradictory decision"),
+    /confirmed disclosure requires severity pass/,
+  );
+
+  const ungroundedMissing = structuredClone(adjudication.finalDecision);
+  ungroundedMissing.applicability = "applicable";
+  ungroundedMissing.goldLabel = "possible_missing_disclosure";
+  ungroundedMissing.severity = "medium";
+  ungroundedMissing.requiresFactualVerification = false;
+  ungroundedMissing.evidence = [];
+  assert.throws(
+    () => assertLegalEvaluationDecision(ungroundedMissing, "missing decision"),
+    /requires an absence trace/,
+  );
+
+  const unsupportedLegalBasis = structuredClone(adjudication.finalDecision);
+  unsupportedLegalBasis.legalBases = unsupportedLegalBasis.legalBases.map((basis) => ({
+    ...basis,
+    fit: "incorrect",
+  }));
+  assert.throws(
+    () => assertLegalEvaluationDecision(unsupportedLegalBasis, "incorrect legal basis"),
+    /supporting legal basis/,
+  );
+});
+
+test("direct corpus evaluation rejects contradictory structured reviewer decisions", () => {
+  const corpus = createCorpus();
+  const adjudication = JSON.parse(
+    readFileSync(
+      "data/legal-evaluation/examples/adjudication.synthetic.json",
+      "utf8",
+    ),
+  );
+  const contradictory = structuredClone(adjudication.finalDecision);
+  contradictory.applicability = "applicable";
+  contradictory.goldLabel = "confirmed_disclosure";
+  contradictory.severity = "high";
+  contradictory.defectCodes = [];
+  contradictory.requiresFactualVerification = false;
+  corpus.annotations[0].structuredDecision = contradictory;
+
+  assert.throws(
+    () => evaluateLegalAccuracyCorpus(corpus, evaluationOptions),
+    (error) =>
+      error instanceof LegalAccuracyConfigurationError &&
+      /confirmed disclosure requires severity pass/.test(error.message),
+  );
+
+  const malformed = createCorpus();
+  malformed.annotations[0].structuredDecision = "finding";
+  assert.throws(
+    () => evaluateLegalAccuracyCorpus(malformed, evaluationOptions),
+    (error) =>
+      error instanceof LegalAccuracyConfigurationError &&
+      /structured annotation decision/.test(error.message),
   );
 });
 
