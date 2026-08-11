@@ -73,9 +73,34 @@ const profiles: PolicySourceProfile[] = [
     trustedPolicyDomains: ["help.netmarble.com"],
   },
   {
-    inputDomains: ["coupang.com"],
+    inputDomains: ["coupang.com", "coupangeats.com"],
     hints: ["https://www.coupang.com/np/policies/privacy"],
     trustedPolicyDomains: ["privacy.coupang.com", "coupang.com"],
+  },
+  {
+    inputDomains: ["musinsa.com"],
+    hints: ["https://www.musinsa.com/member/join/agreement/privacy-policy"],
+    trustedPolicyDomains: ["musinsa.com", "member.one.musinsa.com"],
+  },
+  {
+    inputDomains: ["zigzag.kr", "kakaostyle.com"],
+    hints: [
+      "https://cf.res.s.zigzag.kr/zigzag/terms/user/ko/privacy.html",
+    ],
+    trustedPolicyDomains: ["zigzag.kr", "cf.res.s.zigzag.kr", "kakaostyle.com"],
+  },
+  {
+    inputDomains: ["kurly.com"],
+    hints: ["https://privacy.kurly.com/kurly/privacypolicy/ko/"],
+    trustedPolicyDomains: ["kurly.com", "privacy.kurly.com"],
+  },
+  {
+    inputDomains: ["melon.com"],
+    hints: [
+      "https://info.melon.com/terms/web/terms3.html",
+      "https://kakaoent.com/privacy/policy?service=melon&isTabMode=true&isHeaderMode=true&isFooterMode=true&isIframeMode=true",
+    ],
+    trustedPolicyDomains: ["melon.com", "info.melon.com", "kakaoent.com"],
   },
   {
     inputDomains: ["hyundai.com"],
@@ -111,6 +136,11 @@ const profiles: PolicySourceProfile[] = [
     inputDomains: ["sooplive.co.kr", "sooplive.com"],
     hints: ["https://res.sooplive.com/policy/policy2.html"],
     trustedPolicyDomains: ["res.sooplive.com"],
+  },
+  {
+    inputDomains: ["smilegate.com"],
+    hints: ["https://www.smilegate.com/ko/privacy.do"],
+    trustedPolicyDomains: ["smilegate.com"],
   },
   {
     inputDomains: ["socar.kr"],

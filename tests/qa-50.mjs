@@ -99,7 +99,7 @@ const sites = [
   ["Wavve", "www.wavve.com", ["wavve.com"]],
   ["TVING", "www.tving.com", ["tving.com"]],
   ["Watcha", "watcha.com", ["watcha.com"]],
-  ["Melon", "www.melon.com", ["melon.com", "kakao.com"]],
+  ["Melon", "www.melon.com", ["melon.com", "kakao.com", "kakaoent.com"]],
   ["Bugs", "music.bugs.co.kr", ["bugs.co.kr"]],
   ["JobKorea", "www.jobkorea.co.kr", ["jobkorea.co.kr"]],
   ["Saramin", "www.saramin.co.kr", ["saramin.co.kr"]],
