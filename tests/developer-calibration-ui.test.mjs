@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   createEmptyDeveloperCalibrationDataset,
@@ -85,6 +88,23 @@ async function fetchCalibrationPage() {
   );
 }
 
+function builtCalibrationChunks() {
+  const roots = [
+    new URL("../dist/server/ssr/assets/", import.meta.url),
+    new URL("../dist/client/assets/", import.meta.url),
+  ];
+  return roots.flatMap((root) =>
+    readdirSync(root, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isFile() &&
+          entry.name.startsWith("CalibrationWorkspace-") &&
+          entry.name.endsWith(".js"),
+      )
+      .map((entry) => new URL(entry.name, root)),
+  );
+}
+
 function visibleText(html) {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -104,6 +124,41 @@ test("server-renders the developer-only notice and all 24 slots", async () => {
   assert.match(text, /사례 수집 중 · 정확도 의미 아님/);
   assert.match(text, /slot-01/);
   assert.match(text, /slot-24/);
+});
+
+test("calibration deploy artifacts are CSP-safe and render with string code generation disabled", () => {
+  const chunks = builtCalibrationChunks();
+  assert.equal(chunks.length, 2, "expected one client and one SSR calibration chunk");
+  for (const chunk of chunks) {
+    const code = readFileSync(chunk, "utf8");
+    assert.doesNotMatch(code, /ajv(?:-formats|\/dist)?|compileSchema/iu);
+    assert.doesNotMatch(code, /\b(?:eval|Function)\s*\(/u);
+  }
+
+  const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+  const evalDisabledFetch = spawnSync(
+    process.execPath,
+    [
+      "--disallow-code-generation-from-strings",
+      "--input-type=module",
+      "--eval",
+      `const workerUrl = new URL("./dist/server/index.js?csp-test=${Date.now()}", import.meta.url);
+       const { default: worker } = await import(workerUrl);
+       const response = await worker.fetch(
+         new Request("http://localhost/calibration", { headers: { accept: "text/html", host: "localhost" } }),
+         { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
+         { waitUntil() {}, passThroughOnException() {} },
+       );
+       if (response.status !== 200) throw new Error("Unexpected status " + response.status);
+       await response.text();`,
+    ],
+    { cwd: projectRoot, encoding: "utf8", timeout: 30_000 },
+  );
+  assert.equal(
+    evalDisabledFetch.status,
+    0,
+    `eval-disabled calibration render failed:\n${evalDisabledFetch.stderr || evalDisabledFetch.stdout}`,
+  );
 });
 
 test("transfer whitelists transient review data and rejects oversized JSON", () => {

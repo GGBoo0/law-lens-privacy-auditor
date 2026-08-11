@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
+    "build": "npm run calibration:schema:check && vinext build",
     "start": "vinext start",
     "test": "npm run build && node --test --test-concurrency=1 tests/rendered-html.test.mjs tests/legal-update-monitor.test.mjs tests/legal-lifecycle.test.mjs tests/legal-accuracy.test.mjs tests/legal-accuracy-statistics.test.mjs tests/legal-reviewer-agreement.test.mjs tests/developer-calibration.test.mjs tests/developer-calibration-ui.test.mjs",
     "legal:check": "node scripts/check-legal-updates.mjs",
@@ -15,6 +15,8 @@
     "test:live": "npm run build && node --test tests/live-url.test.mjs",
     "qa:50": "npm run build && node tests/qa-50.mjs",
     "qa:50:gate": "npm run build && node tests/qa-50.mjs --min-verified=40 --max-wrong-source=0",
+    "calibration:schema:generate": "node scripts/generate-developer-calibration-validator.mjs",
+    "calibration:schema:check": "node scripts/generate-developer-calibration-validator.mjs --check",
     "accuracy:prepare": "node scripts/prepare-legal-accuracy-review.mjs",
     "accuracy:export-annotations": "node scripts/export-legal-accuracy-annotations.mjs",
     "accuracy:evaluate": "node scripts/evaluate-legal-accuracy.mjs",

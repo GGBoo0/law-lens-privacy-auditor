@@ -661,3 +661,30 @@ test("rejects malformed JSON imports without returning partial data", () => {
     oneCompletedDataset(),
   );
 });
+
+test("precompiled schema validation preserves date, date-time, and unique-item checks", () => {
+  const invalidDate = oneCompletedDataset();
+  invalidDate.slots[0].caseReview.sourcePins.legalAsOfDate = "2026-02-30";
+  assert.throws(
+    () => assertDeveloperCalibrationDataset(invalidDate),
+    /must match format "date"/,
+  );
+
+  const missingTimezone = oneCompletedDataset();
+  missingTimezone.slots[0].caseReview.sourcePins.retrievedAt =
+    "2026-08-12T00:00:00";
+  assert.throws(
+    () => assertDeveloperCalibrationDataset(missingTimezone),
+    /must match format "date-time"/,
+  );
+
+  const duplicateReason = oneCompletedDataset();
+  duplicateReason.slots[0].caseReview.findingReviews[1].reasonCodes = [
+    "disclosure_present",
+    "disclosure_present",
+  ];
+  assert.throws(
+    () => assertDeveloperCalibrationDataset(duplicateReason),
+    /must NOT have duplicate items/,
+  );
+});
