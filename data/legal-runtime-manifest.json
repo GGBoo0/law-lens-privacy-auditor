@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-12T10:23:31.394Z",
-  "asOfDate": "2026-08-12",
-  "snapshotCapturedAt": "2026-08-12T10:23:31.394Z",
+  "generatedAt": "2026-08-13T02:44:49.283Z",
+  "asOfDate": "2026-08-13",
+  "snapshotCapturedAt": "2026-08-13T02:44:49.283Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "registryReviewedAt": "2026-08-11",
   "sourceCount": 11,
@@ -129,6 +129,34 @@
   ],
   "pendingChanges": [
     {
+      "changeId": "runtime:credit-information-act:285955:20260813",
+      "sourceId": "credit-information-act",
+      "versionId": "285955:20260813",
+      "documentHash": "e4af01d546218440aeeb0cf7056ea3b1ed3d8420187fa8e70a66b27a34a16636",
+      "hashAlgorithm": "legal-semantic-text-v1",
+      "name": "신용정보의 이용 및 보호에 관한 법률",
+      "version": "현행 · 시행 2026-08-13 · 21646",
+      "effectiveFrom": "2026-08-13",
+      "effectiveDateUnknown": false,
+      "detectedAt": "2026-08-13T02:44:49.283Z",
+      "changeKind": "semantic",
+      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
+      "url": "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률",
+      "impactCategories": [
+        "credit_information"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewedAt": null,
+        "reviewedRulesetVersion": null,
+        "outcome": null
+      },
+      "officialState": "현행",
+      "observation": "observed",
+      "firstObservedAt": "2026-08-13T02:44:49.283Z",
+      "lastObservedAt": "2026-08-13T02:44:49.283Z"
+    },
+    {
       "changeId": "runtime:pipa:283839:20260911",
       "sourceId": "pipa",
       "versionId": "283839:20260911",
@@ -169,7 +197,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-12T10:23:31.394Z"
+      "lastObservedAt": "2026-08-13T02:44:49.283Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
@@ -212,7 +240,7 @@
       "officialState": "단계 시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-12T10:23:31.394Z"
+      "lastObservedAt": "2026-08-13T02:44:49.283Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
@@ -255,10 +283,10 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-12T10:23:31.394Z"
+      "lastObservedAt": "2026-08-13T02:44:49.283Z"
     }
   ],
-  "pendingCount": 3,
-  "effectivePendingCount": 0,
-  "nextReviewRequiredBy": "2026-09-11"
+  "pendingCount": 4,
+  "effectivePendingCount": 1,
+  "nextReviewRequiredBy": "2026-08-13"
 }
