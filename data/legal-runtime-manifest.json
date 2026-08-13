@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-13T02:44:49.283Z",
+  "generatedAt": "2026-08-13T08:06:35.147Z",
   "asOfDate": "2026-08-13",
-  "snapshotCapturedAt": "2026-08-13T02:44:49.283Z",
+  "snapshotCapturedAt": "2026-08-13T08:06:35.147Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "registryReviewedAt": "2026-08-11",
   "sourceCount": 11,
@@ -154,7 +154,7 @@
       "officialState": "현행",
       "observation": "observed",
       "firstObservedAt": "2026-08-13T02:44:49.283Z",
-      "lastObservedAt": "2026-08-13T02:44:49.283Z"
+      "lastObservedAt": "2026-08-13T08:06:35.147Z"
     },
     {
       "changeId": "runtime:pipa:283839:20260911",
@@ -197,7 +197,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-13T02:44:49.283Z"
+      "lastObservedAt": "2026-08-13T08:06:35.147Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
@@ -240,7 +240,7 @@
       "officialState": "단계 시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-13T02:44:49.283Z"
+      "lastObservedAt": "2026-08-13T08:06:35.147Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
@@ -283,7 +283,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-13T02:44:49.283Z"
+      "lastObservedAt": "2026-08-13T08:06:35.147Z"
     }
   ],
   "pendingCount": 4,
