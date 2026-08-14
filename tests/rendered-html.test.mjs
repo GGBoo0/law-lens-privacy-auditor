@@ -365,8 +365,8 @@ test("analyzes pasted policy text without external services", async () => {
   assert.equal(response.status, 200);
   const result = await response.json();
   assert.equal(result.policyTitle, "직접 입력한 개인정보처리방침");
-  assert.equal(result.legalBaseline.date, "2026-08-11");
-  assert.equal(result.legalBaseline.verifiedAt, "2026-08-11");
+  assert.equal(result.legalBaseline.date, "2026-08-14");
+  assert.equal(result.legalBaseline.verifiedAt, "2026-08-14");
   assert.equal(result.legalBaseline.rulesetVersion, "KR-PRIVACY-2026.08.11-r4");
   assert.equal(result.legalBaseline.monitoring.enabled, true);
   assert.equal(result.legalBaseline.monitoring.sourceCount, 11);

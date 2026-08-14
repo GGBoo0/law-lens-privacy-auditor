@@ -41,7 +41,7 @@ export const LEGAL_IMPACT_CATEGORIES = {
 export type LegalImpactCategory = keyof typeof LEGAL_IMPACT_CATEGORIES;
 
 export const LEGAL_BASELINE = {
-  verifiedAt: "2026-08-11",
+  verifiedAt: "2026-08-14",
   rulesetVersion: "KR-PRIVACY-2026.08.11-r4",
   lifecycle: {
     schemaVersion: LEGAL_UPDATE_CONTRACT.schemaVersion,
@@ -130,7 +130,7 @@ export const LEGAL_BASELINE = {
     {
       sourceId: LEGAL_SOURCE_IDS.CREDIT_INFORMATION_ACT,
       name: "신용정보법",
-      version: "현행 제31조·제32조",
+      version: "시행 2026.08.13 · 법률 제21646호 · 제31조·제32조",
       scope: "개인신용정보 신호가 있을 때",
       url: "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1025128075",
     },
@@ -140,7 +140,7 @@ export const LEGAL_BASELINE = {
       changeId: "pipa-decree-36121-2026-08-20",
       sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
       versionId: "283503:20260820",
-      documentHash: "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
+      documentHash: "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
       name: "개인정보 보호법 시행령",
       version: "시행 예정 2026.08.20 · 대통령령 제36121호",
       effectiveFrom: "2026-08-20",
@@ -151,7 +151,7 @@ export const LEGAL_BASELINE = {
       impactCategories: ["data_portability"],
       review: {
         status: "reviewed",
-        reviewedAt: "2026-08-11",
+        reviewedAt: "2026-08-14",
         reviewedRulesetVersion: "KR-PRIVACY-2026.08.11-r4",
         outcome: "rule_updated",
       },
@@ -160,7 +160,7 @@ export const LEGAL_BASELINE = {
       changeId: "pipa-21445-2026-09-11",
       sourceId: LEGAL_SOURCE_IDS.PIPA,
       versionId: "283839:20260911",
-      documentHash: "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
+      documentHash: "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
       name: "개인정보 보호법",
       version: "시행 예정 2026.09.11 · 법률 제21445호",
       effectiveFrom: "2026-09-11",
@@ -183,7 +183,7 @@ export const LEGAL_BASELINE = {
       changeId: "pipa-21445-2027-07-01",
       sourceId: LEGAL_SOURCE_IDS.PIPA,
       versionId: "283839:20270701",
-      documentHash: "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
+      documentHash: "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
       name: "개인정보 보호법",
       version: "단계 시행 예정 2027.07.01 · 법률 제21445호",
       effectiveFrom: "2027-07-01",
@@ -191,10 +191,7 @@ export const LEGAL_BASELINE = {
       changeKind: "semantic",
       status: "시행 전 · 분석 규칙 미적용",
       url: "https://law.go.kr/LSW/lsInfoP.do?lsiSeq=283839&viewCls=lsRvsDocInfoR",
-      impactCategories: [
-        "security_measures",
-        "privacy_officer",
-      ],
+      impactCategories: ["security_measures"],
       review: {
         status: "pending",
         reviewedAt: null,
@@ -206,7 +203,7 @@ export const LEGAL_BASELINE = {
       changeId: "pipa-decree-36121-2027-02-20",
       sourceId: LEGAL_SOURCE_IDS.PIPA_DECREE,
       versionId: "283503:20270220",
-      documentHash: "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
+      documentHash: "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
       name: "개인정보 보호법 시행령",
       version: "단계 시행 예정 2027.02.20 · 대통령령 제36121호",
       effectiveFrom: "2027-02-20",

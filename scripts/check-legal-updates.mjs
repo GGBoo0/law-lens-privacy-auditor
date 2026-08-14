@@ -10,6 +10,7 @@ const DEFAULT_RETRY_BASE_DELAY_MS = 750;
 const MAX_RETRY_DELAY_MS = 5_000;
 export const STAGE_EFFECTIVE_DATE_ALGORITHM =
   "promulgation-calendar-period-v2";
+export const LEGAL_SEMANTIC_TEXT_ALGORITHM = "legal-semantic-text-v2";
 const USER_AGENT =
   "LawLensPrivacyKR/1.0 (+https://github.com/GGBoo0/law-lens-privacy-auditor)";
 const SAFE_ERROR_CODE = /^[A-Z][A-Z0-9_]{1,63}$/;
@@ -134,17 +135,59 @@ function decodeHtml(value) {
 }
 
 function cleanText(value = "") {
-  return decodeHtml(
-    String(value)
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<!--([\s\S]*?)-->/g, " ")
-      .replace(/<[^>]+>/g, " "),
-  )
+  return decodeHtml(String(value))
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<!--([\s\S]*?)-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .normalize("NFC")
     .replace(/[\u200B-\u200D\uFEFF]/g, "");
+}
+
+function numberParts(numberValue, branchValue = "", visibleText = "", kind = "list") {
+  let number = cleanText(numberValue).replace(/\s+/g, "");
+  let branch = cleanText(branchValue)
+    .replace(/\s+/g, "")
+    .replace(/^의/, "")
+    .replace(/[.)]$/, "");
+
+  if (kind === "article") {
+    const articleMatch = number.match(/^(?:제)?(\d+)(?:조)?(?:의(\d+))?$/);
+    if (articleMatch) {
+      number = articleMatch[1];
+      branch ||= articleMatch[2] || "";
+    }
+
+    const visibleMatch = cleanText(visibleText).match(/^제\s*(\d+)\s*조(?:\s*의\s*(\d+))?/);
+    if (visibleMatch && (!number || visibleMatch[1] === number)) {
+      number ||= visibleMatch[1];
+      branch ||= visibleMatch[2] || "";
+    }
+    return { number, branch };
+  }
+
+  const suffix = number.match(/[.)]$/)?.[0] || "";
+  number = number.replace(/[.)]$/, "");
+  const combinedMatch = number.match(/^(.+?)의([^의]+)$/);
+  if (combinedMatch) {
+    number = combinedMatch[1];
+    branch ||= combinedMatch[2];
+  }
+
+  const visibleMatch = cleanText(visibleText).match(/^([^\s.()]+?)\s*의\s*([^\s.()]+)[.)]?/);
+  if (visibleMatch && (!number || visibleMatch[1] === number)) {
+    number ||= visibleMatch[1];
+    branch ||= visibleMatch[2];
+  }
+
+  return {
+    number: number
+      ? `${number}${branch ? `의${branch}` : ""}${suffix || (kind === "list" ? "." : "")}`
+      : "",
+    branch: "",
+  };
 }
 
 function compactObject(entries) {
@@ -171,6 +214,7 @@ function flattenLegalUnits(value, wrapperKeys = []) {
 function normalizeLeafUnits(value, {
   wrapperKeys,
   numberKeys,
+  branchNumberKeys = [],
   textKeys,
   childKeys = [],
   normalizeChildren,
@@ -182,8 +226,12 @@ function normalizeLeafUnits(value, {
         return text ? { text } : null;
       }
 
-      const number = cleanText(numberKeys.map((key) => unit[key]).find(Boolean) || "");
       const text = cleanText(textKeys.map((key) => unit[key]).find(Boolean) || "");
+      const numberValue = numberKeys.map((key) => unit[key]).find(Boolean) || "";
+      const branchValue = branchNumberKeys
+        .map((key) => unit[key])
+        .find(Boolean) || "";
+      const { number } = numberParts(numberValue, branchValue, text);
       const childValue = childKeys.map((key) => unit[key]).find((item) => item !== undefined);
       const children = normalizeChildren
         ? normalizeChildren(childValue)
@@ -198,6 +246,7 @@ function normalizeSubitems(value) {
   return normalizeLeafUnits(value, {
     wrapperKeys: ["목단위", "목"],
     numberKeys: ["목번호"],
+    branchNumberKeys: ["목가지번호"],
     textKeys: ["목내용"],
   });
 }
@@ -206,6 +255,7 @@ function normalizeItems(value) {
   return normalizeLeafUnits(value, {
     wrapperKeys: ["호단위", "호"],
     numberKeys: ["호번호"],
+    branchNumberKeys: ["호가지번호"],
     textKeys: ["호내용"],
     childKeys: ["목", "목단위"],
     normalizeChildren: normalizeSubitems,
@@ -220,9 +270,16 @@ function normalizeParagraphs(value) {
         return text ? { text } : null;
       }
 
+      const text = cleanText(unit.항내용 || "");
+      const { number } = numberParts(
+        unit.항번호 || "",
+        unit.항가지번호 || "",
+        text,
+        "paragraph",
+      );
       const normalized = compactObject({
-        number: cleanText(unit.항번호 || ""),
-        text: cleanText(unit.항내용 || ""),
+        number,
+        text,
         items: normalizeItems(unit.호 ?? unit.호단위),
       });
       return Object.keys(normalized).length > 0 ? normalized : null;
@@ -236,12 +293,25 @@ function normalizeParagraphs(value) {
  * excluded so an upstream metadata refresh does not look like a law amendment.
  */
 export function normalizeArticleUnit(unit = {}) {
+  const [article = {}] = flattenLegalUnits(unit, ["조문단위", "조문"]);
+  const articleIdentity = numberParts(
+    article.조문번호 || "",
+    article.조문가지번호 || "",
+    article.조문내용 || "",
+    "article",
+  );
+  const paragraphs = normalizeParagraphs(article.항 ?? article.항단위);
+  if (paragraphs.length === 0 && (article.호 !== undefined || article.호단위 !== undefined)) {
+    const items = normalizeItems(article.호 ?? article.호단위);
+    if (items.length > 0) paragraphs.push({ items });
+  }
+
   return compactObject({
-    articleNumber: cleanText(unit.조문번호 || ""),
-    branchNumber: cleanText(unit.조문가지번호 || ""),
-    title: cleanText(unit.조문제목 || ""),
-    text: cleanText(unit.조문내용 || ""),
-    paragraphs: normalizeParagraphs(unit.항),
+    articleNumber: articleIdentity.number,
+    branchNumber: articleIdentity.branch,
+    title: cleanText(article.조문제목 || ""),
+    text: cleanText(article.조문내용 || ""),
+    paragraphs,
   });
 }
 
@@ -600,8 +670,12 @@ function lawApiUrl(endpoint, parameters) {
   return url;
 }
 
+function legalArticleUnits(lawBody) {
+  return flattenLegalUnits(lawBody?.조문 ?? lawBody, ["조문", "조문단위"]);
+}
+
 export function articleMap(lawBody) {
-  const units = toArray(lawBody?.조문?.조문단위);
+  const units = legalArticleUnits(lawBody);
   return Object.fromEntries(
     units.map((unit, index) => {
       const key = String(unit?.조문키 || unit?.조문번호 || index + 1);
@@ -618,7 +692,7 @@ export function articleMap(lawBody) {
 }
 
 function legacyArticleHashes(lawBody) {
-  const units = toArray(lawBody?.조문?.조문단위);
+  const units = legalArticleUnits(lawBody);
   return Object.fromEntries(
     units.map((unit, index) => [
       String(unit?.조문키 || unit?.조문번호 || index + 1),
@@ -723,7 +797,7 @@ async function collectLaw(source, options) {
       stageEffectiveDates,
       documentHash,
       semanticDocumentHash,
-      articleHashAlgorithm: "legal-semantic-text-v1",
+      articleHashAlgorithm: LEGAL_SEMANTIC_TEXT_ALGORITHM,
       articles,
     });
     legacyFingerprintVersions.push({
@@ -747,7 +821,7 @@ async function collectLaw(source, options) {
     type: source.type,
     officialUrl: source.officialUrl,
     fingerprint: fingerprint(legacyFingerprintVersions),
-    contentHashAlgorithm: "legal-semantic-text-v1",
+    contentHashAlgorithm: LEGAL_SEMANTIC_TEXT_ALGORITHM,
     stageEffectiveDateAlgorithm: STAGE_EFFECTIVE_DATE_ALGORITHM,
     contentFingerprint: fingerprint(semanticFingerprintVersions),
     versions,
@@ -950,6 +1024,13 @@ function describeSourceChange(previous, current) {
     const oldVersions = new Map((previous.versions || []).map((item) => [item.id, item]));
     const newVersions = new Map((current.versions || []).map((item) => [item.id, item]));
     const details = [];
+    const sameContentHashAlgorithm =
+      previous.contentHashAlgorithm === current.contentHashAlgorithm;
+    if (!sameContentHashAlgorithm) {
+      details.push(
+        `법령 본문 정규화 기준 변경: ${previous.contentHashAlgorithm || "이전 버전 미기록"} → ${current.contentHashAlgorithm || "미상"}`,
+      );
+    }
     if (
       previous.stageEffectiveDateAlgorithm !==
       current.stageEffectiveDateAlgorithm
@@ -967,6 +1048,11 @@ function describeSourceChange(previous, current) {
         continue;
       }
       const oldVersion = oldVersions.get(id);
+      if (oldVersion.state !== version.state) {
+        details.push(
+          `법령 상태 변경: ${oldVersion.state || "미상"} → ${version.state || "미상"} (시행 ${version.effectiveDate || oldVersion.effectiveDate || "미상"})`,
+        );
+      }
       const oldStageDates = new Set(
         (oldVersion.stageEffectiveDates || [])
           .map((stage) => String(stage?.effectiveDate || ""))
@@ -987,7 +1073,9 @@ function describeSourceChange(previous, current) {
           details.push(`단계 시행일 제외: ${effectiveDate}`);
         }
       }
-      if (oldVersion.documentHash !== version.documentHash) {
+      const oldDocumentHash = oldVersion.semanticDocumentHash || oldVersion.documentHash;
+      const currentDocumentHash = version.semanticDocumentHash || version.documentHash;
+      if (sameContentHashAlgorithm && oldDocumentHash !== currentDocumentHash) {
         const articles = changedArticles(oldVersion, version);
         details.push(
           articles.length > 0
@@ -1035,8 +1123,10 @@ export function compareSnapshots(previousSnapshot, currentSnapshot) {
       const oldSource = previous[id];
       const newSource = current[id];
       if (!oldSource || !newSource) return true;
+      if (oldSource.contentHashAlgorithm !== newSource.contentHashAlgorithm) {
+        return true;
+      }
       const canUseSemanticFingerprint =
-        oldSource.contentHashAlgorithm === newSource.contentHashAlgorithm &&
         oldSource.contentFingerprint &&
         newSource.contentFingerprint;
       return canUseSemanticFingerprint

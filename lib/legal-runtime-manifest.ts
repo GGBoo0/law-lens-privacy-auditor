@@ -5,6 +5,19 @@ import {
 
 export const LEGAL_RUNTIME_MANIFEST_SCHEMA_VERSION = 1 as const;
 
+export const LEGAL_SEMANTIC_HASH_ALGORITHMS = Object.freeze([
+  "legal-semantic-text-v1",
+  "legal-semantic-text-v2",
+] as const);
+
+export type LegalSemanticHashAlgorithm =
+  (typeof LEGAL_SEMANTIC_HASH_ALGORITHMS)[number];
+
+export type LegalRuntimeHashAlgorithm =
+  | LegalSemanticHashAlgorithm
+  | "legacy-document-hash"
+  | "source-fingerprint";
+
 export const ALL_LEGAL_IMPACT_CATEGORIES = Object.freeze(
   Object.keys(LEGAL_IMPACT_CATEGORIES) as LegalImpactCategory[],
 );
@@ -50,7 +63,7 @@ export type RuntimePendingLegalChange = {
   sourceId: string;
   versionId: string;
   documentHash: string;
-  hashAlgorithm: "legal-semantic-text-v1" | "legacy-document-hash" | "source-fingerprint";
+  hashAlgorithm: LegalRuntimeHashAlgorithm;
   name: string;
   version: string;
   effectiveFrom: string;
@@ -103,6 +116,7 @@ type SnapshotSource = {
   name?: unknown;
   officialUrl?: unknown;
   fingerprint?: unknown;
+  contentHashAlgorithm?: unknown;
   versions?: unknown;
 };
 
@@ -150,6 +164,42 @@ export function normalizeOfficialEffectiveDate(value: unknown) {
 
 function versionKey(sourceId: string, versionId: string, documentHash: string) {
   return `${sourceId}\u0000${versionId}\u0000${documentHash}`;
+}
+
+function semanticHashAlgorithm(
+  source: SnapshotSource,
+  version: SnapshotVersion,
+): LegalSemanticHashAlgorithm {
+  const declared = [
+    ["version.articleHashAlgorithm", version.articleHashAlgorithm],
+    ["source.contentHashAlgorithm", source.contentHashAlgorithm],
+  ].filter(([, value]) => value !== undefined && value !== null);
+
+  if (declared.length === 0) {
+    // Snapshots written before the algorithm field was introduced used v1.
+    return "legal-semantic-text-v1";
+  }
+
+  const algorithms = declared.map(([label, value]) => {
+    if (
+      typeof value !== "string" ||
+      !LEGAL_SEMANTIC_HASH_ALGORITHMS.includes(
+        value as LegalSemanticHashAlgorithm,
+      )
+    ) {
+      throw new TypeError(`${label} is unsupported: ${String(value)}`);
+    }
+    return value as LegalSemanticHashAlgorithm;
+  });
+
+  if (new Set(algorithms).size !== 1) {
+    throw new TypeError(
+      `semantic hash algorithm mismatch: ${declared
+        .map(([label, value]) => `${label}=${String(value)}`)
+        .join(", ")}`,
+    );
+  }
+  return algorithms[0];
 }
 
 export function validateLegalRuleReviewRegistry(value: unknown) {
@@ -232,10 +282,10 @@ function validatePendingChange(change: unknown, index: number, errors: string[])
   }
   if (
     ![
-      "legal-semantic-text-v1",
+      ...LEGAL_SEMANTIC_HASH_ALGORITHMS,
       "legacy-document-hash",
       "source-fingerprint",
-    ].includes(String(change.hashAlgorithm))
+    ].includes(change.hashAlgorithm as LegalRuntimeHashAlgorithm)
   ) {
     errors.push(`manifest.pendingChanges[${index}].hashAlgorithm is invalid`);
   }
@@ -475,6 +525,9 @@ export function buildLegalRuntimeManifest({
         semanticDocumentHash ??
         officialDocumentHash ??
         `missing-document-hash:${versionId}`;
+      const hashAlgorithm = semanticDocumentHash
+        ? semanticHashAlgorithm(source, rawVersion)
+        : "legacy-document-hash";
       const officialState = typeof rawVersion.state === "string" ? rawVersion.state : "미상";
       if (
         !versionId || !["현행", "시행예정"].includes(officialState)
@@ -497,9 +550,7 @@ export function buildLegalRuntimeManifest({
         sourceId,
         versionId,
         documentHash,
-        hashAlgorithm: semanticDocumentHash
-          ? "legal-semantic-text-v1"
-          : "legacy-document-hash",
+        hashAlgorithm,
         name: sourceName,
         version: `${officialState} · 시행 ${effectiveFrom}${
           typeof rawVersion.promulgationNumber === "string" && rawVersion.promulgationNumber
@@ -555,6 +606,9 @@ export function buildLegalRuntimeManifest({
         semanticDocumentHash ??
         officialDocumentHash ??
         `missing-document-hash:${versionId}`;
+      const hashAlgorithm = semanticDocumentHash
+        ? semanticHashAlgorithm(source, rawVersion)
+        : "legacy-document-hash";
       const sourceDocumentWasReviewed = registry.reviews.some(
         (review) =>
           review.sourceId === sourceId &&
@@ -586,9 +640,7 @@ export function buildLegalRuntimeManifest({
           sourceId,
           versionId: syntheticVersionId,
           documentHash,
-          hashAlgorithm: semanticDocumentHash
-            ? "legal-semantic-text-v1"
-            : "legacy-document-hash",
+          hashAlgorithm,
           name: sourceName,
           version: `별도 단계 시행 ${stageDate}${
             typeof rawVersion.promulgationNumber === "string" &&

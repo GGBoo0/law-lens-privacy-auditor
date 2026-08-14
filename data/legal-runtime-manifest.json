@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-10T17:20:35.264Z",
-  "asOfDate": "2026-08-11",
-  "snapshotCapturedAt": "2026-08-10T17:20:35.264Z",
+  "generatedAt": "2026-08-14T11:31:56.040Z",
+  "asOfDate": "2026-08-14",
+  "snapshotCapturedAt": "2026-08-14T11:31:56.040Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
-  "registryReviewedAt": "2026-08-11",
+  "registryReviewedAt": "2026-08-14",
   "sourceCount": 11,
   "reviewedVersions": [
     {
@@ -125,6 +125,90 @@
       "documentHash": "e32c6ea5b0f352add8cfd341b315ca76734b03e1a0a7802c8df5fd9ae897217b",
       "effectiveDate": "2027-02-07",
       "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "pipa",
+      "versionId": "270351:20251002",
+      "documentHash": "86d8b7c15f5375f28247a2c8e7bf7776b6dfcf461d92f21f4386637541848a4c",
+      "effectiveDate": "2025-10-02",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "286175:20260519",
+      "documentHash": "ea000cb5182f0ec9307281df23dcb85c087f1cfb232ea11c2ec9b751d280af08",
+      "effectiveDate": "2026-05-19",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "283503:20260820",
+      "documentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+      "effectiveDate": "2026-08-20",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20260721",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270121",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270207",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-02-07",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20260721",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20270121",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ai-framework-act",
+      "versionId": "282791:20260721",
+      "documentHash": "00b3571600da9f38b0264a089b8bed2ecb19a06788d7bd0f01242303dbbcabdb",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "location-information-act",
+      "versionId": "277359:20251001",
+      "documentHash": "91a87155432f23e2cd6793301f8c0d18fc699d475ba49d2e814102325b61f186",
+      "effectiveDate": "2025-10-01",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "285955:20260813",
+      "documentHash": "df3dba3448582f68e0f9fd7bd7ac70c19b29e6434bbe7a6b60ae772f576c0211",
+      "effectiveDate": "2026-08-13",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "283841:20260911",
+      "documentHash": "056125ae9f2cf0b2ebe3678b6fd22aaa9b266dc57598f6065cc35b29001db475",
+      "effectiveDate": "2026-09-11",
+      "outcome": "no_analyzer_impact"
     }
   ],
   "pendingChanges": [
@@ -132,13 +216,13 @@
       "changeId": "runtime:pipa:283839:20260911",
       "sourceId": "pipa",
       "versionId": "283839:20260911",
-      "documentHash": "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법",
       "version": "시행예정 · 시행 2026-09-11 · 21445",
       "effectiveFrom": "2026-09-11",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-10T17:20:35.264Z",
+      "detectedAt": "2026-08-14T11:31:56.040Z",
       "changeKind": "semantic",
       "status": "시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법",
@@ -168,20 +252,20 @@
       },
       "officialState": "시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-10T17:20:35.264Z"
+      "firstObservedAt": "2026-08-14T11:31:56.040Z",
+      "lastObservedAt": "2026-08-14T11:31:56.040Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
       "sourceId": "pipa-decree",
       "versionId": "283503:20270220",
-      "documentHash": "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법 시행령",
       "version": "별도 단계 시행 2027-02-20 · 36121",
       "effectiveFrom": "2027-02-20",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-10T17:20:35.264Z",
+      "detectedAt": "2026-08-14T11:31:56.040Z",
       "changeKind": "semantic",
       "status": "단계 시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법시행령",
@@ -211,20 +295,20 @@
       },
       "officialState": "단계 시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-10T17:20:35.264Z"
+      "firstObservedAt": "2026-08-14T11:31:56.040Z",
+      "lastObservedAt": "2026-08-14T11:31:56.040Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
       "sourceId": "pipa",
       "versionId": "283839:20270701",
-      "documentHash": "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법",
       "version": "시행예정 · 시행 2027-07-01 · 21445",
       "effectiveFrom": "2027-07-01",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-10T17:20:35.264Z",
+      "detectedAt": "2026-08-14T11:31:56.040Z",
       "changeKind": "semantic",
       "status": "시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법",
@@ -254,8 +338,8 @@
       },
       "officialState": "시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-10T17:20:35.264Z",
-      "lastObservedAt": "2026-08-10T17:20:35.264Z"
+      "firstObservedAt": "2026-08-14T11:31:56.040Z",
+      "lastObservedAt": "2026-08-14T11:31:56.040Z"
     }
   ],
   "pendingCount": 3,

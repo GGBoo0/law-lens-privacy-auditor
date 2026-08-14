@@ -6,7 +6,7 @@
   "reviewMode": "developer_self_review",
   "validationLevel": "not_expert_validated",
   "createdAt": "2026-08-11T15:00:00.000Z",
-  "updatedAt": "2026-08-11T15:00:00.000Z",
+  "updatedAt": "2026-08-14T11:31:56.040Z",
   "sectorPlan": [
     { "sector": "commerce", "requiredSlotCount": 4 },
     { "sector": "finance", "requiredSlotCount": 4 },
@@ -20,8 +20,8 @@
     "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
     "analyzerSourceSha256": "sha256:ca8e74361d12908daeab7a971914ade0228f7f7c41eed2881aa5f9ffa40f2933",
     "ruleCatalogSha256": "sha256:473e23d5a81fa5484b9d804c1817990dec4504c86ce5dd89f5704d3adfe0b2af",
-    "legalRuntimeManifestSha256": "sha256:00f9c40d88fc7d69f51c30aa30163d549f0128c04be21846b8b9f858ec978925",
-    "legalSourceSnapshotSha256": "sha256:6793b00f5e6294d889cd46c6ffc25b616a3fc2d19b2a53e77157e032b6d8edca"
+    "legalRuntimeManifestSha256": "sha256:7c616fad01bc0501255e7019c92561dc00566b874ac4b8eee10dec5407acd7d8",
+    "legalSourceSnapshotSha256": "sha256:b515f63e95957491397c35a9a201ca633d7fb4c6b49bbb5721af53d9a33a3204"
   },
   "legalCohort": null,
   "slots": [

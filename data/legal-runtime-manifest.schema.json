@@ -86,6 +86,7 @@
         "hashAlgorithm": {
           "enum": [
             "legal-semantic-text-v1",
+            "legal-semantic-text-v2",
             "legacy-document-hash",
             "source-fingerprint"
           ]
