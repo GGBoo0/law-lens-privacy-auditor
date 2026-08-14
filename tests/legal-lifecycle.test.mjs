@@ -462,6 +462,81 @@ test("semantic document hashes take precedence over transport hashes", () => {
   );
 });
 
+test("v2 semantic hash identity is preserved for regular and synthetic stages", () => {
+  const snapshot = runtimeSnapshot({ sourceId: "pipa-decree" });
+  const source = snapshot.sources["pipa-decree"];
+  const version = source.versions[0];
+  source.contentHashAlgorithm = "legal-semantic-text-v2";
+  version.semanticDocumentHash = "semantic-text-v2";
+  version.id = "283503:20260820";
+  version.effectiveDate = "20260820";
+  version.stageEffectiveDates = [
+    { effectiveDate: "20260820", source: "law-search" },
+    { effectiveDate: "20270220", source: "appendix-relative" },
+  ];
+
+  const manifest = buildLegalRuntimeManifest({
+    snapshot,
+    registry: emptyRegistry(),
+    generatedAt: "2026-08-14T01:00:00.000Z",
+  });
+
+  assert.equal(manifest.pendingCount, 2);
+  assert.deepEqual(
+    manifest.pendingChanges.map((change) => [
+      change.versionId,
+      change.hashAlgorithm,
+    ]),
+    [
+      ["283503:20260820", "legal-semantic-text-v2"],
+      ["283503:20270220", "legal-semantic-text-v2"],
+    ],
+  );
+  assert.equal(validateLegalRuntimeManifest(manifest).valid, true);
+
+  const versionDeclaredSnapshot = runtimeSnapshot();
+  const versionDeclared = versionDeclaredSnapshot.sources["new-law"].versions[0];
+  versionDeclared.articleHashAlgorithm = "legal-semantic-text-v2";
+  versionDeclared.semanticDocumentHash = "version-declared-semantic-text-v2";
+  assert.equal(
+    buildLegalRuntimeManifest({
+      snapshot: versionDeclaredSnapshot,
+      registry: emptyRegistry(),
+      generatedAt: "2026-08-14T01:00:00.000Z",
+    }).pendingChanges[0].hashAlgorithm,
+    "legal-semantic-text-v2",
+  );
+});
+
+test("semantic hash metadata rejects unsupported and conflicting algorithms", () => {
+  for (const mutate of [
+    (source, version) => {
+      source.contentHashAlgorithm = "legal-semantic-text-v3";
+      version.articleHashAlgorithm = "legal-semantic-text-v3";
+    },
+    (source, version) => {
+      source.contentHashAlgorithm = "legal-semantic-text-v2";
+      version.articleHashAlgorithm = "legal-semantic-text-v1";
+    },
+  ]) {
+    const snapshot = runtimeSnapshot();
+    const source = snapshot.sources["new-law"];
+    const version = source.versions[0];
+    version.semanticDocumentHash = "semantic-document";
+    mutate(source, version);
+
+    assert.throws(
+      () =>
+        buildLegalRuntimeManifest({
+          snapshot,
+          registry: emptyRegistry(),
+          generatedAt: "2026-08-14T01:00:00.000Z",
+        }),
+      /semantic hash algorithm|unsupported/,
+    );
+  }
+});
+
 test("a future staged effective date without its own version row stays pending", () => {
   const snapshot = runtimeSnapshot({ sourceId: "ecommerce-act" });
   const version = snapshot.sources["ecommerce-act"].versions[0];
@@ -628,6 +703,34 @@ test("the committed registry validates and leaves only official future versions 
   });
   assert.equal(manifest.effectivePendingCount, 0);
   assert.equal(manifest.pendingCount, 3);
+  assert.deepEqual(
+    manifest.pendingChanges.map((change) => ({
+      sourceId: change.sourceId,
+      versionId: change.versionId,
+      effectiveFrom: change.effectiveFrom,
+      hashAlgorithm: change.hashAlgorithm,
+    })),
+    [
+      {
+        sourceId: "pipa",
+        versionId: "283839:20260911",
+        effectiveFrom: "2026-09-11",
+        hashAlgorithm: "legal-semantic-text-v2",
+      },
+      {
+        sourceId: "pipa-decree",
+        versionId: "283503:20270220",
+        effectiveFrom: "2027-02-20",
+        hashAlgorithm: "legal-semantic-text-v2",
+      },
+      {
+        sourceId: "pipa",
+        versionId: "283839:20270701",
+        effectiveFrom: "2027-07-01",
+        hashAlgorithm: "legal-semantic-text-v2",
+      },
+    ],
+  );
   assert.equal(
     manifest.pendingChanges.some(
       (change) => change.versionId === "283503:20260820",

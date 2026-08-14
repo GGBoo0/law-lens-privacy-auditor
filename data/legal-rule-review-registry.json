@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
-  "reviewedAt": "2026-08-11",
+  "reviewedAt": "2026-08-14",
   "reviews": [
     {
       "sourceId": "pipa",
@@ -120,6 +120,90 @@
       "versionId": "282793:20270207",
       "documentHash": "e32c6ea5b0f352add8cfd341b315ca76734b03e1a0a7802c8df5fd9ae897217b",
       "effectiveDate": "2027-02-07",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "pipa",
+      "versionId": "270351:20251002",
+      "documentHash": "86d8b7c15f5375f28247a2c8e7bf7776b6dfcf461d92f21f4386637541848a4c",
+      "effectiveDate": "2025-10-02",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "286175:20260519",
+      "documentHash": "ea000cb5182f0ec9307281df23dcb85c087f1cfb232ea11c2ec9b751d280af08",
+      "effectiveDate": "2026-05-19",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "283503:20260820",
+      "documentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+      "effectiveDate": "2026-08-20",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20260721",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270121",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270207",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-02-07",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20260721",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20270121",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ai-framework-act",
+      "versionId": "282791:20260721",
+      "documentHash": "00b3571600da9f38b0264a089b8bed2ecb19a06788d7bd0f01242303dbbcabdb",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "location-information-act",
+      "versionId": "277359:20251001",
+      "documentHash": "91a87155432f23e2cd6793301f8c0d18fc699d475ba49d2e814102325b61f186",
+      "effectiveDate": "2025-10-01",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "285955:20260813",
+      "documentHash": "df3dba3448582f68e0f9fd7bd7ac70c19b29e6434bbe7a6b60ae772f576c0211",
+      "effectiveDate": "2026-08-13",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "283841:20260911",
+      "documentHash": "056125ae9f2cf0b2ebe3678b6fd22aaa9b266dc57598f6065cc35b29001db475",
+      "effectiveDate": "2026-09-11",
       "outcome": "no_analyzer_impact"
     }
   ]

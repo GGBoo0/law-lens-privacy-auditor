@@ -7,6 +7,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  LEGAL_SEMANTIC_TEXT_ALGORITHM,
   STAGE_EFFECTIVE_DATE_ALGORITHM,
   articleMap,
   buildChangeReport,
@@ -16,6 +17,7 @@ import {
   extractStageEffectiveDates,
   extractPipcArticle,
   extractPipcGuideList,
+  normalizeArticleUnit,
   pipcAttachmentUrl,
   runMonitor,
   safeFailureDiagnostic,
@@ -295,6 +297,104 @@ test("article hashes ignore API metadata but preserve meaningful nested text", (
   assert.notEqual(changedHash, baseHash);
 });
 
+test("article hashes survive equivalent law API number, tag, and wrapper shapes", () => {
+  const splitShape = {
+    조문키: "0035021",
+    조문번호: "35",
+    조문가지번호: "2",
+    조문제목: "개인정보의 전송 요구",
+    조문내용: "제35조의2(개인정보의 전송 요구) &lt;개정 2026.8.14&gt;",
+    항: [
+      {
+        항번호: "①",
+        항내용: "① 다음 각 호의 정보를 전송할 수 있다. &lt;개정 2026.8.14&gt;",
+        호: [
+          {
+            호번호: "3.",
+            호가지번호: "2",
+            호내용: "3의2. 정보주체가 요구한 개인정보",
+            목: [{ 목번호: "가.", 목내용: "가. 전송 대상 정보" }],
+          },
+        ],
+      },
+    ],
+  };
+  const combinedWrappedShape = {
+    조문단위: {
+      조문키: "0035021",
+      조문번호: "35의2",
+      조문제목: "개인정보의 전송 요구",
+      조문내용: "제35조의2(개인정보의 전송 요구) <개정 2026.8.14>",
+      항단위: {
+        항단위: {
+          항번호: "①",
+          항내용: "① 다음 각 호의 정보를 전송할 수 있다. <개정 2026.8.14>",
+          호단위: {
+            호단위: {
+              호번호: "3의2.",
+              호내용: "3의2. 정보주체가 요구한 개인정보",
+              목단위: {
+                목단위: { 목번호: "가.", 목내용: "가. 전송 대상 정보" },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  assert.deepEqual(
+    normalizeArticleUnit(combinedWrappedShape),
+    normalizeArticleUnit(splitShape),
+  );
+  assert.deepEqual(
+    normalizeArticleUnit(splitShape).paragraphs[0].items[0].children,
+    [{ number: "가.", text: "가. 전송 대상 정보" }],
+    "newly exposed subitems are legally meaningful and must remain in v2 hashes",
+  );
+
+  const splitHash = articleMap({ 조문: { 조문단위: splitShape } })["0035021"].hash;
+  const wrappedHash = articleMap({
+    조문: { 조문단위: combinedWrappedShape },
+  })["0035021"].hash;
+  assert.equal(wrappedHash, splitHash);
+
+  const changed = structuredClone(combinedWrappedShape);
+  changed.조문단위.항단위.항단위.호단위.호단위.호내용 =
+    "3의2. 정보주체가 요구한 개인정보와 이용 기록";
+  const changedHash = articleMap({ 조문: { 조문단위: changed } })["0035021"].hash;
+  assert.notEqual(changedHash, splitHash);
+
+  const changedSubitem = structuredClone(combinedWrappedShape);
+  changedSubitem.조문단위.항단위.항단위.호단위.호단위.목단위.목단위.목내용 =
+    "가. 전송 대상 정보와 이용 기록";
+  const changedSubitemHash = articleMap({
+    조문: { 조문단위: changedSubitem },
+  })["0035021"].hash;
+  assert.notEqual(changedSubitemHash, splitHash);
+});
+
+test("article hashes treat top-level items and an implicit paragraph wrapper equally", () => {
+  const article = {
+    조문키: "0002001",
+    조문번호: "2",
+    조문제목: "정의",
+    조문내용: "제2조(정의)",
+    호: [{ 호번호: "1.", 호내용: "1. 개인정보의 정의" }],
+  };
+  const wrapped = {
+    ...article,
+    항: { 호: article.호 },
+  };
+  delete wrapped.호;
+
+  assert.deepEqual(normalizeArticleUnit(article), normalizeArticleUnit(wrapped));
+});
+
+test("law semantic hash algorithm is bumped for canonical API-shape handling", () => {
+  assert.equal(LEGAL_SEMANTIC_TEXT_ALGORITHM, "legal-semantic-text-v2");
+});
+
 test("staged effective dates are extracted from defensive appendix shapes", () => {
   const lawBody = {
     부칙: {
@@ -451,6 +551,73 @@ test("semantic source fingerprints suppress legacy metadata-only changes", () =>
   current.sources.pipa.fingerprint = "legacy-after-metadata-refresh";
 
   assert.deepEqual(compareSnapshots(previous, current), []);
+});
+
+test("same law version reports a scheduled-to-current state transition", () => {
+  const previous = {
+    sources: {
+      "credit-information-act": {
+        name: "신용정보의 이용 및 보호에 관한 법률",
+        officialUrl: "https://law.go.kr/example",
+        contentHashAlgorithm: LEGAL_SEMANTIC_TEXT_ALGORITHM,
+        contentFingerprint: "scheduled-version-state",
+        versions: [
+          {
+            id: "285955:20260813",
+            state: "시행예정",
+            effectiveDate: "20260813",
+            semanticDocumentHash: "same-semantic-document",
+            articles: {
+              "0032001": { label: "제32조", hash: "same-article-hash" },
+            },
+          },
+        ],
+      },
+    },
+  };
+  const current = structuredClone(previous);
+  current.sources["credit-information-act"].contentFingerprint =
+    "current-version-state";
+  current.sources["credit-information-act"].versions[0].state = "현행";
+
+  const changes = compareSnapshots(previous, current);
+  assert.equal(changes.length, 1);
+  assert.match(
+    changes[0].details.join(" "),
+    /법령 상태 변경: 시행예정 → 현행 \(시행 20260813\)/,
+  );
+  assert.doesNotMatch(changes[0].details.join(" "), /기존 버전 본문 변경 감지/);
+});
+
+test("content parser upgrades do not compare incompatible article hashes", () => {
+  const previous = {
+    sources: {
+      pipa: {
+        name: "개인정보 보호법",
+        officialUrl: "https://law.go.kr/example",
+        fingerprint: "same-legacy-response",
+        contentHashAlgorithm: "legal-semantic-text-v1",
+        contentFingerprint: "semantic-v1",
+        versions: [
+          {
+            id: "270351:20251002",
+            semanticDocumentHash: "document-v1",
+            articles: { "0030001": { label: "제30조", hash: "article-v1" } },
+          },
+        ],
+      },
+    },
+  };
+  const current = structuredClone(previous);
+  current.sources.pipa.contentHashAlgorithm = LEGAL_SEMANTIC_TEXT_ALGORITHM;
+  current.sources.pipa.contentFingerprint = "semantic-v2";
+  current.sources.pipa.versions[0].semanticDocumentHash = "document-v2";
+  current.sources.pipa.versions[0].articles["0030001"].hash = "article-v2";
+
+  const changes = compareSnapshots(previous, current);
+  assert.equal(changes.length, 1);
+  assert.match(changes[0].details.join(" "), /법령 본문 정규화 기준 변경/);
+  assert.doesNotMatch(changes[0].details.join(" "), /기존 버전 본문 변경 감지/);
 });
 
 test("official-source fetches use bounded exponential retries", async () => {

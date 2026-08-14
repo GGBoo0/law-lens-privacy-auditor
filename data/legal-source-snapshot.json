@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-08-10T17:17:16.675Z",
+  "capturedAt": "2026-08-14T11:31:56.040Z",
   "sourceCount": 11,
   "sources": {
     "pipa": {
@@ -8,10 +8,10 @@
       "name": "개인정보 보호법",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/개인정보보호법",
-      "fingerprint": "4a133dab15c4f4c8f478cfac37fcf74ab2f7cc61c7aab0471f1830e7ab46f381",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "c84525ffe3a382f16642e79799a49f4449ae184398bc5d9a8c615d13bfd87bf5",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "8dc624bfb82dd516a07a2d24308a08c8fc3d9c2f46b6de432d70e07a82c2d942",
+      "contentFingerprint": "c6b0ffc616347d0afebfa0fac0a84dca44c4400001316c19fcb80c1ebe61e9a8",
       "versions": [
         {
           "id": "270351:20251002",
@@ -28,9 +28,9 @@
               "basisText": "제1조(시행일) 이 법은 공포 후 6개월이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "6dc2e420614daa6f3fc9e61bc191c84b1f5d681e7838acd4a5d93e7b1423da47",
-          "semanticDocumentHash": "b93ea32686f1088f9e45ddfc09454f59c4d3889ff4f191833adba1f19d81e260",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "e7283717e19ea0cf6dccceffeb828114c25b61a0371fb31c45d5cedab3d8cce1",
+          "semanticDocumentHash": "86d8b7c15f5375f28247a2c8e7bf7776b6dfcf461d92f21f4386637541848a4c",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -42,7 +42,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "411025143ea3bc0f96b4ab7e4a2bca30c9ae75a831bb13ee4bd91026d7f719de"
+              "hash": "3ea6db4a00f6c601ed7467ffa6790a9b61cb3315b236d10ebb08e4e16c6b7536"
             },
             "0003001": {
               "label": "제3조(개인정보 보호 원칙)",
@@ -274,7 +274,7 @@
             },
             "0028081": {
               "label": "제28조의8(개인정보의 국외 이전)",
-              "hash": "aeaf6f3daa0be5e07a3d37e9171608105c70ec0bcb32ef6e685d55311b49b491"
+              "hash": "4667ffcb348375702d64803be28b09c1b426a73ebfbcad1fc49c6c33010622d6"
             },
             "0028091": {
               "label": "제28조의9(개인정보의 국외 이전 중지 명령)",
@@ -338,11 +338,11 @@
             },
             "0035001": {
               "label": "제35조(개인정보의 열람)",
-              "hash": "8aa51fc7a11cda9da96e1f7462473a6d4b61d0b2da84748ff89eb15610c3b8f0"
+              "hash": "5cb0015f9edace3cd0b5e646c914528d7dda995ba5f22998df96a819834880b8"
             },
             "0035021": {
               "label": "제35조의2(개인정보의 전송 요구)",
-              "hash": "3fa5c1730581031ef7f1e910dcbff1308231582b2543202fbc74d00ddd71b565"
+              "hash": "a9fe0d68fb429ea2290da23962eb4aa002661dff30eed89b94c9734d866b07f0"
             },
             "0035031": {
               "label": "제35조의3(개인정보관리 전문기관)",
@@ -462,7 +462,7 @@
             },
             "0051001": {
               "label": "제51조(단체소송의 대상 등) 다음 각 호의 어느 하나에 해당하는 단체는 개인정보처리자가 제49조에 따른 집단분쟁조정을 거부하거나 집단분쟁조정의 결과를 수락하지 아니한 경우에는 법원에 권리침해 행위의 금지ㆍ중지를 구하는 소송(이하 \"단체소송\"이라 한다",
-              "hash": "8c20c206b481464e0b38365aab2b4bae7c19bae58160f947526798836f1d5afb"
+              "hash": "044ffaf631acfcfd2e0e04ff8e7096e7c471de8011edc01f0863bbf4fac4f082"
             },
             "0052001": {
               "label": "제52조(전속관할)",
@@ -610,9 +610,9 @@
               "basisText": "다만, 제32조의2제1항 단서 및 제75조제2항제15호의 개정규정은 2027년 7월 1일부터 시행한다."
             }
           ],
-          "documentHash": "4393209ab7506b10cabcbfbc61be0ca3a3d5a3c88a108c50d342dbd7ff69b42a",
-          "semanticDocumentHash": "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "1b38292bc0111be0161f534a678cbf307a8e8103f2edded1544b2fe4247dd18d",
+          "semanticDocumentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -624,7 +624,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "411025143ea3bc0f96b4ab7e4a2bca30c9ae75a831bb13ee4bd91026d7f719de"
+              "hash": "3ea6db4a00f6c601ed7467ffa6790a9b61cb3315b236d10ebb08e4e16c6b7536"
             },
             "0003001": {
               "label": "제3조(개인정보 보호 원칙)",
@@ -856,7 +856,7 @@
             },
             "0028081": {
               "label": "제28조의8(개인정보의 국외 이전)",
-              "hash": "aeaf6f3daa0be5e07a3d37e9171608105c70ec0bcb32ef6e685d55311b49b491"
+              "hash": "4667ffcb348375702d64803be28b09c1b426a73ebfbcad1fc49c6c33010622d6"
             },
             "0028091": {
               "label": "제28조의9(개인정보의 국외 이전 중지 명령)",
@@ -924,11 +924,11 @@
             },
             "0035001": {
               "label": "제35조(개인정보의 열람)",
-              "hash": "8aa51fc7a11cda9da96e1f7462473a6d4b61d0b2da84748ff89eb15610c3b8f0"
+              "hash": "5cb0015f9edace3cd0b5e646c914528d7dda995ba5f22998df96a819834880b8"
             },
             "0035021": {
               "label": "제35조의2(개인정보의 전송 요구)",
-              "hash": "3fa5c1730581031ef7f1e910dcbff1308231582b2543202fbc74d00ddd71b565"
+              "hash": "a9fe0d68fb429ea2290da23962eb4aa002661dff30eed89b94c9734d866b07f0"
             },
             "0035031": {
               "label": "제35조의3(개인정보관리 전문기관)",
@@ -1048,7 +1048,7 @@
             },
             "0051001": {
               "label": "제51조(단체소송의 대상 등) 다음 각 호의 어느 하나에 해당하는 단체는 개인정보처리자가 제49조에 따른 집단분쟁조정을 거부하거나 집단분쟁조정의 결과를 수락하지 아니한 경우에는 법원에 권리침해 행위의 금지ㆍ중지를 구하는 소송(이하 \"단체소송\"이라 한다",
-              "hash": "8c20c206b481464e0b38365aab2b4bae7c19bae58160f947526798836f1d5afb"
+              "hash": "044ffaf631acfcfd2e0e04ff8e7096e7c471de8011edc01f0863bbf4fac4f082"
             },
             "0052001": {
               "label": "제52조(전속관할)",
@@ -1196,9 +1196,9 @@
               "basisText": "다만, 제32조의2제1항 단서 및 제75조제2항제15호의 개정규정은 2027년 7월 1일부터 시행한다."
             }
           ],
-          "documentHash": "4393209ab7506b10cabcbfbc61be0ca3a3d5a3c88a108c50d342dbd7ff69b42a",
-          "semanticDocumentHash": "e38db80a5b453fec1a22f59237512b6a524856ed65cdc90f859c88128d631348",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "1b38292bc0111be0161f534a678cbf307a8e8103f2edded1544b2fe4247dd18d",
+          "semanticDocumentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -1210,7 +1210,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "411025143ea3bc0f96b4ab7e4a2bca30c9ae75a831bb13ee4bd91026d7f719de"
+              "hash": "3ea6db4a00f6c601ed7467ffa6790a9b61cb3315b236d10ebb08e4e16c6b7536"
             },
             "0003001": {
               "label": "제3조(개인정보 보호 원칙)",
@@ -1442,7 +1442,7 @@
             },
             "0028081": {
               "label": "제28조의8(개인정보의 국외 이전)",
-              "hash": "aeaf6f3daa0be5e07a3d37e9171608105c70ec0bcb32ef6e685d55311b49b491"
+              "hash": "4667ffcb348375702d64803be28b09c1b426a73ebfbcad1fc49c6c33010622d6"
             },
             "0028091": {
               "label": "제28조의9(개인정보의 국외 이전 중지 명령)",
@@ -1510,11 +1510,11 @@
             },
             "0035001": {
               "label": "제35조(개인정보의 열람)",
-              "hash": "8aa51fc7a11cda9da96e1f7462473a6d4b61d0b2da84748ff89eb15610c3b8f0"
+              "hash": "5cb0015f9edace3cd0b5e646c914528d7dda995ba5f22998df96a819834880b8"
             },
             "0035021": {
               "label": "제35조의2(개인정보의 전송 요구)",
-              "hash": "3fa5c1730581031ef7f1e910dcbff1308231582b2543202fbc74d00ddd71b565"
+              "hash": "a9fe0d68fb429ea2290da23962eb4aa002661dff30eed89b94c9734d866b07f0"
             },
             "0035031": {
               "label": "제35조의3(개인정보관리 전문기관)",
@@ -1634,7 +1634,7 @@
             },
             "0051001": {
               "label": "제51조(단체소송의 대상 등) 다음 각 호의 어느 하나에 해당하는 단체는 개인정보처리자가 제49조에 따른 집단분쟁조정을 거부하거나 집단분쟁조정의 결과를 수락하지 아니한 경우에는 법원에 권리침해 행위의 금지ㆍ중지를 구하는 소송(이하 \"단체소송\"이라 한다",
-              "hash": "8c20c206b481464e0b38365aab2b4bae7c19bae58160f947526798836f1d5afb"
+              "hash": "044ffaf631acfcfd2e0e04ff8e7096e7c471de8011edc01f0863bbf4fac4f082"
             },
             "0052001": {
               "label": "제52조(전속관할)",
@@ -1769,10 +1769,10 @@
       "name": "개인정보 보호법 시행령",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/개인정보보호법시행령",
-      "fingerprint": "bf25152b2760038b4d5b22df191716abce421df0cc31bd2fd54e44198b37ee7b",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "4fc38854a6bf3056b7fc72c4ba678ecbe3bd16e21fc49d50cb82919de9cd7422",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "975a23a79b0c1f0547466a8420f08d77209a54df5c054bb9f0e300ece531c850",
+      "contentFingerprint": "065a0d13879d9bcda3ba92ea773f3b7c0300fe5fdf952cca22796a319489fb69",
       "versions": [
         {
           "id": "286175:20260519",
@@ -1789,9 +1789,9 @@
               "basisText": "이 영은 공포한 날부터 시행한다."
             }
           ],
-          "documentHash": "92374131479b71d0c81e92f9983cec30e25358d5f6f1c7411cc060af58a6e1ed",
-          "semanticDocumentHash": "2bf9d869974dee99e6cef7c6f1cfed060f5abe333ac4a0d506cd32754012e8e9",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "c46043fd5079df269c147d067b79969e42b3f2579aee5e5c091e27efbb04fe62",
+          "semanticDocumentHash": "ea000cb5182f0ec9307281df23dcb85c087f1cfb232ea11c2ec9b751d280af08",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -1807,7 +1807,7 @@
             },
             "0003001": {
               "label": "제3조(영상정보처리기기의 범위)",
-              "hash": "6c4cae62fe6b3b32b64d4176bc4494d2a525e800c9c79bba7cb4081aeb225ca6"
+              "hash": "65df933b16ee403723e324b17af5e5d6946a718ec38dc19941caf93e5b334714"
             },
             "0004000": {
               "label": "제2장 개인정보 보호위원회",
@@ -1911,7 +1911,7 @@
             },
             "0017001": {
               "label": "제17조(동의를 받는 방법)",
-              "hash": "33d1b0023e93c397a2c6cca4fbe0fa43fbf526e99c734ccf9ae9a9903d33f502"
+              "hash": "31bd40975b481a80a31fe3473c4c80e85e51802fa677e81edd814d7f98050ef4"
             },
             "0017021": {
               "label": "제17조의2(아동의 개인정보 보호)",
@@ -2035,7 +2035,7 @@
             },
             "0030001": {
               "label": "제30조(개인정보의 안전성 확보 조치)",
-              "hash": "ea0026e7fe44a107fa074bf751cb4688b8f8aef3227927ce1798d5001c78838f"
+              "hash": "c7fc9cacfffc54a0d47330aac23f360e477d0f883a0e60765d6404db79877794"
             },
             "0030021": {
               "label": "제30조의2(공공시스템 운영기관 등의 개인정보 안전성 확보 조치 등)",
@@ -2051,7 +2051,7 @@
             },
             "0032001": {
               "label": "제32조(개인정보 보호책임자의 업무 및 지정요건 등)",
-              "hash": "e62fd51f5c08f239d80c6413bed3d124f4b24c1fff2a321318e8c54c868cbf94"
+              "hash": "a29d90cc88378d0d77ea729bddb41100cafe73509c5a5f7e43ee4c50138e384f"
             },
             "0032021": {
               "label": "제32조의2(개인정보 보호책임자 협의회의 사업 범위 등)",
@@ -2059,7 +2059,7 @@
             },
             "0032031": {
               "label": "제32조의3(국내대리인 지정 대상자의 범위 등)",
-              "hash": "c71142d28aaa2ad3c8b0e2848b8469ed321f7bbeab47238cb3e1372992340bf5"
+              "hash": "aec86c44e0752381b3874f33ca6529ab83ae5a4bbf5a394d4539838a0502071a"
             },
             "0033001": {
               "label": "제33조(개인정보파일의 등록사항 등)",
@@ -2087,7 +2087,7 @@
             },
             "0034061": {
               "label": "제34조의6(개인정보 보호 인증 전문기관)",
-              "hash": "623e10afdcea5caa27da69eef1e56a3afde4fc04fcc5bebc9af016746b7f7874"
+              "hash": "118080fabb76e26c20a75e65edd6ddee87dbff2082ac879a1c21a12e7d831b0b"
             },
             "0034071": {
               "label": "제34조의7(인증의 표시 및 홍보) 법 제32조의2제6항에 따라 인증을 받은 자가 인증 받은 내용을 표시하거나 홍보하려는 경우에는 보호위원회가 정하여 고시하는 개인정보 보호 인증표시를 사용할 수 있다. 이 경우 인증의 범위와 유효기간을 함께 표시해야 ",
@@ -2103,7 +2103,7 @@
             },
             "0036001": {
               "label": "제36조(평가기관의 지정 및 지정취소)",
-              "hash": "daa663bcb568d806aa4c3a8106a9ad39ce2417dee0a214742e85de95bb2f68f6"
+              "hash": "26d59c275580d5efcbe87d2e8a9e9c8c1f371133c96da91acd31f55cadecb7a1"
             },
             "0037001": {
               "label": "제37조(영향평가 시 고려사항) 법 제33조제3항제4호에서 \"대통령령으로 정한 사항\"이란 다음 각 호의 사항을 말한다.",
@@ -2139,7 +2139,7 @@
             },
             "0042021": {
               "label": "제42조의2(정보전송자 기준)",
-              "hash": "e84c320e4b2a41353586835a576e325abb1f74c1c7a3ca412f3e4905084c8b85"
+              "hash": "d6cc507ccaaa6e0c4a7a407527fe9c48f7d9f5b58d45d0f0e262a55760057619"
             },
             "0042031": {
               "label": "제42조의3(일반수신자 기준)",
@@ -2147,7 +2147,7 @@
             },
             "0042041": {
               "label": "제42조의4(전송 요구 대상 정보의 범위)",
-              "hash": "eda5c86f6e324dd1c8e33f55387ea344e794e947b60b948935284e72c4a08bf7"
+              "hash": "69f29dfa326259b8e3a1325d3557eb88406f12e8fc46dd53a69e5add373a2213"
             },
             "0042051": {
               "label": "제42조의5(전송 요구의 방법 등)",
@@ -2155,7 +2155,7 @@
             },
             "0042061": {
               "label": "제42조의6(개인정보 전송의 기한 및 방법 등)",
-              "hash": "eb11b929bfaf1bbb481a08e5f8268e41671d731260d0672afad9e636fee7e8d1"
+              "hash": "595809f44d78f10ca6012da189a172f95a7b9dfcc78fdd2f686b65c71009fd9d"
             },
             "0042071": {
               "label": "제42조의7(전송 요구 시 적용이 배제되는 법률의 규정) 법 제35조의2제4항제3호에서 \"대통령령으로 정하는 법률의 규정\"이란 다음 각 호의 규정을 말한다.",
@@ -2175,11 +2175,11 @@
             },
             "0042111": {
               "label": "제42조의11(개인정보관리 전문기관의 지정요건 세부기준)",
-              "hash": "06734de072eb3d04d38b9a96f459c8f5abec84c9c150879f1d1119a550c0fe9f"
+              "hash": "83f95a55b9ad2aaf402d5c7645465641c62d6e13dd7c96e7cad606e0f80969c9"
             },
             "0042121": {
               "label": "제42조의12(개인정보관리 전문기관의 지정 등)",
-              "hash": "8fb27ca82cb4df0ca9fd6aac8d8dc087408a5b80223a69fa978fa04c5f3f417b"
+              "hash": "e7edfd1fe60c4eca36786e6b21f70be28b8846e0d5bc5a81ac82390a13a44794"
             },
             "0042131": {
               "label": "제42조의13(개인정보관리 전문기관의 금지행위) 법 제35조의3제3항제2호에서 \"대통령령으로 정하는 행위\"란 별표 1의3에 따른 행위를 말한다.",
@@ -2191,7 +2191,7 @@
             },
             "0042151": {
               "label": "제42조의15(개인정보 전송 요구에 대한 보호위원회의 관리ㆍ감독)",
-              "hash": "19ec4f8bdcdd48213758f554a952aeadf94ee4091eacd4b80fcd8be72fd29ab9"
+              "hash": "33871b1688475ed4690aa4ce45de4738ef7cbb8fbe9209d4be639ed7f72905a0"
             },
             "0042161": {
               "label": "제42조의16(개인정보전송지원플랫폼의 구축 및 운영 등)",
@@ -2323,7 +2323,7 @@
             },
             "0052001": {
               "label": "제52조(집단분쟁조정의 신청 대상) 법 제49조제1항에서 \"대통령령으로 정하는 사건\"이란 다음 각 호의 요건을 모두 갖춘 사건을 말한다.",
-              "hash": "8867e6f4381e06cf6e2aaff87dd409a5ac8ca829a3a071f5c1ed55f9c9e71461"
+              "hash": "0959c4f248a4b5286630d17e5ef616082da51e9073e29ae5698ab046ce31d1b4"
             },
             "0053001": {
               "label": "제53조(집단분쟁조정 절차의 개시)",
@@ -2363,7 +2363,7 @@
             },
             "0060021": {
               "label": "제60조의2(과징금의 산정기준 등)",
-              "hash": "fc192bb4d5b417ac67c25639eda085ea8e3091a819f24720f7d0814ee52c1ce8"
+              "hash": "8e93724572dc709d2933399b72f1a393159f10dedfc83be255552f40e2e95d7e"
             },
             "0060031": {
               "label": "제60조의3(과징금의 부과 및 납부)",
@@ -2383,7 +2383,7 @@
             },
             "0062001": {
               "label": "제62조(업무의 위탁)",
-              "hash": "104e7845cbe6ae8cbe4023f373e5e64fcd039fd62ba9ce5b53eb2be5004fbb1d"
+              "hash": "a8769493800847061542ae2b91bcd2ed898fbe0c13af1eb20481d627496ca2c6"
             },
             "0062021": {
               "label": "제62조의2(민감정보 및 고유식별정보의 처리)",
@@ -2419,9 +2419,9 @@
               "basisText": "다만, 제42조의2제1항제1호의 개정규정은 공포 후 1년이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "a4fd1f1cce9bdc7d798b35e886fad548917da567cb0dc432f24dc86c2e71f652",
-          "semanticDocumentHash": "fe1eb6e2ffc57acae3f934254c50523948cba6d91bd72ef98cf96e4e4501633d",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "9909228c2955c1b594dc53a601b9ccf665dbb1d98a4b08800111d8b3185dcf3f",
+          "semanticDocumentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -2437,7 +2437,7 @@
             },
             "0003001": {
               "label": "제3조(영상정보처리기기의 범위)",
-              "hash": "6c4cae62fe6b3b32b64d4176bc4494d2a525e800c9c79bba7cb4081aeb225ca6"
+              "hash": "65df933b16ee403723e324b17af5e5d6946a718ec38dc19941caf93e5b334714"
             },
             "0004000": {
               "label": "제2장 개인정보 보호위원회",
@@ -2541,7 +2541,7 @@
             },
             "0017001": {
               "label": "제17조(동의를 받는 방법)",
-              "hash": "33d1b0023e93c397a2c6cca4fbe0fa43fbf526e99c734ccf9ae9a9903d33f502"
+              "hash": "31bd40975b481a80a31fe3473c4c80e85e51802fa677e81edd814d7f98050ef4"
             },
             "0017021": {
               "label": "제17조의2(아동의 개인정보 보호)",
@@ -2665,7 +2665,7 @@
             },
             "0030001": {
               "label": "제30조(개인정보의 안전성 확보 조치)",
-              "hash": "ea0026e7fe44a107fa074bf751cb4688b8f8aef3227927ce1798d5001c78838f"
+              "hash": "c7fc9cacfffc54a0d47330aac23f360e477d0f883a0e60765d6404db79877794"
             },
             "0030021": {
               "label": "제30조의2(공공시스템 운영기관 등의 개인정보 안전성 확보 조치 등)",
@@ -2681,7 +2681,7 @@
             },
             "0032001": {
               "label": "제32조(개인정보 보호책임자의 업무 및 지정요건 등)",
-              "hash": "e62fd51f5c08f239d80c6413bed3d124f4b24c1fff2a321318e8c54c868cbf94"
+              "hash": "a29d90cc88378d0d77ea729bddb41100cafe73509c5a5f7e43ee4c50138e384f"
             },
             "0032021": {
               "label": "제32조의2(개인정보 보호책임자 협의회의 사업 범위 등)",
@@ -2689,7 +2689,7 @@
             },
             "0032031": {
               "label": "제32조의3(국내대리인 지정 대상자의 범위 등)",
-              "hash": "c71142d28aaa2ad3c8b0e2848b8469ed321f7bbeab47238cb3e1372992340bf5"
+              "hash": "aec86c44e0752381b3874f33ca6529ab83ae5a4bbf5a394d4539838a0502071a"
             },
             "0033001": {
               "label": "제33조(개인정보파일의 등록사항 등)",
@@ -2717,7 +2717,7 @@
             },
             "0034061": {
               "label": "제34조의6(개인정보 보호 인증 전문기관)",
-              "hash": "623e10afdcea5caa27da69eef1e56a3afde4fc04fcc5bebc9af016746b7f7874"
+              "hash": "118080fabb76e26c20a75e65edd6ddee87dbff2082ac879a1c21a12e7d831b0b"
             },
             "0034071": {
               "label": "제34조의7(인증의 표시 및 홍보) 법 제32조의2제6항에 따라 인증을 받은 자가 인증 받은 내용을 표시하거나 홍보하려는 경우에는 보호위원회가 정하여 고시하는 개인정보 보호 인증표시를 사용할 수 있다. 이 경우 인증의 범위와 유효기간을 함께 표시해야 ",
@@ -2733,7 +2733,7 @@
             },
             "0036001": {
               "label": "제36조(평가기관의 지정 및 지정취소)",
-              "hash": "daa663bcb568d806aa4c3a8106a9ad39ce2417dee0a214742e85de95bb2f68f6"
+              "hash": "26d59c275580d5efcbe87d2e8a9e9c8c1f371133c96da91acd31f55cadecb7a1"
             },
             "0037001": {
               "label": "제37조(영향평가 시 고려사항) 법 제33조제3항제4호에서 \"대통령령으로 정한 사항\"이란 다음 각 호의 사항을 말한다.",
@@ -2769,7 +2769,7 @@
             },
             "0042021": {
               "label": "제42조의2(정보전송자 기준)",
-              "hash": "e84c320e4b2a41353586835a576e325abb1f74c1c7a3ca412f3e4905084c8b85"
+              "hash": "d6cc507ccaaa6e0c4a7a407527fe9c48f7d9f5b58d45d0f0e262a55760057619"
             },
             "0042031": {
               "label": "제42조의3(일반수신자 기준)",
@@ -2777,7 +2777,7 @@
             },
             "0042041": {
               "label": "제42조의4(전송 요구 대상 정보의 범위)",
-              "hash": "eda5c86f6e324dd1c8e33f55387ea344e794e947b60b948935284e72c4a08bf7"
+              "hash": "69f29dfa326259b8e3a1325d3557eb88406f12e8fc46dd53a69e5add373a2213"
             },
             "0042051": {
               "label": "제42조의5(전송 요구의 방법 등)",
@@ -2785,7 +2785,7 @@
             },
             "0042061": {
               "label": "제42조의6(개인정보 전송의 기한 및 방법 등)",
-              "hash": "eb11b929bfaf1bbb481a08e5f8268e41671d731260d0672afad9e636fee7e8d1"
+              "hash": "595809f44d78f10ca6012da189a172f95a7b9dfcc78fdd2f686b65c71009fd9d"
             },
             "0042071": {
               "label": "제42조의7(전송 요구 시 적용이 배제되는 법률의 규정) 법 제35조의2제4항제3호에서 \"대통령령으로 정하는 법률의 규정\"이란 다음 각 호의 규정을 말한다.",
@@ -2805,11 +2805,11 @@
             },
             "0042111": {
               "label": "제42조의11(개인정보관리 전문기관의 지정요건 세부기준)",
-              "hash": "06734de072eb3d04d38b9a96f459c8f5abec84c9c150879f1d1119a550c0fe9f"
+              "hash": "83f95a55b9ad2aaf402d5c7645465641c62d6e13dd7c96e7cad606e0f80969c9"
             },
             "0042121": {
               "label": "제42조의12(개인정보관리 전문기관의 지정 등)",
-              "hash": "8fb27ca82cb4df0ca9fd6aac8d8dc087408a5b80223a69fa978fa04c5f3f417b"
+              "hash": "e7edfd1fe60c4eca36786e6b21f70be28b8846e0d5bc5a81ac82390a13a44794"
             },
             "0042131": {
               "label": "제42조의13(개인정보관리 전문기관의 금지행위) 법 제35조의3제3항제2호에서 \"대통령령으로 정하는 행위\"란 별표 1의3에 따른 행위를 말한다.",
@@ -2821,7 +2821,7 @@
             },
             "0042151": {
               "label": "제42조의15(개인정보 전송 요구에 대한 보호위원회의 관리ㆍ감독)",
-              "hash": "19ec4f8bdcdd48213758f554a952aeadf94ee4091eacd4b80fcd8be72fd29ab9"
+              "hash": "33871b1688475ed4690aa4ce45de4738ef7cbb8fbe9209d4be639ed7f72905a0"
             },
             "0042161": {
               "label": "제42조의16(개인정보전송지원플랫폼의 구축 및 운영 등)",
@@ -2953,7 +2953,7 @@
             },
             "0052001": {
               "label": "제52조(집단분쟁조정의 신청 대상) 법 제49조제1항에서 \"대통령령으로 정하는 사건\"이란 다음 각 호의 요건을 모두 갖춘 사건을 말한다.",
-              "hash": "8867e6f4381e06cf6e2aaff87dd409a5ac8ca829a3a071f5c1ed55f9c9e71461"
+              "hash": "0959c4f248a4b5286630d17e5ef616082da51e9073e29ae5698ab046ce31d1b4"
             },
             "0053001": {
               "label": "제53조(집단분쟁조정 절차의 개시)",
@@ -2993,7 +2993,7 @@
             },
             "0060021": {
               "label": "제60조의2(과징금의 산정기준 등)",
-              "hash": "f202f7b3dab38d24d0251505b9416c1c0b41fce3997be585e4fbe5ccb37439de"
+              "hash": "cd0410a190085626e6cf50e3c1805dced90f47e3fee890554b18ed5015d62189"
             },
             "0060031": {
               "label": "제60조의3(과징금의 부과 및 납부)",
@@ -3013,7 +3013,7 @@
             },
             "0062001": {
               "label": "제62조(업무의 위탁)",
-              "hash": "104e7845cbe6ae8cbe4023f373e5e64fcd039fd62ba9ce5b53eb2be5004fbb1d"
+              "hash": "a8769493800847061542ae2b91bcd2ed898fbe0c13af1eb20481d627496ca2c6"
             },
             "0062021": {
               "label": "제62조의2(민감정보 및 고유식별정보의 처리)",
@@ -3036,10 +3036,10 @@
       "name": "전자상거래 등에서의 소비자보호에 관한 법률",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률",
-      "fingerprint": "41504a1a3020b8562fc9d5156668c5788aa241bd4b65da4969697fc5caecb7d9",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "7fb6cd687c69a066158dde04096ea425775c22ebd68a6c806bc8be47a0ddb688",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "1043a54b21db4b09310772d007c2096035ac24d4925748f7ec9243a4e44d9cff",
+      "contentFingerprint": "cb7b165f42c8200572e5b2ac8f03f0b7f9fad39acef7df02f525f0ac528a3c3c",
       "versions": [
         {
           "id": "282793:20260721",
@@ -3066,9 +3066,9 @@
               "basisText": "제39조제3항의 개정규정 중 \"제98조의2, 제98조의3\" 부분: 2027년 2월 7일"
             }
           ],
-          "documentHash": "76a82f07202376f1c18acc3bd2de8bd460725fcd27a2b552a2a032ffb46ad905",
-          "semanticDocumentHash": "e32c6ea5b0f352add8cfd341b315ca76734b03e1a0a7802c8df5fd9ae897217b",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "0b538b558940524ffe3cf9a8f21db36a7d88204685b2b6b20c975f3c9ef1dad6",
+          "semanticDocumentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -3080,7 +3080,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "9494e52fc4acacb8516d0b355aebe7de8e6a9152b7cfeebb40bd19c6294e5371"
+              "hash": "82c94bce622cb941cec40d5e236b2c0335e3329efd2c383a55ce3d8b2f48de07"
             },
             "0003001": {
               "label": "제3조(적용 제외)",
@@ -3156,7 +3156,7 @@
             },
             "0019001": {
               "label": "제19조(손해배상청구금액의 제한 등)",
-              "hash": "11b82942781bc873840c1e1b588a28f38719ade5af01d49355cd947fd5baf7e8"
+              "hash": "1ef2c14f6e77580c3dd073909465b6f667d4d7d8896d0ce79b45fb3002ffb845"
             },
             "0020001": {
               "label": "제20조(통신판매중개자의 의무와 책임)",
@@ -3168,7 +3168,7 @@
             },
             "0020031": {
               "label": "제20조의3(통신판매의 중요한 일부 업무를 수행하는 통신판매중개업자의 책임) 통신판매에 관한 거래과정에서 다음 각 호의 업무를 수행하는 통신판매중개업자는 통신판매업자가 해당 각 호의 각 목에 따른 의무를 이행하지 아니하는 경우에는 이를 대신하여 이행하",
-              "hash": "1e8d7344512421f46f52f52bc584655aca21ab5f0d2d8bb63611daf22e926c6f"
+              "hash": "f7f39d1314d94a74109a0cf8ac0e9e7607b3bf9968c845c5f9e6b01fec2697b4"
             },
             "0020041": {
               "label": "제20조의4(개인 간 거래에 관한 통신판매중개업자의 의무와 책임)",
@@ -3176,15 +3176,15 @@
             },
             "0020051": {
               "label": "제20조의5(국내대리인의 지정)",
-              "hash": "2c5baa2d8771cf1bc79801da9e88f6612108807090b928a07d18752469dad494"
+              "hash": "98cc971a5266651bb4483eacb3da63391a37cc1efcd01f4d73e12d8c4773fbaa"
             },
             "0021001": {
               "label": "제21조(금지행위)",
-              "hash": "84d2b6f408cc2492d5f8da53dc93d81516ee497a7917e1e28ff848e6fff3929e"
+              "hash": "effe6d783d3b81e3e4faa1bf0a82b6a683bdffa107a55e85c5911afee826e5f2"
             },
             "0021021": {
               "label": "제21조의2(온라인 인터페이스 운영에 있어서 금지되는 행위)",
-              "hash": "823f9b15fcde91709822b13c005e166eae07f093b9c0b8f9e58519f7c352e8b8"
+              "hash": "3585413fed68745ddc9c9c56e89a9ac08fd0855ed6dbcf2a7028291b6696226c"
             },
             "0021031": {
               "label": "제21조의3(온라인 인터페이스 관련 자율규약) 사업자 및 사업자단체는 제21조의2제1항 각 호를 위반하는 행위를 예방하기 위하여 자율적으로 규약을 정할 수 있다.",
@@ -3357,9 +3357,9 @@
               "basisText": "제39조제3항의 개정규정 중 \"제98조의2, 제98조의3\" 부분: 2027년 2월 7일"
             }
           ],
-          "documentHash": "76a82f07202376f1c18acc3bd2de8bd460725fcd27a2b552a2a032ffb46ad905",
-          "semanticDocumentHash": "e32c6ea5b0f352add8cfd341b315ca76734b03e1a0a7802c8df5fd9ae897217b",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "0b538b558940524ffe3cf9a8f21db36a7d88204685b2b6b20c975f3c9ef1dad6",
+          "semanticDocumentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -3371,7 +3371,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "9494e52fc4acacb8516d0b355aebe7de8e6a9152b7cfeebb40bd19c6294e5371"
+              "hash": "82c94bce622cb941cec40d5e236b2c0335e3329efd2c383a55ce3d8b2f48de07"
             },
             "0003001": {
               "label": "제3조(적용 제외)",
@@ -3447,7 +3447,7 @@
             },
             "0019001": {
               "label": "제19조(손해배상청구금액의 제한 등)",
-              "hash": "11b82942781bc873840c1e1b588a28f38719ade5af01d49355cd947fd5baf7e8"
+              "hash": "1ef2c14f6e77580c3dd073909465b6f667d4d7d8896d0ce79b45fb3002ffb845"
             },
             "0020001": {
               "label": "제20조(통신판매중개자의 의무와 책임)",
@@ -3459,7 +3459,7 @@
             },
             "0020031": {
               "label": "제20조의3(통신판매의 중요한 일부 업무를 수행하는 통신판매중개업자의 책임) 통신판매에 관한 거래과정에서 다음 각 호의 업무를 수행하는 통신판매중개업자는 통신판매업자가 해당 각 호의 각 목에 따른 의무를 이행하지 아니하는 경우에는 이를 대신하여 이행하",
-              "hash": "1e8d7344512421f46f52f52bc584655aca21ab5f0d2d8bb63611daf22e926c6f"
+              "hash": "f7f39d1314d94a74109a0cf8ac0e9e7607b3bf9968c845c5f9e6b01fec2697b4"
             },
             "0020041": {
               "label": "제20조의4(개인 간 거래에 관한 통신판매중개업자의 의무와 책임)",
@@ -3467,15 +3467,15 @@
             },
             "0020051": {
               "label": "제20조의5(국내대리인의 지정)",
-              "hash": "2c5baa2d8771cf1bc79801da9e88f6612108807090b928a07d18752469dad494"
+              "hash": "98cc971a5266651bb4483eacb3da63391a37cc1efcd01f4d73e12d8c4773fbaa"
             },
             "0021001": {
               "label": "제21조(금지행위)",
-              "hash": "84d2b6f408cc2492d5f8da53dc93d81516ee497a7917e1e28ff848e6fff3929e"
+              "hash": "effe6d783d3b81e3e4faa1bf0a82b6a683bdffa107a55e85c5911afee826e5f2"
             },
             "0021021": {
               "label": "제21조의2(온라인 인터페이스 운영에 있어서 금지되는 행위)",
-              "hash": "823f9b15fcde91709822b13c005e166eae07f093b9c0b8f9e58519f7c352e8b8"
+              "hash": "3585413fed68745ddc9c9c56e89a9ac08fd0855ed6dbcf2a7028291b6696226c"
             },
             "0021031": {
               "label": "제21조의3(온라인 인터페이스 관련 자율규약) 사업자 및 사업자단체는 제21조의2제1항 각 호를 위반하는 행위를 예방하기 위하여 자율적으로 규약을 정할 수 있다.",
@@ -3630,10 +3630,10 @@
       "name": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률시행령",
-      "fingerprint": "668934202a74600f698d8d99f2fe0987fd854a7ea97f2f3591e25e05f89a1e88",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "a63b102b0e9bc0cfedd38d850f0033bbab8dbb4808f5f02de33f2dd09f26c9f1",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "f8db40e9f249f5a37919af3b8fc5844e7dcfc76ac9b83fa26920e7c227903ff4",
+      "contentFingerprint": "927a9ac6582178395aa3973b97f5bd7aa1352025904b72eff8ea849295335429",
       "versions": [
         {
           "id": "288143:20260721",
@@ -3655,9 +3655,9 @@
               "basisText": "다만, 제25조의4, 제40조제3호의2, 별표 1 제2호처목의3부터 처목의6까지 및 별표 3 제2호아목의5부터 아목의8까지의 개정규정은 2027년 1월 21일부터 시행한다."
             }
           ],
-          "documentHash": "75dff8e986b6cbe755de64b393e555c2dbb1daaeed3aa4ac9fbb2ad0e8700deb",
-          "semanticDocumentHash": "9aa5a05465b98c0450ac3fa8c655e258d1c247d5dc9e08fdc7e595d0d6ed017c",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "bb780718b7efedbe58087e1d439d332a3679cc0a841299d076b2c12c42d58b4f",
+          "semanticDocumentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001001": {
               "label": "제1조(목적) 이 영은 「전자상거래 등에서의 소비자보호에 관한 법률」에서 위임된 사항과 그 시행에 필요한 사항을 규정함을 목적으로 한다.",
@@ -3757,7 +3757,7 @@
             },
             "0019031": {
               "label": "제19조의3(제3자의 범위 등)",
-              "hash": "9d8d1028c87a629cd92d4ef9052e75dde82c9c7a8953a55c1499b15ec4d1278e"
+              "hash": "3399b78c27fbbaf34a3d5df7f32d8d1173bf0d24f5af9b299781d00329249868"
             },
             "0020001": {
               "label": "제20조(계약서의 기재사항) 법 제13조제2항제11호에서 \"대통령령으로 정하는 사항\"이란 다음 각 호의 사항을 말한다.",
@@ -3813,7 +3813,7 @@
             },
             "0027001": {
               "label": "제27조(도용방지를 위한 소비자정보의 이용) 법 제21조제1항제6호다목에서 \"대통령령으로 정하는 경우\"란 다음 각 호의 경우를 말한다.",
-              "hash": "2918393033e9dc5f7ee1ee200b527f8c231aaa6b722c79d9c2947b721624d009"
+              "hash": "3936e6a53cf89552ea0b1e4f66ff53b615df55d08d0ac6a2860b6d9759cb8bd3"
             },
             "0027021": {
               "label": "제27조의2(소비자의 선택ㆍ결정에 대한 변경 요구의 제한 기간) 법 제21조의2제1항제5호 단서에서 \"대통령령으로 정하는 기간\"이란 7일을 말한다.",
@@ -3833,7 +3833,7 @@
             },
             "0028031": {
               "label": "제28조의3(예치된 결제대금의 지급방법) 제19조의3제1항에 따른 제3자(이하 \"제3자\"라 한다)는 예치된 결제대금을 법 제24조제4항에 따라 다음 각 호의 방법으로 통신판매업자에게 지급하거나 소비자에게 환급한다.",
-              "hash": "8fb2076e64df5e57afa8603bf81e1455b13a108cc57e7c7f56b5767a10a5d901"
+              "hash": "41969f071859e70a01d941a117debf188ea07c9e6233de16245bdbe8f9206a6b"
             },
             "0028041": {
               "label": "제28조의4(공제조합의 인가 등) 법 제24조제10항에 따라 설립된 공제조합의 인가, 정관 기재사항, 운영 및 감독에 관하여는 「방문판매 등에 관한 법률 시행령」 제45조, 제47조 및 제48조를 준용한다.",
@@ -3937,9 +3937,9 @@
               "basisText": "다만, 제25조의4, 제40조제3호의2, 별표 1 제2호처목의3부터 처목의6까지 및 별표 3 제2호아목의5부터 아목의8까지의 개정규정은 2027년 1월 21일부터 시행한다."
             }
           ],
-          "documentHash": "75dff8e986b6cbe755de64b393e555c2dbb1daaeed3aa4ac9fbb2ad0e8700deb",
-          "semanticDocumentHash": "9aa5a05465b98c0450ac3fa8c655e258d1c247d5dc9e08fdc7e595d0d6ed017c",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "bb780718b7efedbe58087e1d439d332a3679cc0a841299d076b2c12c42d58b4f",
+          "semanticDocumentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001001": {
               "label": "제1조(목적) 이 영은 「전자상거래 등에서의 소비자보호에 관한 법률」에서 위임된 사항과 그 시행에 필요한 사항을 규정함을 목적으로 한다.",
@@ -4039,7 +4039,7 @@
             },
             "0019031": {
               "label": "제19조의3(제3자의 범위 등)",
-              "hash": "9d8d1028c87a629cd92d4ef9052e75dde82c9c7a8953a55c1499b15ec4d1278e"
+              "hash": "3399b78c27fbbaf34a3d5df7f32d8d1173bf0d24f5af9b299781d00329249868"
             },
             "0020001": {
               "label": "제20조(계약서의 기재사항) 법 제13조제2항제11호에서 \"대통령령으로 정하는 사항\"이란 다음 각 호의 사항을 말한다.",
@@ -4095,7 +4095,7 @@
             },
             "0027001": {
               "label": "제27조(도용방지를 위한 소비자정보의 이용) 법 제21조제1항제6호다목에서 \"대통령령으로 정하는 경우\"란 다음 각 호의 경우를 말한다.",
-              "hash": "2918393033e9dc5f7ee1ee200b527f8c231aaa6b722c79d9c2947b721624d009"
+              "hash": "3936e6a53cf89552ea0b1e4f66ff53b615df55d08d0ac6a2860b6d9759cb8bd3"
             },
             "0027021": {
               "label": "제27조의2(소비자의 선택ㆍ결정에 대한 변경 요구의 제한 기간) 법 제21조의2제1항제5호 단서에서 \"대통령령으로 정하는 기간\"이란 7일을 말한다.",
@@ -4115,7 +4115,7 @@
             },
             "0028031": {
               "label": "제28조의3(예치된 결제대금의 지급방법) 제19조의3제1항에 따른 제3자(이하 \"제3자\"라 한다)는 예치된 결제대금을 법 제24조제4항에 따라 다음 각 호의 방법으로 통신판매업자에게 지급하거나 소비자에게 환급한다.",
-              "hash": "8fb2076e64df5e57afa8603bf81e1455b13a108cc57e7c7f56b5767a10a5d901"
+              "hash": "41969f071859e70a01d941a117debf188ea07c9e6233de16245bdbe8f9206a6b"
             },
             "0028041": {
               "label": "제28조의4(공제조합의 인가 등) 법 제24조제10항에 따라 설립된 공제조합의 인가, 정관 기재사항, 운영 및 감독에 관하여는 「방문판매 등에 관한 법률 시행령」 제45조, 제47조 및 제48조를 준용한다.",
@@ -4206,10 +4206,10 @@
       "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법",
-      "fingerprint": "04d4780fbf4fdff65de592f36d57909b7ed7d8c1ac3c4aa1427daeb7f197b2ee",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "2d51f0e271da4d97992f6d350c5cedaac2cf1c0b8af9e89ac0da123be505c4c0",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "835ddff85e03876cf7c215d28a972f755da1e6bfa95decd923cb672bc0ba1f82",
+      "contentFingerprint": "2a0920c18c18d3f79f6cc79d1536bbc1e55acd785c6b8b635b7a15b35c491f7d",
       "versions": [
         {
           "id": "282791:20260721",
@@ -4231,9 +4231,9 @@
               "basisText": "다만, 제3조제5항, 제6조제2항제7호ㆍ제8호, 제16조제3항부터 제5항까지(제2항제2호의2의 개정규정에 관한 부분에 한정한다), 제17조의2, 제18조, 제22조의3 및 제35조제1항 후단의 개정규정은 공포 후 6개월이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "a67e208f3ac9e1339b0f03a4fcf8966221c8cbba17829e8ff07f3bd801b2e875",
-          "semanticDocumentHash": "3e1c5b4e4e5c9c629406e2fc98bbd77e6f19bd07ecc04d95d3cab243641a2cc3",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "2a2932244ac722424dcc3bc27d8b3870cb86751ed02d0ba7d9fc79c12f5bac62",
+          "semanticDocumentHash": "00b3571600da9f38b0264a089b8bed2ecb19a06788d7bd0f01242303dbbcabdb",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -4245,7 +4245,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "90cb3ec7503d9c64edd1f438f4bcedcfb3ce0ff38fc9b7c7a6cf7a354e0b6375"
+              "hash": "ce0c11c51f38bf970aa7ff316d6dd961ec26aadc3ee2c0e79fda0d3da18d3c86"
             },
             "0003001": {
               "label": "제3조(기본원칙 및 국가 등의 책무)",
@@ -4456,10 +4456,10 @@
       "name": "위치정보의 보호 및 이용 등에 관한 법률",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/위치정보의보호및이용등에관한법률",
-      "fingerprint": "9c95557bdc330828689e52fbd5417050f407a2158975e2e699d55e60bf1f9b2a",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "ab15176050dc4ecb9924ee0adf5aa08fe21ec0b744ba6639384caaf431f51084",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "86cf712be8308a71245ddfd136e51ef3b1da0fd014b860f6c5fba54d37b92ba4",
+      "contentFingerprint": "c4bd140ddb42809d64ba20c1aff45860e35bc2daaf778d32d0fa7b5a7b89c411",
       "versions": [
         {
           "id": "277359:20251001",
@@ -4476,9 +4476,9 @@
               "basisText": "제1조(시행일) 이 법은 공포한 날부터 시행한다. 다만, 부칙 제7조에 따라 개정되는 법률 중 이 법 시행 전에 공포되었으나 시행일이 도래하지 아니한 법률을 개정한 부분은 각각 해당 법률의 시행일부터 시행한다."
             }
           ],
-          "documentHash": "dc27825605d4d0543d8972c57afd2d684d0fa4ad84f63b6a898a6e2c1f8d0f45",
-          "semanticDocumentHash": "5b60065d4b887d81b529620cb651a54cde4b771aa80ed0dbb689fca91a4b8813",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "76d9a5616667d2c6a4d81e0213d30293df4af7721ca36e12610a406982e9e0ba",
+          "semanticDocumentHash": "91a87155432f23e2cd6793301f8c0d18fc699d475ba49d2e814102325b61f186",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -4506,7 +4506,7 @@
             },
             "0005001": {
               "label": "제5조(개인위치정보를 대상으로 하는 위치정보사업의 등록 등)",
-              "hash": "ef09c25d4a7f5f71b231e32835c6dea8edef29cb5cce5b8d5d01d64af5b0838e"
+              "hash": "5499e373909d61d2e736e9f9644548ae861050641fab72227163e0ac37e1fe13"
             },
             "0005021": {
               "label": "제5조의2(개인위치정보를 대상으로 하지 아니하는 위치정보사업의 신고)",
@@ -4546,7 +4546,7 @@
             },
             "0013001": {
               "label": "제13조(등록의 취소 및 사업의 폐지ㆍ정지 등)",
-              "hash": "17ac98efaeed22de4596e88017a53af79592d3696bb9c6e831bdce9da7f375d0"
+              "hash": "f7f01099c5b76e942c082b8d92dc42154b342f24ad942a7c0fe95d3b220aea78"
             },
             "0014001": {
               "label": "제14조(과징금의 부과 등)",
@@ -4737,443 +4737,14 @@
       "name": "신용정보의 이용 및 보호에 관한 법률",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률",
-      "fingerprint": "7180fd66fb3aba5bcbfb6871e4ee95fec22c642ce9ff4c242c812e6b398f7831",
-      "contentHashAlgorithm": "legal-semantic-text-v1",
+      "fingerprint": "c72c63549ab50d3af5fbfbb223cf21d8c9e6cef05d8d1bc090020b163d551fe8",
+      "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "bec7998d775abd820febc7f43998add423e7ea41f9c6d32e30eb27b6588ab4ee",
+      "contentFingerprint": "252b3d4866689ef01eeea043128a12f442dcb8755b715a8117ce1392ed25860e",
       "versions": [
         {
-          "id": "260423:20240814",
-          "state": "현행",
-          "effectiveDate": "20240814",
-          "promulgationDate": "20240213",
-          "promulgationNumber": "20304",
-          "revisionType": "일부개정",
-          "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-          "stageEffectiveDates": [
-            {
-              "effectiveDate": "20240814",
-              "source": "law-search",
-              "basisText": "이 법은 공포 후 6개월이 경과한 날부터 시행한다."
-            }
-          ],
-          "documentHash": "781fad60059bf5e80c4df1fbb85942f0a844117f43aefd07e350b87a180c48ed",
-          "semanticDocumentHash": "4cb29833ce3aa56d242d91a62db0e72f61429a9da40edfabe987d9c329d2c5a7",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
-          "articles": {
-            "0001000": {
-              "label": "제1장 총칙",
-              "hash": "9fccc58f1e35b34d49bde0b4e489d767547c79276b7494915f197d98b3eca2e6"
-            },
-            "0001001": {
-              "label": "제1조(목적) 이 법은 신용정보 관련 산업을 건전하게 육성하고 신용정보의 효율적 이용과 체계적 관리를 도모하며 신용정보의 오용ㆍ남용으로부터 사생활의 비밀 등을 적절히 보호함으로써 건전한 신용질서를 확립하고 국민경제의 발전에 이바지함을 목적으로 한다.",
-              "hash": "d1d6f8ab230ffdaa833027f1744d8918bacb6a874b7987ba923e7b90828aa8bd"
-            },
-            "0002001": {
-              "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "69338cba09b4f267f7609b3dc194b95df5aadb56ba156540fc1a23a23645df35"
-            },
-            "0003001": {
-              "label": "제3조(신용정보 관련 산업의 육성)",
-              "hash": "e26b1d9665306bc1909b858743da5a7d0fb70578202588c37c9439a51f80e84d"
-            },
-            "0003021": {
-              "label": "제3조의2(다른 법률과의 관계)",
-              "hash": "4ec74a544eaa4cd03967fa2b6b6dbcfb5b981db3c6d65952cdd7b72d08f00755"
-            },
-            "0004000": {
-              "label": "제2장 신용정보업 등의 허가 등",
-              "hash": "60ce7ee3000b761419c36d3bfcf73e4fa1abf3ad5aa18947536ddc22fff8267d"
-            },
-            "0004001": {
-              "label": "제4조(신용정보업 등의 허가)",
-              "hash": "67d68bb3fe77ffd9636c5150abb9704705a059623c6df472b6f79f7bdba5f7b7"
-            },
-            "0005001": {
-              "label": "제5조(신용정보업 등의 허가를 받을 수 있는 자)",
-              "hash": "189d5d40afb122916df727512bc1df3f4ac97ef6e846c534125147177a384a7d"
-            },
-            "0006001": {
-              "label": "제6조(허가의 요건)",
-              "hash": "2834a3d1d2894a7ab2f001e5096c8eb053890da2032820a3dee17d18ae7481ce"
-            },
-            "0007001": {
-              "label": "제7조(허가 등의 공고) 금융위원회는 다음 각 호의 어느 하나에 해당하는 경우 지체 없이 그 내용을 관보에 공고하고 인터넷 홈페이지 등을 이용하여 일반인에게 알려야 한다.",
-              "hash": "670c23f84e14b4913cbc2f69e134cfbe6115317f13c5f425861330f2db97e6e9"
-            },
-            "0008001": {
-              "label": "제8조(신고 및 보고 사항)",
-              "hash": "249f095fc19a24992579e56d3977c21d9b0c775c9386b5c4e228eb574e93d402"
-            },
-            "0009001": {
-              "label": "제9조(대주주의 변경승인 등)",
-              "hash": "7f295d79510c321ce4bd792de8f9355de3d313f1fb576c9476983841b5c42ae5"
-            },
-            "0009021": {
-              "label": "제9조의2(최대주주의 자격심사 등)",
-              "hash": "e3734e2865c6233fb467472d1bc92c1400073943a1617ba316ca527296b2fcfc"
-            },
-            "0010001": {
-              "label": "제10조(양도ㆍ양수 등의 인가 등)",
-              "hash": "d7f13983b23ce507abdd98682878270fe7167d6d6cd71fce721f9e2d60a573f9"
-            },
-            "0011001": {
-              "label": "제11조(겸영업무)",
-              "hash": "badaa5488444d367bb240786dbb0ffdee009d3cfef548493e6de2a75a8b13c88"
-            },
-            "0011021": {
-              "label": "제11조의2(부수업무)",
-              "hash": "10deee82a7ab1f7e29162df8fa74ff7d276c35ae309a5fe55e0d1d893a8d0821"
-            },
-            "0012001": {
-              "label": "제12조(유사명칭의 사용 금지) 이 법에 따라 허가받은 신용정보회사, 본인신용정보관리회사, 채권추심회사 또는 신용정보집중기관이 아닌 자는 상호 또는 명칭 중에 신용정보ㆍ신용조사ㆍ개인신용평가ㆍ신용관리ㆍ마이데이터(MyData)ㆍ채권추심 또는 이와 비슷한 ",
-              "hash": "fa983c008aafc1f3d3af54a9eca83a95e7a1bb282b9c4138e0bb44b8c1379d3e"
-            },
-            "0013001": {
-              "label": "제13조(임원의 겸직 금지) 신용정보회사, 본인신용정보관리회사 및 채권추심회사의 상임 임원은 금융위원회의 승인 없이 다른 영리법인의 상무(常務)에 종사할 수 없다.",
-              "hash": "8777d5404766274184579925dc9f4dfc8f636d05c57f7fd0c05d16b1e3e4a5e7"
-            },
-            "0014001": {
-              "label": "제14조(허가 등의 취소와 업무의 정지)",
-              "hash": "986d582d8377236140a9d84227f0a38fd473e8a900d1f83edd054fad4e959895"
-            },
-            "0015000": {
-              "label": "제3장 신용정보의 수집 및 처리",
-              "hash": "2a80e003f43bdfc8cc3fba4ad398c6f6c8783f047e64d6e02c403196b2088719"
-            },
-            "0015001": {
-              "label": "제15조(수집 및 처리의 원칙)",
-              "hash": "2721e8b460988bb68956a8ae7cf1cd36f47aa59c6d85442e499a8f7bfb3ded8d"
-            },
-            "0016001": {
-              "label": "제16조 삭제",
-              "hash": "59c7efe208ea46cc78d7b059e338c5f20fa878d7ca7b12a6384c3ffa0f9ef19c"
-            },
-            "0017001": {
-              "label": "제17조(처리의 위탁)",
-              "hash": "b16dac744f12851f062961cc96261d4fee7b2956d05c85cdcb3a1a51f2cce4c2"
-            },
-            "0017021": {
-              "label": "제17조의2(정보집합물의 결합 등)",
-              "hash": "8e3ba6a1b8d3792d19b2f85ebaf932b3b986a6e4914c983d014bff4464f5e87e"
-            },
-            "0018000": {
-              "label": "제4장 신용정보의 유통 및 관리",
-              "hash": "fc7d2cca8bb129d6cef8fb019846f8178e84c0a6cf6f53d41a7aa598d22c9f85"
-            },
-            "0018001": {
-              "label": "제18조(신용정보의 정확성 및 최신성의 유지)",
-              "hash": "ae3df094210740da0d4448cabb0e10338a018941c168c43a9b1c4a9e2ffaad87"
-            },
-            "0019001": {
-              "label": "제19조(신용정보전산시스템의 안전보호)",
-              "hash": "157e9068e76d057062a204fec04089521d8a559cd3e32479ab3d2a90ed96bd9c"
-            },
-            "0020001": {
-              "label": "제20조(신용정보 관리책임의 명확화 및 업무처리기록의 보존)",
-              "hash": "554cbad35269c2f79e9fda5148ecdb800df6cc1f248f4b1a500f09d47e861f97"
-            },
-            "0020021": {
-              "label": "제20조의2(개인신용정보의 보유기간 등)",
-              "hash": "7ae003c713c30867cc9a0decd53f958a37cc92e07302435e326abcb216442194"
-            },
-            "0021001": {
-              "label": "제21조(폐업 시 보유정보의 처리) 신용정보회사등(신용정보제공ㆍ이용자는 제외한다)이 폐업하려는 경우에는 금융위원회가 정하여 고시하는 바에 따라 보유정보를 처분하거나 폐기하여야 한다.",
-              "hash": "a0c26b0e3e8870534bd0f90509dc8451bbe790bba0699e81c75526ddca8090c1"
-            },
-            "0022000": {
-              "label": "제1절 신용정보업",
-              "hash": "4f889e041cc54173df12748fe2011ffdc94f48a86f55ba24433cc564461256fc"
-            },
-            "0022001": {
-              "label": "제22조(신용정보회사 임원의 자격요건 등)",
-              "hash": "34636dd1711bb81dca133dad1fab22c41178286c14a39a9975e1a706251f3862"
-            },
-            "0022021": {
-              "label": "제22조의2(신용정보 등의 보고) 개인신용평가회사, 개인사업자신용평가회사, 기업신용조회회사 및 본인신용정보관리회사는 신용정보의 이용범위, 이용기간, 제공 대상자를 대통령령으로 정하는 바에 따라 금융위원회에 보고하여야 한다.",
-              "hash": "1c863c4410eb629060902f027ddfead679bd0d86107d382d2e51617e1c8f483d"
-            },
-            "0022031": {
-              "label": "제22조의3(개인신용평가 등에 관한 원칙)",
-              "hash": "f2c50d472384a998df745cfce802ede7bd50e8532a2033d738e8ccdb8d976f37"
-            },
-            "0022041": {
-              "label": "제22조의4(개인신용평가회사의 행위규칙)",
-              "hash": "23bc1ce123960777febd2e4cbbc5cee10570dc0eeba22ecec17e5e7c2f00b9c7"
-            },
-            "0022051": {
-              "label": "제22조의5(개인사업자신용평가회사의 행위규칙)",
-              "hash": "4682fe100256361cda0afa3cb80cd638652347b2bad96b50811beac93d76a460"
-            },
-            "0022061": {
-              "label": "제22조의6(기업신용조회회사의 행위규칙)",
-              "hash": "6a65f96cb397846272522e52cde4ba244b316b8b080b9184b94f4a47ef0e6461"
-            },
-            "0022071": {
-              "label": "제22조의7(신용조사회사의 행위규칙)",
-              "hash": "0c2de35ab7e6941138c0443261fd8c70d64f2da5edddf179a562dcc7cfb48259"
-            },
-            "0022080": {
-              "label": "제2절 본인신용정보관리업",
-              "hash": "5f70583d5d996a3b15f714ad0d88b2fa76d9434e205aed061ab76baffdd6c508"
-            },
-            "0022081": {
-              "label": "제22조의8(본인신용정보관리회사의 임원의 자격요건) 본인신용정보관리회사의 임원에 관하여는 「금융회사의 지배구조에 관한 법률」 제5조를 준용한다.",
-              "hash": "139fdabb36e954cce709306add3af465599ddf0580ca10daee3d071ba3a18439"
-            },
-            "0022091": {
-              "label": "제22조의9(본인신용정보관리회사의 행위규칙)",
-              "hash": "3ae0db87bd582e4617fb000f7a75864ad9d7354588c9d0ed98f7f3b8686e8e11"
-            },
-            "0023000": {
-              "label": "제3절 공공정보의 이용ㆍ제공",
-              "hash": "cb558356b4aa51cb449fce89f725211dfe7f21d12c2c5c89e5c9ec12288eaf15"
-            },
-            "0023001": {
-              "label": "제23조(공공기관에 대한 신용정보의 제공 요청 등)",
-              "hash": "7fd9a10f24733414c2280b7270d0ce12a683ae23d50ad445f723223e9954b84d"
-            },
-            "0024001": {
-              "label": "제24조(주민등록전산정보자료의 이용)",
-              "hash": "f64e7d2bf6b809cbe4e91c8ce228e08f83abb31093309777d57eeed2a5bb9e81"
-            },
-            "0025000": {
-              "label": "제4절 신용정보집중기관 및 데이터전문기관 등",
-              "hash": "293f7708d05686c65e4c36d0939de22c58dc59909b72bf696ae2678453bcb975"
-            },
-            "0025001": {
-              "label": "제25조(신용정보집중기관)",
-              "hash": "86e255ac62c9a3242b29ac7c8874951bc29ec1abf23ad62b2e449ffaea1f397b"
-            },
-            "0025021": {
-              "label": "제25조의2(종합신용정보집중기관의 업무) 종합신용정보집중기관은 다음 각 호의 업무를 수행한다.",
-              "hash": "86eb7a5a0d93e18ba7af4005b2d6d158a2ef3bb7251dba4d361128b3ef6f9965"
-            },
-            "0026001": {
-              "label": "제26조(신용정보집중관리위원회)",
-              "hash": "891613ea6b9c92afa98149fa9303344a0ed82849be095b8f37ff0a087905d958"
-            },
-            "0026021": {
-              "label": "제26조의2(신용정보집중관리위원회의 구성ㆍ운영 등)",
-              "hash": "b07789fab6855dde61ce3988687d3fbac6bf27e33aeb19b8f754771d617d7c02"
-            },
-            "0026031": {
-              "label": "제26조의3(개인신용평가체계 검증위원회)",
-              "hash": "59b9ad7bc01ce6f1ef16078f97b07239d7633643778c6d3235a335dfab3add23"
-            },
-            "0026041": {
-              "label": "제26조의4(데이터전문기관)",
-              "hash": "3851dc0fdba505395178a0dfd5bfa9b8c5e580634c733d3a79b87f5f4be53e60"
-            },
-            "0027000": {
-              "label": "제5절 채권추심업",
-              "hash": "8576f99060193133000cf58228750f0bfacc80b69111e2c2c2fa63d135966435"
-            },
-            "0027001": {
-              "label": "제27조(채권추심업 종사자 및 위임직채권추심인 등)",
-              "hash": "49a20c2850b693dde1b61ebac592a6003dad00a8c2abfbc94442b868673ecf41"
-            },
-            "0027021": {
-              "label": "제27조의2(무허가 채권추심업자에 대한 업무위탁의 금지) 대통령령으로 정하는 여신금융기관, 대부업자 등 신용정보제공ㆍ이용자는 채권추심회사 외의 자에게 채권추심업무를 위탁하여서는 아니 된다.",
-              "hash": "44d978063038c2d185af91ca76fb1d326a0f64550989ef3bf74ed30a754b636e"
-            },
-            "0028001": {
-              "label": "제28조 삭제",
-              "hash": "b3c882131e8aebf43d9e919f09784b129217485732504624b91ebe4dde0b6df8"
-            },
-            "0029001": {
-              "label": "제29조 삭제",
-              "hash": "7b0b73a31b45dd8b698670749b4f6904fe74b1988435a018de814b7414c10b75"
-            },
-            "0030001": {
-              "label": "제30조 삭제",
-              "hash": "6d42eb63cfe96c3aaa724baf665a52f1ca153dd15a5c1986ab26aa8c8b73143e"
-            },
-            "0031000": {
-              "label": "제6장 신용정보주체의 보호",
-              "hash": "c9eb48ddb7661c3e1e36ad27e38468898ad2b4dbb637124d8068889c5420d083"
-            },
-            "0031001": {
-              "label": "제31조(신용정보활용체제의 공시)",
-              "hash": "854b53392f4427f02826bbaba4fd22f472c95cd050eaadbac1812f01d80c8f6c"
-            },
-            "0032001": {
-              "label": "제32조(개인신용정보의 제공ㆍ활용에 대한 동의)",
-              "hash": "08decd1f2c0053d1b9b9a8ecaae33c6edaf2c40f8ed5888f6c9567c6bb2219b2"
-            },
-            "0033001": {
-              "label": "제33조(개인신용정보의 이용)",
-              "hash": "77c9f32fb56562fe71fd2799717eecfda3dede6b0005fece640c0562787fc27b"
-            },
-            "0033021": {
-              "label": "제33조의2(개인신용정보의 전송요구)",
-              "hash": "efc77fae671fc1afa932f921c2770ca70fad642bac429d1b9d300c530f5c8b90"
-            },
-            "0034001": {
-              "label": "제34조(개인식별정보의 수집ㆍ이용 및 제공) 신용정보회사등이 개인을 식별하기 위하여 필요로 하는 정보로서 대통령령으로 정하는 정보를 수집ㆍ이용 및 제공하는 경우에는 제15조, 제32조 및 제33조를 준용한다.",
-              "hash": "f2f3e852383a4f18341f9ecd2022ca7b9ee2df037b21b2143f7951bce1c96196"
-            },
-            "0034021": {
-              "label": "제34조의2(개인신용정보 등의 활용에 관한 동의의 원칙)",
-              "hash": "86777367e93a672311db48418339aea891731aacc28cae095c6380a59119f8c7"
-            },
-            "0034031": {
-              "label": "제34조의3(정보활용 동의등급)",
-              "hash": "8e4b90d78b231cbe784c9006954b121357efd96a0d388a50b5abeffc4613f8f0"
-            },
-            "0035001": {
-              "label": "제35조(신용정보 이용 및 제공사실의 조회)",
-              "hash": "248048f89b881e98ff076ce4cb12f3a492b80c343a7826baad896476465ff514"
-            },
-            "0035021": {
-              "label": "제35조의2(개인신용평점 하락 가능성 등에 대한 설명의무) 대통령령으로 정하는 신용정보제공ㆍ이용자는 개인인 신용정보주체와 신용위험이 따르는 금융거래로서 대통령령으로 정하는 금융거래를 하는 경우 다음 각 호의 사항을 해당 신용정보주체에게 설명하여야 한다",
-              "hash": "8f81d0bcbf8f7f60dd5a37749a4f7a7e653de92e9918f8c2fb7234798c347d67"
-            },
-            "0035031": {
-              "label": "제35조의3(신용정보제공ㆍ이용자의 사전통지)",
-              "hash": "85e0a6c4bc0aeef6e2b7306facb719bfcae6c26f6b7108c5ac465024277888bd"
-            },
-            "0036001": {
-              "label": "제36조(상거래 거절 근거 신용정보의 고지 등)",
-              "hash": "0c150bbbe4a7541b7ae6a1976f61a6fb327f3ff198e54dd1389198b61466117a"
-            },
-            "0036021": {
-              "label": "제36조의2(자동화평가 결과에 대한 설명 및 이의제기 등)",
-              "hash": "8ade4475e32fd87e0ad2820b045e78a5346345e04fbff792d622ab47b88e8511"
-            },
-            "0037001": {
-              "label": "제37조(개인신용정보 제공 동의 철회권 등)",
-              "hash": "c67156db95818a25cf32bc4d1e314148c8dd987df6d03a361f5b4d21d3b506e1"
-            },
-            "0038001": {
-              "label": "제38조(신용정보의 열람 및 정정청구 등)",
-              "hash": "fc68cbc6d58a6995509ce75e8abeee8057b248c803db1c91f1720034248abd76"
-            },
-            "0038021": {
-              "label": "제38조의2(신용조회사실의 통지 요청)",
-              "hash": "d743ea8fbd6371a78fc5c107a7a88733c42545a49ea9a0f59bc578821db408ad"
-            },
-            "0038031": {
-              "label": "제38조의3(개인신용정보의 삭제 요구)",
-              "hash": "e03137127efc235a612e21e33e7b109e0d6fb04df4bb98cec3b1210edd46e151"
-            },
-            "0039001": {
-              "label": "제39조(무료 열람권) 개인인 신용정보주체는 1년 이내로서 대통령령으로 정하는 일정한 기간마다 개인신용평가회사(대통령령으로 정하는 개인신용평가회사는 제외한다)에 대하여 다음 각 호의 신용정보를 1회 이상 무료로 교부받거나 열람할 수 있다.",
-              "hash": "fa2d4bcaf1d2b37c327478d6d306542b90e5a4be63ad7b3da858742bbaa568a3"
-            },
-            "0039021": {
-              "label": "제39조의2(채권자변동정보의 열람 등)",
-              "hash": "9602f5f9ea58a156c691df39c58ba736e870c12755008fc33955f3279343e26b"
-            },
-            "0039031": {
-              "label": "제39조의3(신용정보주체의 권리행사 방법 및 절차)",
-              "hash": "61fb05a5c65f9d570658731bddc1d54d7ab773c1dc57828a62c43c778ffe4050"
-            },
-            "0039041": {
-              "label": "제39조의4(개인신용정보 누설통지 등)",
-              "hash": "3d6198dd9a544bf9a79249bd9b641e8cf7e8dcb2e620c45084fc9178d339f508"
-            },
-            "0040001": {
-              "label": "제40조(신용정보회사등의 금지사항)",
-              "hash": "1af2b9109a8955d36d79d15328e0d636c8a8d946ddc135fcfc9a9c6282eda4d4"
-            },
-            "0040021": {
-              "label": "제40조의2(가명처리ㆍ익명처리에 관한 행위규칙)",
-              "hash": "8b70a29c757b8f66393d0713cc44f197d13321bf7bdbc2c0d4a9a34362617871"
-            },
-            "0040031": {
-              "label": "제40조의3(가명정보에 대한 적용 제외) 가명정보에 관하여는 제32조제7항, 제33조의2, 제35조, 제35조의2, 제35조의3, 제36조, 제36조의2, 제37조, 제38조, 제38조의2, 제38조의3, 제39조 및 제39조의2부터 제39조의4까지의",
-              "hash": "eaa13f909b8007876609e3fc81380f21c2171bb6a5f3212ae0fe9117cb2a68b7"
-            },
-            "0041001": {
-              "label": "제41조(채권추심회사의 금지 사항)",
-              "hash": "b84cff481a9d63e457096e03efc23101d314bfb8e3737295572d34e74a94a4fe"
-            },
-            "0041021": {
-              "label": "제41조의2(모집업무수탁자의 모집경로 확인 등)",
-              "hash": "9b13416ef3106691851fefc9ac4f50710b14e8bcd39e73f2ad95d2c4b6f1bce6"
-            },
-            "0042001": {
-              "label": "제42조(업무 목적 외 누설금지 등)",
-              "hash": "77ce4267dc2a694db4ae10e1ad251371aeca64ffbe7cf111a9a7eada31e50582"
-            },
-            "0042021": {
-              "label": "제42조의2(과징금의 부과 등)",
-              "hash": "8d2377b0ba55e0b46503b8562fcf741c170cf042bf2528a7bf0a9debfc7b1d98"
-            },
-            "0043001": {
-              "label": "제43조(손해배상의 책임)",
-              "hash": "f759866b39fe1827dbd9fcb5f845e7a6ed56b4cc386b99c870cf278c9fa7f0d3"
-            },
-            "0043021": {
-              "label": "제43조의2(법정손해배상의 청구)",
-              "hash": "ca8f762b917703ef82ab8fc51783f00a95b60661f1ad4b850ed6f3e2fab6c182"
-            },
-            "0043031": {
-              "label": "제43조의3(손해배상의 보장) 대통령령으로 정하는 신용정보회사등은 제43조에 따른 손해배상책임의 이행을 위하여 금융위원회가 정하는 기준에 따라 보험 또는 공제에 가입하거나 준비금을 적립하는 등 필요한 조치를 하여야 한다.",
-              "hash": "8d49fccb1cd9bd8c7d8860ac959572f7c248bcb3078d5b93b67f3d13ff81d52d"
-            },
-            "0044001": {
-              "label": "제44조(신용정보협회)",
-              "hash": "0069cc3288fecb39b1d9a1b22db572e535f5f8f7e0eb2f705795e6b02bca479b"
-            },
-            "0045000": {
-              "label": "제7장 보칙",
-              "hash": "7dd9e11c28122fb7b494334d1955491b5c82f869f261b6ee70f44a2e94ed203c"
-            },
-            "0045001": {
-              "label": "제45조(감독ㆍ검사 등)",
-              "hash": "9101492cd0ab703a3bca63c4e2fc3bd96389488bd0b1aeb7746b6b28b45264e8"
-            },
-            "0045021": {
-              "label": "제45조의2(금융위원회의 조치명령권) 금융위원회는 신용정보주체를 보호하고 건전한 신용질서를 확립하기 위하여 신용정보회사등에 다음 각 호의 사항에 관하여 자료제출, 처리중단, 시정조치, 공시 등 필요한 조치를 명할 수 있다.",
-              "hash": "59a4e5c140d5da544d60e31ee26f8a3a0ae36e9483de1d499015a0208114a440"
-            },
-            "0045031": {
-              "label": "제45조의3(보호위원회의 자료제출 요구ㆍ조사 등)",
-              "hash": "acdede54d09b31215c48b21733b384e45068b956641eac4d6d7fbcc39e918ced"
-            },
-            "0045041": {
-              "label": "제45조의4(보호위원회의 시정조치) 보호위원회는 상거래정보보호규정과 관련하여 개인신용정보가 침해되었다고 판단할 상당한 근거가 있고 이를 방치할 경우 회복하기 어려운 피해가 발생할 우려가 있다고 인정되면 상거래기업 및 법인에 대하여 다음 각 호에 해당하",
-              "hash": "2e230c4c8e64b6cd7929f1d001400d3244289f1713d540d340ab60204e559ea6"
-            },
-            "0045051": {
-              "label": "제45조의5(개인신용정보 활용ㆍ관리 실태에 대한 상시평가)",
-              "hash": "a05f4b98597366e00ac098607f56c2029e03178db497f01a404dd01b5dc81ecc"
-            },
-            "0046001": {
-              "label": "제46조(퇴임한 임원 등에 대한 조치 내용의 통보)",
-              "hash": "d338ebd4dfc751c286c7974ef2101d59db7e18a6b54084c76b6a273098053908"
-            },
-            "0047001": {
-              "label": "제47조(업무보고서의 제출)",
-              "hash": "721fd4d27743902fd93802c176c09659e032ba99122ba64ccdc3c6934a7ace60"
-            },
-            "0048001": {
-              "label": "제48조(청문) 금융위원회는 다음 각 호의 어느 하나에 해당하는 처분을 하려면 청문을 하여야 한다.",
-              "hash": "2f496f16b8546c002c23f14aaaf8c9a90620802d70e3a65d2a5c1546ac42a2f0"
-            },
-            "0049001": {
-              "label": "제49조(권한의 위임ㆍ위탁) 이 법에 따른 금융위원회의 권한 중 대통령령으로 정하는 권한은 대통령령으로 정하는 바에 따라 특별시장ㆍ광역시장ㆍ특별자치시장ㆍ도지사ㆍ특별자치도지사, 금융감독원장, 종합신용정보집중기관, 데이터전문기관, 신용정보협회, 그 밖에 ",
-              "hash": "ab428cb56dcdd84db994f8fb7f4709c66093e9c80e5ec4ae28597d72ad3f5a93"
-            },
-            "0050001": {
-              "label": "제50조(벌칙)",
-              "hash": "3dc0e078ba40a75c842cef117b63a599cde1e10f2a6ddea543b94229dce750b2"
-            },
-            "0051001": {
-              "label": "제51조(양벌규정) 법인의 대표자나 법인 또는 개인의 대리인, 사용인, 그 밖의 종업원이 그 법인 또는 개인의 업무에 관하여 제50조의 위반행위를 하면 그 행위자를 벌하는 외에 그 법인 또는 개인에게도 해당 조문의 벌금형을 과(科)한다. 다만, 법인 ",
-              "hash": "448b0b5724392bad54f331bf1e95cf5a1d1f2038b6af9e15eaa72c64e57dcc1c"
-            },
-            "0052001": {
-              "label": "제52조(과태료)",
-              "hash": "e5d28973e8c96ad1b5b34a602c6b3e3176b384ed49216fce347be22045198222"
-            }
-          }
-        },
-        {
           "id": "285955:20260813",
-          "state": "시행예정",
+          "state": "현행",
           "effectiveDate": "20260813",
           "promulgationDate": "20260512",
           "promulgationNumber": "21646",
@@ -5186,9 +4757,9 @@
               "basisText": "제1조(시행일) 이 법은 공포 후 3개월이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "e45655c639ae31858e07e9e6ac44571974c9a95cf7e4e659857317c1175bca09",
-          "semanticDocumentHash": "8430e63cd401f5a20db24ef237f96e9a7c186a29c84d9a44fe3df0578dda5c6f",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "0d0e8ad0ed34aa9f9ecd6aff8cd443eaaf12f5e0df3648a9fcff827f2c0b3e8d",
+          "semanticDocumentHash": "df3dba3448582f68e0f9fd7bd7ac70c19b29e6434bbe7a6b60ae772f576c0211",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -5200,7 +4771,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "69338cba09b4f267f7609b3dc194b95df5aadb56ba156540fc1a23a23645df35"
+              "hash": "1a6233a5116e04be2ec80b0d487c2793410b3fe6f5d2b2cb6fc628e8a85c7f71"
             },
             "0003001": {
               "label": "제3조(신용정보 관련 산업의 육성)",
@@ -5224,7 +4795,7 @@
             },
             "0006001": {
               "label": "제6조(허가의 요건)",
-              "hash": "2834a3d1d2894a7ab2f001e5096c8eb053890da2032820a3dee17d18ae7481ce"
+              "hash": "ed3d07e7df2404700ce3ad30491582fcdc3c484bdd2823168fd985189e4f1adc"
             },
             "0007001": {
               "label": "제7조(허가 등의 공고) 금융위원회는 다음 각 호의 어느 하나에 해당하는 경우 지체 없이 그 내용을 관보에 공고하고 인터넷 홈페이지 등을 이용하여 일반인에게 알려야 한다.",
@@ -5272,7 +4843,7 @@
             },
             "0015001": {
               "label": "제15조(수집 및 처리의 원칙)",
-              "hash": "2721e8b460988bb68956a8ae7cf1cd36f47aa59c6d85442e499a8f7bfb3ded8d"
+              "hash": "2e646a6d9b3faadac8ea20bb9a1ccd7b5127cddc1ad6418c23b42376e7e48b85"
             },
             "0016001": {
               "label": "제16조 삭제",
@@ -5300,11 +4871,11 @@
             },
             "0020001": {
               "label": "제20조(신용정보 관리책임의 명확화 및 업무처리기록의 보존)",
-              "hash": "f57cba59bfa030e69865146292e6b5c01a0c07149245dd0b3e8fe1450a4e468b"
+              "hash": "8f812f18f76c913e1e58c76a1ed9e38521f953ebd8b9285f53502cd8a904dd8b"
             },
             "0020021": {
               "label": "제20조의2(개인신용정보의 보유기간 등)",
-              "hash": "7ae003c713c30867cc9a0decd53f958a37cc92e07302435e326abcb216442194"
+              "hash": "a66af95f0c950703a61e11809433f8b53a1f7c401922b328ed965b608eab97b7"
             },
             "0021001": {
               "label": "제21조(폐업 시 보유정보의 처리) 신용정보회사등(신용정보제공ㆍ이용자는 제외한다)이 폐업하려는 경우에는 금융위원회가 정하여 고시하는 바에 따라 보유정보를 처분하거나 폐기하여야 한다.",
@@ -5428,7 +4999,7 @@
             },
             "0032001": {
               "label": "제32조(개인신용정보의 제공ㆍ활용에 대한 동의)",
-              "hash": "08decd1f2c0053d1b9b9a8ecaae33c6edaf2c40f8ed5888f6c9567c6bb2219b2"
+              "hash": "d212764869ce3ba4e26b7710233c047963fdec83722a2c175903581146812229"
             },
             "0033001": {
               "label": "제33조(개인신용정보의 이용)",
@@ -5436,7 +5007,7 @@
             },
             "0033021": {
               "label": "제33조의2(개인신용정보의 전송요구)",
-              "hash": "efc77fae671fc1afa932f921c2770ca70fad642bac429d1b9d300c530f5c8b90"
+              "hash": "83e57144c6012d2b39bd3593660a0128165022aae557ac228ec4ba553d662025"
             },
             "0034001": {
               "label": "제34조(개인식별정보의 수집ㆍ이용 및 제공) 신용정보회사등이 개인을 식별하기 위하여 필요로 하는 정보로서 대통령령으로 정하는 정보를 수집ㆍ이용 및 제공하는 경우에는 제15조, 제32조 및 제33조를 준용한다.",
@@ -5460,7 +5031,7 @@
             },
             "0035031": {
               "label": "제35조의3(신용정보제공ㆍ이용자의 사전통지)",
-              "hash": "85e0a6c4bc0aeef6e2b7306facb719bfcae6c26f6b7108c5ac465024277888bd"
+              "hash": "1156a0388fee268682653bf6033f6c78c132c171386203972bf81e2850852ce5"
             },
             "0036001": {
               "label": "제36조(상거래 거절 근거 신용정보의 고지 등)",
@@ -5468,7 +5039,7 @@
             },
             "0036021": {
               "label": "제36조의2(자동화평가 결과에 대한 설명 및 이의제기 등)",
-              "hash": "8ade4475e32fd87e0ad2820b045e78a5346345e04fbff792d622ab47b88e8511"
+              "hash": "bd11bc2ebdd9a91b1fbdb5d00bc5a572b71b6833a3d08310453b6ece69fe2f3f"
             },
             "0037001": {
               "label": "제37조(개인신용정보 제공 동의 철회권 등)",
@@ -5508,7 +5079,7 @@
             },
             "0040021": {
               "label": "제40조의2(가명처리ㆍ익명처리에 관한 행위규칙)",
-              "hash": "8b70a29c757b8f66393d0713cc44f197d13321bf7bdbc2c0d4a9a34362617871"
+              "hash": "fa28eada3448d1ffecf302e51517ff6fb8be4b1d0b20b8a6abaa707cdb5cd0a9"
             },
             "0040031": {
               "label": "제40조의3(가명정보에 대한 적용 제외) 가명정보에 관하여는 제32조제7항, 제33조의2, 제35조, 제35조의2, 제35조의3, 제36조, 제36조의2, 제37조, 제38조, 제38조의2, 제38조의3, 제39조 및 제39조의2부터 제39조의4까지의",
@@ -5580,7 +5151,7 @@
             },
             "0045031": {
               "label": "제45조의3(보호위원회의 자료제출 요구ㆍ조사 등)",
-              "hash": "acdede54d09b31215c48b21733b384e45068b956641eac4d6d7fbcc39e918ced"
+              "hash": "3852919212427ccdd9b6fa302466f9bc95007a786d7536eda3edd805e1e33056"
             },
             "0045041": {
               "label": "제45조의4(보호위원회의 시정조치) 보호위원회는 상거래정보보호규정과 관련하여 개인신용정보가 침해되었다고 판단할 상당한 근거가 있고 이를 방치할 경우 회복하기 어려운 피해가 발생할 우려가 있다고 인정되면 상거래기업 및 법인에 대하여 다음 각 호에 해당하",
@@ -5635,9 +5206,9 @@
               "basisText": "제1조(시행일) 이 법은 공포 후 6개월이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "774c198d952f4e17338a444ca11765299610bde126eb8f659f722caa3683794e",
-          "semanticDocumentHash": "e6c4f0a0ea18cd6f9ecd86ca1c00f5fa9eaadd2763c47e3e94a4b2636fd40dea",
-          "articleHashAlgorithm": "legal-semantic-text-v1",
+          "documentHash": "129f52c2525a5e2d2fa631e22cb7367b601eb70d07f9a550f00af5f28c23b9ea",
+          "semanticDocumentHash": "056125ae9f2cf0b2ebe3678b6fd22aaa9b266dc57598f6065cc35b29001db475",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
               "label": "제1장 총칙",
@@ -5649,7 +5220,7 @@
             },
             "0002001": {
               "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
-              "hash": "69338cba09b4f267f7609b3dc194b95df5aadb56ba156540fc1a23a23645df35"
+              "hash": "1a6233a5116e04be2ec80b0d487c2793410b3fe6f5d2b2cb6fc628e8a85c7f71"
             },
             "0003001": {
               "label": "제3조(신용정보 관련 산업의 육성)",
@@ -5673,7 +5244,7 @@
             },
             "0006001": {
               "label": "제6조(허가의 요건)",
-              "hash": "2834a3d1d2894a7ab2f001e5096c8eb053890da2032820a3dee17d18ae7481ce"
+              "hash": "ed3d07e7df2404700ce3ad30491582fcdc3c484bdd2823168fd985189e4f1adc"
             },
             "0007001": {
               "label": "제7조(허가 등의 공고) 금융위원회는 다음 각 호의 어느 하나에 해당하는 경우 지체 없이 그 내용을 관보에 공고하고 인터넷 홈페이지 등을 이용하여 일반인에게 알려야 한다.",
@@ -5721,7 +5292,7 @@
             },
             "0015001": {
               "label": "제15조(수집 및 처리의 원칙)",
-              "hash": "2721e8b460988bb68956a8ae7cf1cd36f47aa59c6d85442e499a8f7bfb3ded8d"
+              "hash": "2e646a6d9b3faadac8ea20bb9a1ccd7b5127cddc1ad6418c23b42376e7e48b85"
             },
             "0016001": {
               "label": "제16조 삭제",
@@ -5749,11 +5320,11 @@
             },
             "0020001": {
               "label": "제20조(신용정보 관리책임의 명확화 및 업무처리기록의 보존)",
-              "hash": "f57cba59bfa030e69865146292e6b5c01a0c07149245dd0b3e8fe1450a4e468b"
+              "hash": "8f812f18f76c913e1e58c76a1ed9e38521f953ebd8b9285f53502cd8a904dd8b"
             },
             "0020021": {
               "label": "제20조의2(개인신용정보의 보유기간 등)",
-              "hash": "7ae003c713c30867cc9a0decd53f958a37cc92e07302435e326abcb216442194"
+              "hash": "a66af95f0c950703a61e11809433f8b53a1f7c401922b328ed965b608eab97b7"
             },
             "0021001": {
               "label": "제21조(폐업 시 보유정보의 처리) 신용정보회사등(신용정보제공ㆍ이용자는 제외한다)이 폐업하려는 경우에는 금융위원회가 정하여 고시하는 바에 따라 보유정보를 처분하거나 폐기하여야 한다.",
@@ -5877,7 +5448,7 @@
             },
             "0032001": {
               "label": "제32조(개인신용정보의 제공ㆍ활용에 대한 동의)",
-              "hash": "08decd1f2c0053d1b9b9a8ecaae33c6edaf2c40f8ed5888f6c9567c6bb2219b2"
+              "hash": "d212764869ce3ba4e26b7710233c047963fdec83722a2c175903581146812229"
             },
             "0033001": {
               "label": "제33조(개인신용정보의 이용)",
@@ -5885,7 +5456,7 @@
             },
             "0033021": {
               "label": "제33조의2(개인신용정보의 전송요구)",
-              "hash": "efc77fae671fc1afa932f921c2770ca70fad642bac429d1b9d300c530f5c8b90"
+              "hash": "83e57144c6012d2b39bd3593660a0128165022aae557ac228ec4ba553d662025"
             },
             "0034001": {
               "label": "제34조(개인식별정보의 수집ㆍ이용 및 제공) 신용정보회사등이 개인을 식별하기 위하여 필요로 하는 정보로서 대통령령으로 정하는 정보를 수집ㆍ이용 및 제공하는 경우에는 제15조, 제32조 및 제33조를 준용한다.",
@@ -5909,7 +5480,7 @@
             },
             "0035031": {
               "label": "제35조의3(신용정보제공ㆍ이용자의 사전통지)",
-              "hash": "85e0a6c4bc0aeef6e2b7306facb719bfcae6c26f6b7108c5ac465024277888bd"
+              "hash": "1156a0388fee268682653bf6033f6c78c132c171386203972bf81e2850852ce5"
             },
             "0036001": {
               "label": "제36조(상거래 거절 근거 신용정보의 고지 등)",
@@ -5917,7 +5488,7 @@
             },
             "0036021": {
               "label": "제36조의2(자동화평가 결과에 대한 설명 및 이의제기 등)",
-              "hash": "8ade4475e32fd87e0ad2820b045e78a5346345e04fbff792d622ab47b88e8511"
+              "hash": "bd11bc2ebdd9a91b1fbdb5d00bc5a572b71b6833a3d08310453b6ece69fe2f3f"
             },
             "0037001": {
               "label": "제37조(개인신용정보 제공 동의 철회권 등)",
@@ -5957,7 +5528,7 @@
             },
             "0040021": {
               "label": "제40조의2(가명처리ㆍ익명처리에 관한 행위규칙)",
-              "hash": "8b70a29c757b8f66393d0713cc44f197d13321bf7bdbc2c0d4a9a34362617871"
+              "hash": "fa28eada3448d1ffecf302e51517ff6fb8be4b1d0b20b8a6abaa707cdb5cd0a9"
             },
             "0040031": {
               "label": "제40조의3(가명정보에 대한 적용 제외) 가명정보에 관하여는 제32조제7항, 제33조의2, 제35조, 제35조의2, 제35조의3, 제36조, 제36조의2, 제37조, 제38조, 제38조의2, 제38조의3, 제39조 및 제39조의2부터 제39조의4까지의",
@@ -6009,7 +5580,7 @@
             },
             "0045031": {
               "label": "제45조의3(보호위원회의 자료제출 요구ㆍ조사 등)",
-              "hash": "acdede54d09b31215c48b21733b384e45068b956641eac4d6d7fbcc39e918ced"
+              "hash": "3852919212427ccdd9b6fa302466f9bc95007a786d7536eda3edd805e1e33056"
             },
             "0045041": {
               "label": "제45조의4(보호위원회의 시정조치) 보호위원회는 상거래정보보호규정과 관련하여 개인신용정보가 침해되었다고 판단할 상당한 근거가 있고 이를 방치할 경우 회복하기 어려운 피해가 발생할 우려가 있다고 인정되면 상거래기업 및 법인에 대하여 다음 각 호에 해당하",
