@@ -16,6 +16,9 @@ import {
 } from "../lib/legal-runtime-manifest.ts";
 import { analyzePrivacyPolicy } from "../lib/privacy-analyzer.ts";
 
+const workflowCandidateManifestPath =
+  process.env.LAW_LENS_CANDIDATE_RUNTIME_MANIFEST;
+
 function baselineWithReviewedChange(changeId, reviewedAt = "2026-08-12") {
   return {
     ...LEGAL_BASELINE,
@@ -367,6 +370,46 @@ test("runtime manifest defers on the effective date and a committed review relea
     "silently-replaced-document-hash",
   );
 });
+
+test(
+  "the generated post-monitor candidate preserves an explicit review lifecycle",
+  { skip: !workflowCandidateManifestPath },
+  () => {
+    const candidate = JSON.parse(
+      readFileSync(workflowCandidateManifestPath, "utf8"),
+    );
+    const validation = validateLegalRuntimeManifest(candidate);
+    assert.equal(validation.valid, true, validation.errors.join("; "));
+
+    const asOfDate = normalizeLegalAsOfDate(candidate.generatedAt);
+    const runtimeState = mergeRuntimeLegalChanges(
+      candidate,
+      candidate.generatedAt,
+    );
+    assert.equal(runtimeState.status, "valid");
+
+    const freshness = evaluateLegalRulesetFreshness(asOfDate, {
+      rulesetVersion: candidate.rulesetVersion,
+      upcomingChanges: runtimeState.changes,
+    });
+    const effectivePending = candidate.pendingChanges.filter(
+      (change) => change.effectiveFrom <= asOfDate,
+    );
+    assert.equal(candidate.effectivePendingCount, effectivePending.length);
+
+    if (effectivePending.length > 0) {
+      assert.equal(freshness.status, "review_overdue");
+      assert.equal(freshness.overdueLegalReview, true);
+      assert.equal(
+        freshness.warnings[0]?.safeHandling,
+        "impacted_findings_deferred",
+      );
+    } else {
+      assert.equal(freshness.overdueLegalReview, false);
+      assert.notEqual(freshness.status, "review_overdue");
+    }
+  },
+);
 
 test("semantic document hashes take precedence over transport hashes", () => {
   const snapshot = runtimeSnapshot();

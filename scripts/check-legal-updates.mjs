@@ -12,6 +12,84 @@ export const STAGE_EFFECTIVE_DATE_ALGORITHM =
   "promulgation-calendar-period-v2";
 const USER_AGENT =
   "LawLensPrivacyKR/1.0 (+https://github.com/GGBoo0/law-lens-privacy-auditor)";
+const SAFE_ERROR_CODE = /^[A-Z][A-Z0-9_]{1,63}$/;
+
+function nestedErrorCode(error) {
+  const pending = [error];
+  const visited = new Set();
+  while (pending.length > 0 && visited.size < 12) {
+    const candidate = pending.shift();
+    if (!candidate || (typeof candidate !== "object" && typeof candidate !== "function")) {
+      continue;
+    }
+    if (visited.has(candidate)) continue;
+    visited.add(candidate);
+
+    const code = String(candidate.code || "").toUpperCase();
+    if (SAFE_ERROR_CODE.test(code)) return code;
+    if (candidate.cause) pending.push(candidate.cause);
+    if (Array.isArray(candidate.errors)) pending.push(...candidate.errors);
+  }
+
+  if (error?.name === "TimeoutError") return "TIMEOUT";
+  if (error?.name === "AbortError") return "ABORT_ERR";
+  if (error instanceof TypeError && error.message === "fetch failed") {
+    return "FETCH_FAILED";
+  }
+  return "UNCLASSIFIED";
+}
+
+function errorCategory(code) {
+  if (code === "HTTP_429") return "rate_limit";
+  if (/^HTTP_4\d\d$/.test(code)) return "http_client";
+  if (/^HTTP_5\d\d$/.test(code)) return "upstream_http";
+  if (code === "ENOTFOUND" || code === "EAI_AGAIN") return "dns";
+  if (/TIMEOUT|TIMEDOUT|ABORT/.test(code)) return "timeout";
+  if (/CERT|TLS|SSL|VERIFY|SELF_SIGNED/.test(code)) return "tls";
+  if (/^E(?:CONN|HOST|NET)|UND_ERR_(?:CONNECT|SOCKET)/.test(code)) {
+    return "network";
+  }
+  if (/INVALID|UNEXPECTED|PARSE/.test(code)) return "response";
+  if (code === "FETCH_FAILED") return "network";
+  return "unknown";
+}
+
+export function safeFailureDiagnostic(error, source = {}) {
+  let host = "unknown";
+  try {
+    host = new URL(source.officialUrl || source.url).hostname.toLowerCase();
+  } catch {
+    // Only a normalized hostname is exposed; malformed URLs stay unknown.
+  }
+  const code = nestedErrorCode(error);
+  return { host, category: errorCategory(code), code };
+}
+
+export function summarizeFailureDiagnostics(failures = []) {
+  const hostCounts = new Map();
+  const causeCounts = new Map();
+  for (const failure of failures) {
+    const diagnostic = failure.diagnostic;
+    hostCounts.set(diagnostic.host, (hostCounts.get(diagnostic.host) || 0) + 1);
+    const causeKey = `${diagnostic.category}/${diagnostic.code}`;
+    causeCounts.set(causeKey, (causeCounts.get(causeKey) || 0) + 1);
+  }
+  return JSON.stringify({
+    hosts: [...hostCounts]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([host, count]) => ({ host, count })),
+    causes: [...causeCounts]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([cause, count]) => {
+        const separator = cause.indexOf("/");
+        return {
+          category: cause.slice(0, separator),
+          code: cause.slice(separator + 1),
+          count,
+        };
+      }),
+  });
+}
 
 function toArray(value) {
   if (value === undefined || value === null) return [];
@@ -435,6 +513,7 @@ async function fetchResponse(url, options = {}) {
 
       if (!response.ok) {
         const error = new Error(`HTTP ${response.status}`);
+        error.code = `HTTP_${response.status}`;
         error.retryable =
           response.status === 408 ||
           response.status === 425 ||
@@ -507,7 +586,9 @@ async function fetchJson(url, options = {}) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new Error(`공식 API가 JSON이 아닌 응답을 반환했습니다: ${url}`);
+    const error = new Error("공식 API가 JSON이 아닌 응답을 반환했습니다.");
+    error.code = "INVALID_JSON_RESPONSE";
+    throw error;
   }
 }
 
@@ -1108,11 +1189,16 @@ export async function runMonitor(options) {
       });
       console.log(`확인 완료: ${source.name}`);
     } catch (error) {
-      failures.push(`${source.name}: ${error instanceof Error ? error.message : error}`);
+      const diagnostic = safeFailureDiagnostic(error, source);
+      failures.push({ source, diagnostic });
+      console.error(
+        `확인 실패: ${source.name} host=${diagnostic.host} category=${diagnostic.category} code=${diagnostic.code}`,
+      );
     }
   }
 
   if (failures.length > 0) {
+    const diagnosticSummary = summarizeFailureDiagnostics(failures);
     await setGithubOutputs(
       {
         changed: false,
@@ -1120,10 +1206,18 @@ export async function runMonitor(options) {
         checked_at: checkedAt,
         source_count: config.sources.length,
         failed_source_count: failures.length,
+        diagnostic_summary: diagnosticSummary,
       },
       options.githubOutput,
     );
-    throw new Error(`공식 소스 확인 실패\n${failures.join("\n")}`);
+    throw new Error(
+      `공식 소스 확인 실패\n${failures
+        .map(
+          ({ source, diagnostic }) =>
+            `${source.name}: host=${diagnostic.host} category=${diagnostic.category} code=${diagnostic.code}`,
+        )
+        .join("\n")}`,
+    );
   }
 
   const currentSnapshot = {
@@ -1145,6 +1239,7 @@ export async function runMonitor(options) {
         checked_at: checkedAt,
         source_count: config.sources.length,
         failed_source_count: 0,
+        diagnostic_summary: summarizeFailureDiagnostics(),
       },
       options.githubOutput,
     );
@@ -1169,6 +1264,7 @@ export async function runMonitor(options) {
       change_count: changes.length,
       source_count: config.sources.length,
       failed_source_count: 0,
+      diagnostic_summary: summarizeFailureDiagnostics(),
     },
     options.githubOutput,
   );

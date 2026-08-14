@@ -228,6 +228,9 @@ async function buildAnalysis(
   text: string,
   meta: NonNullable<Parameters<typeof analyzePrivacyPolicy>[1]>,
 ) {
+  const deterministicBundledReplay =
+    meta.runtimeLegalManifest === undefined &&
+    process.env.LAW_LENS_TEST_RUNTIME_MANIFEST === "bundled";
   const loadedRuntimeManifest =
     meta.runtimeLegalManifest === undefined
       ? await loadRuntimeLegalManifest()
@@ -236,7 +239,17 @@ async function buildAnalysis(
           source: "bundled" as const,
         };
   const runtimeLegalManifest = loadedRuntimeManifest.value;
-  const analysis = analyzePrivacyPolicy(text, { ...meta, runtimeLegalManifest });
+  // The bundled manifest is a point-in-time test fixture. Replay it at its own
+  // legal date so an unrelated wall-clock advance cannot turn golden tests
+  // stale. Production and explicitly supplied lifecycle manifests keep their
+  // real/requested clock.
+  const analysis = analyzePrivacyPolicy(text, {
+    ...meta,
+    ...(deterministicBundledReplay && meta.legalAsOfDate === undefined
+      ? { legalAsOfDate: fallbackRuntimeLegalManifest.asOfDate }
+      : {}),
+    runtimeLegalManifest,
+  });
   const runtimeManifestCanonicalSha256 = await documentHash(
     canonicalJson(runtimeLegalManifest),
   );

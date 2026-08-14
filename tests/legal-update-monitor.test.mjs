@@ -18,8 +18,14 @@ import {
   extractPipcGuideList,
   pipcAttachmentUrl,
   runMonitor,
+  safeFailureDiagnostic,
   semanticVersionFingerprintPayload,
+  summarizeFailureDiagnostics,
 } from "../scripts/check-legal-updates.mjs";
+import {
+  LEGAL_MONITOR_RETRY_SCHEDULES,
+  decideLegalMonitorRun,
+} from "../scripts/legal-monitor-retry-gate.mjs";
 import { syncReviewBranch } from "../scripts/sync-legal-review-branch.mjs";
 import { buildMonitorStatus } from "../scripts/write-legal-monitor-status.mjs";
 import { SOURCES } from "../lib/legal-bases.mjs";
@@ -491,7 +497,7 @@ test("official-source fetches do not retry permanent client errors", async () =>
         },
         sleepImpl: async (delay) => delays.push(delay),
       }),
-      /HTTP 404/,
+      /code=HTTP_404/,
     );
 
     assert.equal(calls, 1);
@@ -499,6 +505,117 @@ test("official-source fetches do not retry permanent client errors", async () =>
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
+});
+
+test("safe monitor diagnostics expose only official hosts and bounded cause codes", () => {
+  const error = new TypeError("fetch failed for https://hidden.example/?oc=secret-value");
+  error.cause = {
+    code: "ENOTFOUND",
+    message: "getaddrinfo ENOTFOUND hidden.example with secret-value",
+  };
+  const diagnostic = safeFailureDiagnostic(error, {
+    officialUrl: "https://www.law.go.kr/법령/개인정보보호법?oc=secret-value",
+  });
+  const summary = summarizeFailureDiagnostics([{ diagnostic }]);
+
+  assert.deepEqual(diagnostic, {
+    host: "www.law.go.kr",
+    category: "dns",
+    code: "ENOTFOUND",
+  });
+  assert.deepEqual(JSON.parse(summary), {
+    hosts: [{ host: "www.law.go.kr", count: 1 }],
+    causes: [{ category: "dns", code: "ENOTFOUND", count: 1 }],
+  });
+  assert.doesNotMatch(summary, /secret-value|hidden\.example|\/법령\//);
+});
+
+test("scheduled legal monitor retries run only for recoverable state", () => {
+  const recentFailure = {
+    lastResult: "failed",
+    lastAttemptAt: "2026-08-14T00:17:00.000Z",
+  };
+  const now = "2026-08-14T00:47:00.000Z";
+
+  assert.deepEqual(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "17 9 * * *",
+      status: recentFailure,
+      now,
+    }),
+    {
+      shouldRun: true,
+      runKind: "scheduled_primary",
+      reason: "primary_or_manual",
+    },
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "workflow_dispatch",
+      status: { lastResult: "no_changes" },
+      now,
+    }).shouldRun,
+    true,
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: recentFailure,
+      now,
+    }).reason,
+    "recent_failure",
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: { lastResult: "no_changes", lastAttemptAt: now },
+      now,
+    }).shouldRun,
+    false,
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: recentFailure,
+      now: "2026-08-14T07:00:00.000Z",
+    }).reason,
+    "failure_outside_retry_window",
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: {
+        lastResult: "failed",
+        lastAttemptAt: "2026-08-14T01:00:00.000Z",
+      },
+      now,
+    }).reason,
+    "failure_outside_retry_window",
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: null,
+      now,
+    }).reason,
+    "status_unavailable",
+  );
+  assert.equal(
+    decideLegalMonitorRun({
+      eventName: "schedule",
+      schedule: "47 9 * * *",
+      status: { lastResult: "no_changes", lastAttemptAt: now },
+      incidentOpen: true,
+      now,
+    }).reason,
+    "open_incident",
+  );
 });
 
 test("monitor flow writes a new snapshot and report for one source change", async () => {
@@ -551,7 +668,14 @@ test("monitor flow preserves previous files when one source request fails", asyn
         ...fixture,
         now: () => "2026-08-10T00:17:00.000Z",
         fetchImpl: async () => {
-          throw new Error("network unavailable");
+          const error = new TypeError(
+            "fetch failed with https://hidden.example/?oc=secret-value",
+          );
+          error.cause = {
+            code: "EAI_AGAIN",
+            message: "temporary DNS failure with secret-value",
+          };
+          throw error;
         },
         sleepImpl: async () => {},
       }),
@@ -563,6 +687,9 @@ test("monitor flow preserves previous files when one source request fails", asyn
     const output = await readFile(fixture.githubOutput, "utf8");
     assert.match(output, /failed=true/);
     assert.match(output, /failed_source_count=1/);
+    assert.match(output, /diagnostic_summary=.*www\.pipc\.go\.kr/);
+    assert.match(output, /EAI_AGAIN/);
+    assert.doesNotMatch(output, /secret-value|hidden\.example/);
   } finally {
     await rm(fixture.root, { recursive: true, force: true });
   }
@@ -776,6 +903,10 @@ test("a second bot update preserves human commits on an open review branch", asy
 
 test("workflow avoids force pushes and keeps human-authored PR text", async () => {
   const workflow = await readFile(".github/workflows/legal-update-monitor.yml", "utf8");
+  assert.equal(LEGAL_MONITOR_RETRY_SCHEDULES.size, 4);
+  for (const schedule of LEGAL_MONITOR_RETRY_SCHEDULES) {
+    assert.match(workflow, new RegExp(`cron: ["']${schedule.replaceAll("*", "\\*")}["']`));
+  }
   assert.doesNotMatch(workflow, /push --force|force-with-lease/);
   assert.doesNotMatch(workflow, /gh pr edit/);
   assert.match(workflow, /gh pr comment/);
@@ -792,7 +923,27 @@ test("workflow avoids force pushes and keeps human-authored PR text", async () =
   assert.match(workflow, /gh issue close/);
   assert.match(workflow, /--historyLimit 7/);
   assert.match(workflow, /--staleAfterHours 36/);
+  assert.match(workflow, /Decide whether a scheduled retry is needed/);
+  assert.match(workflow, /--incidentOpen "\$INCIDENT_OPEN"/);
+  assert.match(
+    workflow,
+    /Check official legal sources from trusted code[\s\S]*?continue-on-error:\s*true/,
+  );
+  assert.match(workflow, /id: status/);
+  assert.match(
+    workflow,
+    /MONITOR_OUTCOME" = "failure".*STATUS_OUTCOME" = "success"/,
+  );
+  assert.match(workflow, /legal-monitor-signature:/);
+  assert.match(
+    workflow,
+    /Conclude a primary or manual source failure[\s\S]*steps\.gate\.outputs\.run_kind != 'scheduled_retry'[\s\S]*exit 1/,
+  );
   assert.match(workflow, /npm test/);
+  assert.match(
+    workflow,
+    /Validate trusted application before publishing a review[\s\S]*LAW_LENS_TEST_RUNTIME_MANIFEST:\s*bundled[\s\S]*LAW_LENS_CANDIDATE_RUNTIME_MANIFEST:\s*\$\{\{ runner\.temp \}\}\/legal-runtime-manifest\.json[\s\S]*npm test/,
+  );
   assert.ok(
     workflow.indexOf("Prepare safe review baseline") <
       workflow.indexOf("Check official legal sources from trusted code"),
