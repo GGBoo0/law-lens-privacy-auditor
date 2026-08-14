@@ -4,7 +4,15 @@ on:
   schedule:
     - cron: "17 9 * * *"
       timezone: "Asia/Seoul"
+    - cron: "27 9 * * *"
+      timezone: "Asia/Seoul"
+    - cron: "47 9 * * *"
+      timezone: "Asia/Seoul"
     - cron: "47 15 * * *"
+      timezone: "Asia/Seoul"
+    - cron: "57 15 * * *"
+      timezone: "Asia/Seoul"
+    - cron: "17 16 * * *"
       timezone: "Asia/Seoul"
   workflow_dispatch:
 
@@ -33,7 +41,43 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Decide whether a scheduled retry is needed
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
+          STATUS_BRANCH: automation/legal-monitor-status
+        run: |
+          set -euo pipefail
+
+          RETRY_STATUS="$RUNNER_TEMP/legal-monitor-retry-status.json"
+          if git fetch --no-tags origin "refs/heads/$STATUS_BRANCH:refs/remotes/origin/$STATUS_BRANCH" && \
+             git show "refs/remotes/origin/$STATUS_BRANCH:data/legal-monitor-status.json" > "$RETRY_STATUS"; then
+            echo "최신 법령 감시 상태를 확인했습니다."
+          else
+            printf '{}\n' > "$RETRY_STATUS"
+          fi
+          INCIDENT_OPEN=false
+          if OPEN_INCIDENT="$(gh issue list \
+            --state open \
+            --label "automation:legal-monitor" \
+            --limit 100 \
+            --json title \
+            --jq 'any(.[]; .title == "[automation] Legal source monitor failure")' \
+            2>/dev/null)"; then
+            INCIDENT_OPEN="${OPEN_INCIDENT:-false}"
+          fi
+          node scripts/legal-monitor-retry-gate.mjs \
+            --eventName "$EVENT_NAME" \
+            --schedule "${SCHEDULE_EXPRESSION:-}" \
+            --status "$RETRY_STATUS" \
+            --incidentOpen "$INCIDENT_OPEN" \
+            --githubOutput "$GITHUB_OUTPUT" \
+            --maxFailureAgeHours 6
+
       - name: Prepare safe review baseline
+        if: steps.gate.outputs.should_run == 'true'
         id: review
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,7 +121,9 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Check official legal sources from trusted code
+        if: steps.gate.outputs.should_run == 'true'
         id: monitor
+        continue-on-error: true
         env:
           LAW_OPEN_API_OC: ${{ secrets.LAW_OPEN_API_OC }}
         run: >-
@@ -86,7 +132,11 @@ jobs:
           --report "${{ steps.review.outputs.report }}"
 
       - name: Publish machine-readable monitor status
-        if: always()
+        id: status
+        if: >-
+          always() &&
+          steps.gate.outputs.should_run == 'true' &&
+          (steps.monitor.outcome == 'success' || steps.monitor.outcome == 'failure')
         env:
           MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
           MONITOR_CHANGED: ${{ steps.monitor.outputs.changed }}
@@ -176,12 +226,16 @@ jobs:
           fi
 
       - name: Notify or resolve legal monitor incident
-        if: always()
+        if: >-
+          always() &&
+          steps.gate.outputs.should_run == 'true' &&
+          (steps.monitor.outcome == 'success' || steps.monitor.outcome == 'failure')
         env:
           GH_TOKEN: ${{ github.token }}
           MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
           MONITOR_CHANGED: ${{ steps.monitor.outputs.changed }}
           FAILED_SOURCE_COUNT: ${{ steps.monitor.outputs.failed_source_count }}
+          DIAGNOSTIC_SUMMARY: ${{ steps.monitor.outputs.diagnostic_summary }}
         run: |
           set -euo pipefail
 
@@ -200,10 +254,32 @@ jobs:
             --jq "first(.[] | select(.title == \"$TITLE\")).number // empty")"
 
           if [ "$MONITOR_OUTCOME" != "success" ]; then
-            printf -v BODY 'Official legal source monitoring failed.\n\n- Failed sources: %s\n- Workflow attempt: %s\n- Run: %s\n\nOfficial-source requests were retried with bounded backoff. Review immediately if consecutive failures continue.' \
-              "${FAILED_SOURCE_COUNT:-unknown}" "$GITHUB_RUN_ATTEMPT" "$RUN_URL"
+            DIAGNOSTIC_JSON="$DIAGNOSTIC_SUMMARY"
+            if [ -z "$DIAGNOSTIC_JSON" ]; then
+              DIAGNOSTIC_JSON='{"hosts":[],"causes":[]}'
+            fi
+            if ! jq -e '
+              (.hosts | type == "array") and
+              (.causes | type == "array") and
+              all(.hosts[]; (.host | type == "string") and (.count | type == "number")) and
+              all(.causes[]; (.category | type == "string") and (.code | type == "string") and (.count | type == "number"))
+            ' >/dev/null <<<"$DIAGNOSTIC_JSON"; then
+              DIAGNOSTIC_JSON='{"hosts":[],"causes":[]}'
+            fi
+            HOST_TEXT="$(jq -r '[.hosts[] | "\(.host) (\(.count))"] | join(", ") | if . == "" then "unknown" else . end' <<<"$DIAGNOSTIC_JSON")"
+            CAUSE_TEXT="$(jq -r '[.causes[] | "\(.category)/\(.code) (\(.count))"] | join(", ") | if . == "" then "unknown" else . end' <<<"$DIAGNOSTIC_JSON")"
+            SIGNATURE_PAYLOAD="$(jq -cS '{hosts,causes}' <<<"$DIAGNOSTIC_JSON")"
+            SIGNATURE="$(printf '%s' "$SIGNATURE_PAYLOAD" | sha256sum | cut -d' ' -f1)"
+            MARKER="<!-- legal-monitor-signature:${SIGNATURE} -->"
+            printf -v BODY 'Official legal source monitoring failed.\n\n- Failed sources: %s\n- Hosts: %s\n- Cause codes: %s\n- Workflow attempt: %s\n- Run: %s\n\nPer-request retries were exhausted. Separate +10/+30 minute recovery slots run only while the latest check is failed.\n\n%s' \
+              "${FAILED_SOURCE_COUNT:-unknown}" "$HOST_TEXT" "$CAUSE_TEXT" "$GITHUB_RUN_ATTEMPT" "$RUN_URL" "$MARKER"
             if [ -n "$OPEN_ISSUE" ]; then
-              gh issue comment "$OPEN_ISSUE" --body "$BODY"
+              EXISTING_TEXT="$(gh issue view "$OPEN_ISSUE" --json body,comments --jq '[.body, (.comments[].body)] | join("\n")')"
+              if grep -Fq -- "$MARKER" <<<"$EXISTING_TEXT"; then
+                echo "동일한 법령 감시 장애 알림이 이미 열려 있어 중복 댓글을 생략합니다."
+              else
+                gh issue comment "$OPEN_ISSUE" --body "$BODY"
+              fi
             else
               gh issue create --title "$TITLE" --label "$LABEL" --body "$BODY"
             fi
@@ -218,14 +294,20 @@ jobs:
           fi
 
       - name: Validate trusted application before publishing a review
-        if: steps.monitor.outputs.changed == 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.monitor.outputs.changed == 'true'
+        env:
+          # Golden application tests replay the committed point-in-time
+          # fixture. The newly generated candidate is exercised separately by
+          # the lifecycle suite below, including review-required behavior.
+          LAW_LENS_TEST_RUNTIME_MANIFEST: bundled
+          LAW_LENS_CANDIDATE_RUNTIME_MANIFEST: ${{ runner.temp }}/legal-runtime-manifest.json
         run: |
           npm ci
           npm test
           npm run lint
 
       - name: Revalidate the review destination
-        if: steps.monitor.outputs.changed == 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.monitor.outputs.changed == 'true'
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -261,7 +343,7 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 
       - name: Append bot commit without rewriting review history
-        if: steps.monitor.outputs.changed == 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.monitor.outputs.changed == 'true'
         env:
           REVIEW_BRANCH: ${{ steps.publish.outputs.branch }}
           EXISTING_PR: ${{ steps.publish.outputs.existing_pr }}
@@ -277,7 +359,7 @@ jobs:
             --report "$GENERATED_REPORT"
 
       - name: Create review PR or add a new report comment
-        if: steps.monitor.outputs.changed == 'true'
+        if: steps.gate.outputs.should_run == 'true' && steps.monitor.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REVIEW_BRANCH: ${{ steps.publish.outputs.branch }}
@@ -313,17 +395,18 @@ jobs:
           fi
 
       - name: Notify or resolve legal automation pipeline incident
-        if: always()
+        if: always() && steps.gate.outputs.should_run == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_STATUS: ${{ job.status }}
           MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
+          STATUS_OUTCOME: ${{ steps.status.outcome }}
         run: |
           set -euo pipefail
 
           # Official-source failures are handled by the dedicated incident step.
           # This issue covers status publication, validation, branch sync and PR failures.
-          if [ "$MONITOR_OUTCOME" != "success" ]; then
+          if [ "$MONITOR_OUTCOME" = "failure" ] && [ "$STATUS_OUTCOME" = "success" ]; then
             exit 0
           fi
 
@@ -352,3 +435,13 @@ jobs:
             gh issue close "$OPEN_ISSUE" \
               --comment "The legal update pipeline recovered. Recovery run: $RUN_URL"
           fi
+
+      - name: Conclude a primary or manual source failure
+        if: >-
+          always() &&
+          steps.gate.outputs.should_run == 'true' &&
+          steps.monitor.outcome == 'failure' &&
+          steps.gate.outputs.run_kind != 'scheduled_retry'
+        run: |
+          echo "기본 또는 수동 법령 감시가 실패했습니다. 예약 재시도는 별도 실행에서 진행됩니다." >&2
+          exit 1
