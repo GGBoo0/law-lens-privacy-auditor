@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T11:51:23.867Z",
+  "generatedAt": "2026-08-14T12:06:47.114Z",
   "asOfDate": "2026-08-14",
-  "snapshotCapturedAt": "2026-08-14T11:51:23.867Z",
+  "snapshotCapturedAt": "2026-08-14T12:06:47.114Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "registryReviewedAt": "2026-08-14",
   "sourceCount": 11,
@@ -213,35 +213,6 @@
   ],
   "pendingChanges": [
     {
-      "changeId": "runtime:ai-framework-act:282791:20260122",
-      "sourceId": "ai-framework-act",
-      "versionId": "282791:20260122",
-      "documentHash": "300f3aa56d18434833140950933b9db27ead61b7fedaa9b7328a9078069d1e5b",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
-      "version": "별도 단계 시행 2026-01-22 · 21311",
-      "effectiveFrom": "2026-01-22",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "최근 공식 스냅샷에서 미관측 · 사람 검토 전까지 판단 유보",
-      "url": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법",
-      "impactCategories": [
-        "ai_transparency",
-        "automated_decision"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "단계 시행",
-      "observation": "not_observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
       "changeId": "runtime:pipa:283839:20260911",
       "sourceId": "pipa",
       "versionId": "283839:20260911",
@@ -282,7 +253,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-14T11:51:23.867Z",
-      "lastObservedAt": "2026-08-14T11:51:23.867Z"
+      "lastObservedAt": "2026-08-14T12:06:47.114Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
@@ -325,7 +296,7 @@
       "officialState": "단계 시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-14T11:51:23.867Z",
-      "lastObservedAt": "2026-08-14T11:51:23.867Z"
+      "lastObservedAt": "2026-08-14T12:06:47.114Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
@@ -368,10 +339,10 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-14T11:51:23.867Z",
-      "lastObservedAt": "2026-08-14T11:51:23.867Z"
+      "lastObservedAt": "2026-08-14T12:06:47.114Z"
     }
   ],
-  "pendingCount": 4,
-  "effectivePendingCount": 1,
-  "nextReviewRequiredBy": "2026-01-22"
+  "pendingCount": 3,
+  "effectivePendingCount": 0,
+  "nextReviewRequiredBy": "2026-09-11"
 }
