@@ -622,15 +622,19 @@ export function buildLegalRuntimeManifest({
           isRecord(rawStage) ? rawStage.effectiveDate : rawStage,
         );
         if (!stageDate || rowEffectiveDates.has(stageDate)) continue;
-        // Do not resurrect an already-effective subsidiary stage when the
-        // same semantic document has already received a current review.
-        if (stageDate <= asOfDate && sourceDocumentWasReviewed) continue;
 
         const stageCompactDate = stageDate.replaceAll("-", "");
         const syntheticVersionId = `${rootVersionId}:${stageCompactDate}`;
         observedVersionIdentities.add(
           `${sourceId}\u0000${syntheticVersionId}`,
         );
+
+        // Do not resurrect an already-effective subsidiary stage when the
+        // same semantic document has already received a current review. The
+        // stage is still observed so an older hash from a previous manifest
+        // is retired instead of being preserved as a missing version.
+        if (stageDate <= asOfDate && sourceDocumentWasReviewed) continue;
+
         const key = versionKey(sourceId, syntheticVersionId, documentHash);
         if (reviewedKeys.has(key)) continue;
         const previous = previousByKey.get(key);
