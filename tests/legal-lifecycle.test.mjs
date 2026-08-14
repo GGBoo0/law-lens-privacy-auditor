@@ -595,6 +595,65 @@ test("a future staged effective date without its own version row stays pending",
   assert.equal(reviewed.pendingCount, 0);
 });
 
+test("a reviewed past synthetic stage retires an older semantic hash", () => {
+  const oldSnapshot = runtimeSnapshot({ sourceId: "ai-framework-act" });
+  const oldSource = oldSnapshot.sources["ai-framework-act"];
+  const oldVersion = oldSource.versions[0];
+  oldSource.contentHashAlgorithm = "legal-semantic-text-v1";
+  oldVersion.id = "282791:20260721";
+  oldVersion.state = "현행";
+  oldVersion.effectiveDate = "20260721";
+  oldVersion.semanticDocumentHash = "ai-framework-semantic-v1";
+  oldVersion.stageEffectiveDates = [
+    { effectiveDate: "20260122", source: "appendix-explicit" },
+    { effectiveDate: "20260721", source: "law-search" },
+  ];
+
+  const previousManifest = buildLegalRuntimeManifest({
+    snapshot: oldSnapshot,
+    registry: emptyRegistry(),
+    generatedAt: "2026-08-13T01:00:00.000Z",
+  });
+  assert.deepEqual(
+    previousManifest.pendingChanges.map((change) => change.versionId),
+    ["282791:20260122", "282791:20260721"],
+  );
+
+  const currentSnapshot = structuredClone(oldSnapshot);
+  const currentSource = currentSnapshot.sources["ai-framework-act"];
+  const currentVersion = currentSource.versions[0];
+  currentSource.contentHashAlgorithm = "legal-semantic-text-v2";
+  currentVersion.semanticDocumentHash = "ai-framework-semantic-v2";
+
+  const currentManifest = buildLegalRuntimeManifest({
+    snapshot: currentSnapshot,
+    registry: {
+      ...emptyRegistry(),
+      reviewedAt: "2026-08-14",
+      reviews: [
+        {
+          sourceId: "ai-framework-act",
+          versionId: "282791:20260721",
+          documentHash: "ai-framework-semantic-v2",
+          effectiveDate: "2026-07-21",
+          outcome: "no_analyzer_impact",
+        },
+      ],
+    },
+    previousManifest,
+    generatedAt: "2026-08-14T01:00:00.000Z",
+  });
+
+  assert.equal(currentManifest.pendingCount, 0);
+  assert.equal(currentManifest.effectivePendingCount, 0);
+  assert.equal(
+    currentManifest.pendingChanges.some(
+      (change) => change.versionId === "282791:20260122",
+    ),
+    false,
+  );
+});
+
 test("known sources use scoped impacts while malformed manifests fail closed", () => {
   const known = buildLegalRuntimeManifest({
     snapshot: runtimeSnapshot({ sourceId: "credit-information-act" }),
