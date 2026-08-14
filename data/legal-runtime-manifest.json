@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T10:36:07.060Z",
+  "generatedAt": "2026-08-14T11:51:23.867Z",
   "asOfDate": "2026-08-14",
-  "snapshotCapturedAt": "2026-08-14T10:36:07.060Z",
+  "snapshotCapturedAt": "2026-08-14T11:51:23.867Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
-  "registryReviewedAt": "2026-08-11",
+  "registryReviewedAt": "2026-08-14",
   "sourceCount": 11,
   "reviewedVersions": [
     {
@@ -125,80 +125,93 @@
       "documentHash": "e32c6ea5b0f352add8cfd341b315ca76734b03e1a0a7802c8df5fd9ae897217b",
       "effectiveDate": "2027-02-07",
       "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "pipa",
+      "versionId": "270351:20251002",
+      "documentHash": "86d8b7c15f5375f28247a2c8e7bf7776b6dfcf461d92f21f4386637541848a4c",
+      "effectiveDate": "2025-10-02",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "286175:20260519",
+      "documentHash": "ea000cb5182f0ec9307281df23dcb85c087f1cfb232ea11c2ec9b751d280af08",
+      "effectiveDate": "2026-05-19",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "pipa-decree",
+      "versionId": "283503:20260820",
+      "documentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+      "effectiveDate": "2026-08-20",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20260721",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270121",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-act",
+      "versionId": "282793:20270207",
+      "documentHash": "e6a20741fff68b575c5faaa244b1c92cdc3d846edb2bfbab516651bcb29dd711",
+      "effectiveDate": "2027-02-07",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20260721",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "ecommerce-decree",
+      "versionId": "288143:20270121",
+      "documentHash": "9f2a99f18a986508fb805c72a25c40c4a253051c4cf5da378dab05348b20ca59",
+      "effectiveDate": "2027-01-21",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "ai-framework-act",
+      "versionId": "282791:20260721",
+      "documentHash": "00b3571600da9f38b0264a089b8bed2ecb19a06788d7bd0f01242303dbbcabdb",
+      "effectiveDate": "2026-07-21",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "location-information-act",
+      "versionId": "277359:20251001",
+      "documentHash": "91a87155432f23e2cd6793301f8c0d18fc699d475ba49d2e814102325b61f186",
+      "effectiveDate": "2025-10-01",
+      "outcome": "rule_updated"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "285955:20260813",
+      "documentHash": "df3dba3448582f68e0f9fd7bd7ac70c19b29e6434bbe7a6b60ae772f576c0211",
+      "effectiveDate": "2026-08-13",
+      "outcome": "no_analyzer_impact"
+    },
+    {
+      "sourceId": "credit-information-act",
+      "versionId": "283841:20260911",
+      "documentHash": "056125ae9f2cf0b2ebe3678b6fd22aaa9b266dc57598f6065cc35b29001db475",
+      "effectiveDate": "2026-09-11",
+      "outcome": "no_analyzer_impact"
     }
   ],
   "pendingChanges": [
-    {
-      "changeId": "runtime:location-information-act:277359:20251001",
-      "sourceId": "location-information-act",
-      "versionId": "277359:20251001",
-      "documentHash": "463b59b223c1d91716763987043c1651a372e0775d4e1da088f350d5e1a06b6b",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "위치정보의 보호 및 이용 등에 관한 법률",
-      "version": "현행 · 시행 2025-10-01 · 21066",
-      "effectiveFrom": "2025-10-01",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/위치정보의보호및이용등에관한법률",
-      "impactCategories": [
-        "location_information"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:pipa:270351:20251002",
-      "sourceId": "pipa",
-      "versionId": "270351:20251002",
-      "documentHash": "39bd00bb803df9846e24b0436fe27a832f138990d2e93707ace89dfcefcbfe39",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "개인정보 보호법",
-      "version": "현행 · 시행 2025-10-02 · 20897",
-      "effectiveFrom": "2025-10-02",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/개인정보보호법",
-      "impactCategories": [
-        "core_disclosures",
-        "data_subject_rights",
-        "data_portability",
-        "third_party_provision",
-        "outsourcing",
-        "cross_border_transfer",
-        "cookies_behavioral",
-        "security_measures",
-        "privacy_officer",
-        "policy_transparency",
-        "special_categories",
-        "ai_transparency",
-        "automated_decision",
-        "location_information",
-        "credit_information",
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
     {
       "changeId": "runtime:ai-framework-act:282791:20260122",
       "sourceId": "ai-framework-act",
@@ -211,7 +224,7 @@
       "effectiveDateUnknown": false,
       "detectedAt": "2026-08-14T10:36:07.060Z",
       "changeKind": "semantic",
-      "status": "단계 시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
+      "status": "최근 공식 스냅샷에서 미관측 · 사람 검토 전까지 판단 유보",
       "url": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법",
       "impactCategories": [
         "ai_transparency",
@@ -224,234 +237,7 @@
         "outcome": null
       },
       "officialState": "단계 시행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:pipa-decree:286175:20260519",
-      "sourceId": "pipa-decree",
-      "versionId": "286175:20260519",
-      "documentHash": "ad5a441636a37e716850933267eb28ff0841a93715046016be9defbe87fd4463",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "개인정보 보호법 시행령",
-      "version": "현행 · 시행 2026-05-19 · 36340",
-      "effectiveFrom": "2026-05-19",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/개인정보보호법시행령",
-      "impactCategories": [
-        "core_disclosures",
-        "data_subject_rights",
-        "data_portability",
-        "third_party_provision",
-        "outsourcing",
-        "cross_border_transfer",
-        "cookies_behavioral",
-        "security_measures",
-        "privacy_officer",
-        "policy_transparency",
-        "special_categories",
-        "ai_transparency",
-        "automated_decision",
-        "location_information",
-        "credit_information",
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ai-framework-act:282791:20260721",
-      "sourceId": "ai-framework-act",
-      "versionId": "282791:20260721",
-      "documentHash": "300f3aa56d18434833140950933b9db27ead61b7fedaa9b7328a9078069d1e5b",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
-      "version": "현행 · 시행 2026-07-21 · 21311",
-      "effectiveFrom": "2026-07-21",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법",
-      "impactCategories": [
-        "ai_transparency",
-        "automated_decision"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ecommerce-act:282793:20260721",
-      "sourceId": "ecommerce-act",
-      "versionId": "282793:20260721",
-      "documentHash": "addbfaf5c4ca0ebd5587ac011943d738d133f9e3f8d4e35539b9dee747453ce7",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "전자상거래 등에서의 소비자보호에 관한 법률",
-      "version": "현행 · 시행 2026-07-21 · 21312",
-      "effectiveFrom": "2026-07-21",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률",
-      "impactCategories": [
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ecommerce-decree:288143:20260721",
-      "sourceId": "ecommerce-decree",
-      "versionId": "288143:20260721",
-      "documentHash": "9d351a6d83be24b835aff1f33afad12a11ee1d5cdc2f8dbbe3ec8485c83c4761",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
-      "version": "현행 · 시행 2026-07-21 · 36507",
-      "effectiveFrom": "2026-07-21",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률시행령",
-      "impactCategories": [
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:credit-information-act:285955:20260813",
-      "sourceId": "credit-information-act",
-      "versionId": "285955:20260813",
-      "documentHash": "2164f2f45e0f4be671870db6b1ebe30f750f2f671b9f7b50db63a4e330e00c82",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "신용정보의 이용 및 보호에 관한 법률",
-      "version": "현행 · 시행 2026-08-13 · 21646",
-      "effectiveFrom": "2026-08-13",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행됨 · 분석 규칙 검토 전 · 관련 판단 유보",
-      "url": "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률",
-      "impactCategories": [
-        "credit_information"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "현행",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:pipa-decree:283503:20260820",
-      "sourceId": "pipa-decree",
-      "versionId": "283503:20260820",
-      "documentHash": "075d72590298db5b916e7005bed7a731680100e3ff41dbefc97e0d3b93e69bcd",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "개인정보 보호법 시행령",
-      "version": "시행예정 · 시행 2026-08-20 · 36121",
-      "effectiveFrom": "2026-08-20",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행 예정 · 분석 규칙 영향 검토 필요",
-      "url": "https://www.law.go.kr/법령/개인정보보호법시행령",
-      "impactCategories": [
-        "core_disclosures",
-        "data_subject_rights",
-        "data_portability",
-        "third_party_provision",
-        "outsourcing",
-        "cross_border_transfer",
-        "cookies_behavioral",
-        "security_measures",
-        "privacy_officer",
-        "policy_transparency",
-        "special_categories",
-        "ai_transparency",
-        "automated_decision",
-        "location_information",
-        "credit_information",
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "시행예정",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:credit-information-act:283841:20260911",
-      "sourceId": "credit-information-act",
-      "versionId": "283841:20260911",
-      "documentHash": "cc6b0bd1782e55da99ebe6cc792fc54049440f3d5f53a259e4f0372a0763c091",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "신용정보의 이용 및 보호에 관한 법률",
-      "version": "시행예정 · 시행 2026-09-11 · 21445",
-      "effectiveFrom": "2026-09-11",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행 예정 · 분석 규칙 영향 검토 필요",
-      "url": "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률",
-      "impactCategories": [
-        "credit_information"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "시행예정",
-      "observation": "observed",
+      "observation": "not_observed",
       "firstObservedAt": "2026-08-14T10:36:07.060Z",
       "lastObservedAt": "2026-08-14T10:36:07.060Z"
     },
@@ -459,13 +245,13 @@
       "changeId": "runtime:pipa:283839:20260911",
       "sourceId": "pipa",
       "versionId": "283839:20260911",
-      "documentHash": "1dcd27d726e6098c782bf7b960b8d38a68593ecef6351c57599c141acd2bfcb6",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법",
       "version": "시행예정 · 시행 2026-09-11 · 21445",
       "effectiveFrom": "2026-09-11",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
+      "detectedAt": "2026-08-14T11:51:23.867Z",
       "changeKind": "semantic",
       "status": "시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법",
@@ -495,104 +281,20 @@
       },
       "officialState": "시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ecommerce-act:282793:20270121",
-      "sourceId": "ecommerce-act",
-      "versionId": "282793:20270121",
-      "documentHash": "addbfaf5c4ca0ebd5587ac011943d738d133f9e3f8d4e35539b9dee747453ce7",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "전자상거래 등에서의 소비자보호에 관한 법률",
-      "version": "시행예정 · 시행 2027-01-21 · 21312",
-      "effectiveFrom": "2027-01-21",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행 예정 · 분석 규칙 영향 검토 필요",
-      "url": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률",
-      "impactCategories": [
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "시행예정",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ecommerce-decree:288143:20270121",
-      "sourceId": "ecommerce-decree",
-      "versionId": "288143:20270121",
-      "documentHash": "9d351a6d83be24b835aff1f33afad12a11ee1d5cdc2f8dbbe3ec8485c83c4761",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "전자상거래 등에서의 소비자보호에 관한 법률 시행령",
-      "version": "시행예정 · 시행 2027-01-21 · 36507",
-      "effectiveFrom": "2027-01-21",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "시행 예정 · 분석 규칙 영향 검토 필요",
-      "url": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률시행령",
-      "impactCategories": [
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "시행예정",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
-    },
-    {
-      "changeId": "runtime:ecommerce-act:282793:20270207",
-      "sourceId": "ecommerce-act",
-      "versionId": "282793:20270207",
-      "documentHash": "addbfaf5c4ca0ebd5587ac011943d738d133f9e3f8d4e35539b9dee747453ce7",
-      "hashAlgorithm": "legal-semantic-text-v1",
-      "name": "전자상거래 등에서의 소비자보호에 관한 법률",
-      "version": "별도 단계 시행 2027-02-07 · 21312",
-      "effectiveFrom": "2027-02-07",
-      "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
-      "changeKind": "semantic",
-      "status": "단계 시행 예정 · 분석 규칙 영향 검토 필요",
-      "url": "https://www.law.go.kr/법령/전자상거래등에서의소비자보호에관한법률",
-      "impactCategories": [
-        "ecommerce_retention"
-      ],
-      "review": {
-        "status": "pending",
-        "reviewedAt": null,
-        "reviewedRulesetVersion": null,
-        "outcome": null
-      },
-      "officialState": "단계 시행예정",
-      "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
+      "firstObservedAt": "2026-08-14T11:51:23.867Z",
+      "lastObservedAt": "2026-08-14T11:51:23.867Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
       "sourceId": "pipa-decree",
       "versionId": "283503:20270220",
-      "documentHash": "075d72590298db5b916e7005bed7a731680100e3ff41dbefc97e0d3b93e69bcd",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법 시행령",
       "version": "별도 단계 시행 2027-02-20 · 36121",
       "effectiveFrom": "2027-02-20",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
+      "detectedAt": "2026-08-14T11:51:23.867Z",
       "changeKind": "semantic",
       "status": "단계 시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법시행령",
@@ -622,20 +324,20 @@
       },
       "officialState": "단계 시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
+      "firstObservedAt": "2026-08-14T11:51:23.867Z",
+      "lastObservedAt": "2026-08-14T11:51:23.867Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
       "sourceId": "pipa",
       "versionId": "283839:20270701",
-      "documentHash": "1dcd27d726e6098c782bf7b960b8d38a68593ecef6351c57599c141acd2bfcb6",
-      "hashAlgorithm": "legal-semantic-text-v1",
+      "documentHash": "b1e2a50787af6ba368041ecd71db9c1cef9942b470d194d7740d5e6de97a3ecb",
+      "hashAlgorithm": "legal-semantic-text-v2",
       "name": "개인정보 보호법",
       "version": "시행예정 · 시행 2027-07-01 · 21445",
       "effectiveFrom": "2027-07-01",
       "effectiveDateUnknown": false,
-      "detectedAt": "2026-08-14T10:36:07.060Z",
+      "detectedAt": "2026-08-14T11:51:23.867Z",
       "changeKind": "semantic",
       "status": "시행 예정 · 분석 규칙 영향 검토 필요",
       "url": "https://www.law.go.kr/법령/개인정보보호법",
@@ -665,11 +367,11 @@
       },
       "officialState": "시행예정",
       "observation": "observed",
-      "firstObservedAt": "2026-08-14T10:36:07.060Z",
-      "lastObservedAt": "2026-08-14T10:36:07.060Z"
+      "firstObservedAt": "2026-08-14T11:51:23.867Z",
+      "lastObservedAt": "2026-08-14T11:51:23.867Z"
     }
   ],
-  "pendingCount": 16,
-  "effectivePendingCount": 8,
-  "nextReviewRequiredBy": "2025-10-01"
+  "pendingCount": 4,
+  "effectivePendingCount": 1,
+  "nextReviewRequiredBy": "2026-01-22"
 }
