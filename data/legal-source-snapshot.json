@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-08-20T01:49:29.679Z",
+  "capturedAt": "2026-08-20T07:28:03.038Z",
   "sourceCount": 11,
   "sources": {
     "pipa": {
@@ -1769,10 +1769,10 @@
       "name": "개인정보 보호법 시행령",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/개인정보보호법시행령",
-      "fingerprint": "82ae51fa48511ed7cbf291b190df1aa2858610c52af8f20812b326917041a647",
+      "fingerprint": "b61404bcee58be30b8784a5fd29c5606820e13e835b694b2df18915d0915b408",
       "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "29aa0de34c638a966737d0852ded2ec6c0eb72cb3640a77650a7409b407d5f6e",
+      "contentFingerprint": "11c74ef7f54fb7e649509733106321273846034b13eb29683d172d6ddd8f786c",
       "versions": [
         {
           "id": "283503:20260820",
@@ -1794,8 +1794,8 @@
               "basisText": "다만, 제42조의2제1항제1호의 개정규정은 공포 후 1년이 경과한 날부터 시행한다."
             }
           ],
-          "documentHash": "9909228c2955c1b594dc53a601b9ccf665dbb1d98a4b08800111d8b3185dcf3f",
-          "semanticDocumentHash": "b1e330c6b70021952e720794614301d18cb736a6c38155408c34e1d0bb445922",
+          "documentHash": "f2c2c62fa3e9c61ae0652945a512cc9b4223c3220d7ee0bfdd1fede59d5f422b",
+          "semanticDocumentHash": "2d9d51fbe1671a4e22baea666a01b02c594e34ae8e2f5ee5082c5b6975ad77d4",
           "articleHashAlgorithm": "legal-semantic-text-v2",
           "articles": {
             "0001000": {
