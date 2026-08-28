@@ -1,29 +1,19 @@
 {
   "schemaVersion": 2,
   "configured": true,
-  "lastAttemptAt": "2026-08-28T19:07:29.997Z",
+  "lastAttemptAt": "2026-08-28T19:26:00.656Z",
   "lastSuccessfulCheckAt": "2026-08-28T11:19:35.222Z",
   "lastResult": "failed",
   "sourceCount": 11,
   "failedSources": 11,
-  "consecutiveFailures": 2,
+  "consecutiveFailures": 3,
   "recoveredAt": "2026-08-26T07:33:12.495Z",
   "stale": false,
   "staleAfter": "2026-08-29T23:19:35.222Z",
   "staleAfterHours": 36,
-  "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/33202034686",
+  "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/33203830436",
   "workflowRunAttempt": 1,
   "recentRuns": [
-    {
-      "checkedAt": "2026-08-26T02:14:38.662Z",
-      "result": "failed",
-      "sourceCount": 11,
-      "failedSources": 11,
-      "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/32921986411",
-      "workflowRunAttempt": 1,
-      "consecutiveFailures": 3,
-      "recovered": false
-    },
     {
       "checkedAt": "2026-08-26T07:33:12.495Z",
       "result": "no_changes",
@@ -82,6 +72,16 @@
       "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/33202034686",
       "workflowRunAttempt": 1,
       "consecutiveFailures": 2,
+      "recovered": false
+    },
+    {
+      "checkedAt": "2026-08-28T19:26:00.656Z",
+      "result": "failed",
+      "sourceCount": 11,
+      "failedSources": 11,
+      "workflowRunUrl": "https://github.com/GGBoo0/law-lens-privacy-auditor/actions/runs/33203830436",
+      "workflowRunAttempt": 1,
+      "consecutiveFailures": 3,
       "recovered": false
     }
   ]
