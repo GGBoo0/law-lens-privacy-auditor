@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-09T11:54:33.112Z",
-  "asOfDate": "2026-09-09",
-  "snapshotCapturedAt": "2026-09-09T11:54:33.112Z",
+  "generatedAt": "2026-09-10T05:21:10.632Z",
+  "asOfDate": "2026-09-10",
+  "snapshotCapturedAt": "2026-09-10T05:21:10.632Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "registryReviewedAt": "2026-08-14",
   "sourceCount": 11,
@@ -253,7 +253,7 @@
       "officialState": "현행",
       "observation": "observed",
       "firstObservedAt": "2026-08-20T07:28:03.038Z",
-      "lastObservedAt": "2026-09-09T11:54:33.112Z"
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
     },
     {
       "changeId": "runtime:pipa:283839:20260911",
@@ -296,7 +296,50 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-09T11:54:33.112Z"
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+    },
+    {
+      "changeId": "runtime:pipa-decree:289537:20260911",
+      "sourceId": "pipa-decree",
+      "versionId": "289537:20260911",
+      "documentHash": "696aa8b4cdff9cb068fcd7e8044a246ffba2eb54d9e504377fb801fd591798ba",
+      "hashAlgorithm": "legal-semantic-text-v2",
+      "name": "개인정보 보호법 시행령",
+      "version": "시행예정 · 시행 2026-09-11 · 36671",
+      "effectiveFrom": "2026-09-11",
+      "effectiveDateUnknown": false,
+      "detectedAt": "2026-09-10T05:21:10.632Z",
+      "changeKind": "semantic",
+      "status": "시행 예정 · 분석 규칙 영향 검토 필요",
+      "url": "https://www.law.go.kr/법령/개인정보보호법시행령",
+      "impactCategories": [
+        "core_disclosures",
+        "data_subject_rights",
+        "data_portability",
+        "third_party_provision",
+        "outsourcing",
+        "cross_border_transfer",
+        "cookies_behavioral",
+        "security_measures",
+        "privacy_officer",
+        "policy_transparency",
+        "special_categories",
+        "ai_transparency",
+        "automated_decision",
+        "location_information",
+        "credit_information",
+        "ecommerce_retention"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewedAt": null,
+        "reviewedRulesetVersion": null,
+        "outcome": null
+      },
+      "officialState": "시행예정",
+      "observation": "observed",
+      "firstObservedAt": "2026-09-10T05:21:10.632Z",
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
@@ -339,7 +382,7 @@
       "officialState": "단계 시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-20T07:28:03.038Z",
-      "lastObservedAt": "2026-09-09T11:54:33.112Z"
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
     },
     {
       "changeId": "runtime:pipa:289415:20270309",
@@ -382,7 +425,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-09T11:54:33.112Z"
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
@@ -425,10 +468,10 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-09T11:54:33.112Z"
+      "lastObservedAt": "2026-09-10T05:21:10.632Z"
     }
   ],
-  "pendingCount": 5,
+  "pendingCount": 6,
   "effectivePendingCount": 1,
   "nextReviewRequiredBy": "2026-08-20"
 }
