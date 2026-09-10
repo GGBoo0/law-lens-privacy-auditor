@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-10T05:21:10.632Z",
+  "generatedAt": "2026-09-10T11:51:32.257Z",
   "asOfDate": "2026-09-10",
-  "snapshotCapturedAt": "2026-09-10T05:21:10.632Z",
+  "snapshotCapturedAt": "2026-09-10T11:51:32.257Z",
   "rulesetVersion": "KR-PRIVACY-2026.08.11-r4",
   "registryReviewedAt": "2026-08-14",
   "sourceCount": 11,
@@ -253,7 +253,7 @@
       "officialState": "현행",
       "observation": "observed",
       "firstObservedAt": "2026-08-20T07:28:03.038Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     },
     {
       "changeId": "runtime:pipa:283839:20260911",
@@ -296,7 +296,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     },
     {
       "changeId": "runtime:pipa-decree:289537:20260911",
@@ -339,7 +339,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-10T05:21:10.632Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     },
     {
       "changeId": "runtime:pipa-decree:283503:20270220",
@@ -382,7 +382,7 @@
       "officialState": "단계 시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-08-20T07:28:03.038Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     },
     {
       "changeId": "runtime:pipa:289415:20270309",
@@ -425,7 +425,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     },
     {
       "changeId": "runtime:pipa:283839:20270701",
@@ -468,7 +468,7 @@
       "officialState": "시행예정",
       "observation": "observed",
       "firstObservedAt": "2026-09-08T04:30:25.420Z",
-      "lastObservedAt": "2026-09-10T05:21:10.632Z"
+      "lastObservedAt": "2026-09-10T11:51:32.257Z"
     }
   ],
   "pendingCount": 6,
