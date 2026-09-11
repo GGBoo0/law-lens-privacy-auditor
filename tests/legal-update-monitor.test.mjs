@@ -30,6 +30,7 @@ import {
 } from "../scripts/legal-monitor-retry-gate.mjs";
 import { syncReviewBranch } from "../scripts/sync-legal-review-branch.mjs";
 import { buildMonitorStatus } from "../scripts/write-legal-monitor-status.mjs";
+import { shouldDeferMonitorIncident } from "../scripts/legal-monitor-incident-policy.mjs";
 import { SOURCES } from "../lib/legal-bases.mjs";
 import { REQUIRED_MONITORED_LEGAL_SOURCE_IDS } from "../lib/legal-source-ids.mjs";
 import { LEGAL_BASELINE } from "../lib/legal-baseline.ts";
@@ -697,6 +698,68 @@ test("safe monitor diagnostics expose only official hosts and bounded cause code
   assert.doesNotMatch(summary, /secret-value|hidden\.example|\/법령\//);
 });
 
+test("only a first transient source failure can wait for scheduled recovery", () => {
+  const now = "2026-09-12T00:17:00.000Z";
+  const previous = { lastResult: "no_changes", failedSources: 0, consecutiveFailures: 0, lastSuccessfulCheckAt: "2026-09-11T06:47:00.000Z" };
+  const failed = buildMonitorStatus({
+    previous,
+    result: "failed", checkedAt: now, sourceCount: 11, failedSources: 11,
+    workflowRunUrl: "https://github.com/example/repo/actions/runs/1",
+  });
+  const input = {
+    eventName: "schedule", schedule: "17 9 * * *", incidentOpen: false,
+    previous, status: failed, now,
+    diagnostics: { causes: [{ category: "timeout", code: "UND_ERR_CONNECT_TIMEOUT", count: 11 }] },
+  };
+  assert.equal(shouldDeferMonitorIncident(input), true);
+  assert.equal(failed.lastResult, "failed");
+  assert.equal(failed.failedSources, 11);
+
+  const repeated = buildMonitorStatus({
+    previous: failed, result: "failed", checkedAt: "2026-09-12T00:27:00.000Z",
+    sourceCount: 11, failedSources: 11,
+    workflowRunUrl: "https://github.com/example/repo/actions/runs/2",
+  });
+  assert.equal(shouldDeferMonitorIncident({ ...input, status: repeated }), false);
+  const recovered = buildMonitorStatus({
+    previous: failed, result: "no_changes", checkedAt: "2026-09-12T00:27:00.000Z",
+    sourceCount: 11, failedSources: 0,
+    workflowRunUrl: "https://github.com/example/repo/actions/runs/2",
+  });
+  assert.equal(recovered.consecutiveFailures, 0);
+  assert.equal(shouldDeferMonitorIncident({ ...input, status: recovered }), false);
+
+  for (const change of [
+    { eventName: "workflow_dispatch" }, { schedule: "27 9 * * *" }, { schedule: "unknown" },
+    { incidentOpen: true }, { incidentOpen: "unknown" }, { status: null },
+    { previous: null }, { previous: { ...previous, lastResult: undefined } },
+    { previous: { ...previous, lastResult: "not_run" } },
+    { previous: { ...previous, lastResult: "failed" } },
+    { previous: { ...previous, failedSources: 1 } },
+    { previous: { ...previous, consecutiveFailures: 1 } },
+    { status: { ...failed, stale: true } },
+    { status: { ...failed, lastSuccessfulCheckAt: "2026-09-12T00:18:00.000Z" } },
+    { status: { ...failed, lastSuccessfulCheckAt: "invalid" } },
+    { status: { ...failed, lastSuccessfulCheckAt: "2026-09-10T12:16:59.999Z" } },
+    { diagnostics: null }, { diagnostics: { causes: [] } },
+    { diagnostics: { causes: [{ category: "timeout", code: "UND_ERR_CONNECT_TIMEOUT", count: 10 }] } },
+    { diagnostics: { causes: [{ category: "timeout", code: "UND_ERR_CONNECT_TIMEOUT", count: "11" }] } },
+    { diagnostics: { causes: [{ category: "timeout", code: "UND_ERR_CONNECT_TIMEOUT", count: 0 }] } },
+    { diagnostics: { causes: [{ category: "timeout", code: "UND_ERR_CONNECT_TIMEOUT", count: 10 }, { category: "response", code: "INVALID_JSON_RESPONSE", count: 1 }] } },
+  ]) assert.equal(shouldDeferMonitorIncident({ ...input, ...change }), false, JSON.stringify(change));
+
+  assert.equal(shouldDeferMonitorIncident({
+    ...input, status: { ...failed, lastSuccessfulCheckAt: "2026-09-10T12:17:00.000Z" },
+    previous: { ...previous, lastSuccessfulCheckAt: "2026-09-10T12:17:00.000Z" },
+  }), true);
+  for (const [category, code] of [
+    ["network", "FETCH_FAILED"], ["timeout", "ABORT_ERR"], ["dns", "ENOTFOUND"],
+    ["http", "HTTP_503"], ["tls", "CERT_HAS_EXPIRED"], ["unknown", "UNCLASSIFIED"],
+  ]) assert.equal(shouldDeferMonitorIncident({
+    ...input, diagnostics: { causes: [{ category, code, count: 11 }] },
+  }), false, code);
+});
+
 test("scheduled legal monitor retries run only for recoverable state", () => {
   const recentFailure = {
     lastResult: "failed",
@@ -1104,8 +1167,11 @@ test("workflow avoids force pushes and keeps human-authored PR text", async () =
   assert.match(workflow, /legal-monitor-signature:/);
   assert.match(
     workflow,
-    /Conclude a primary or manual source failure[\s\S]*steps\.gate\.outputs\.run_kind != 'scheduled_retry'[\s\S]*exit 1/,
+    /Conclude an actionable source failure[\s\S]*steps\.incident\.outputs\.notify != 'false'[\s\S]*exit 1/,
   );
+  assert.match(workflow, /INCIDENT_OPEN=unknown/);
+  assert.match(workflow, /steps\.status\.outcome == 'success'[\s\S]*legal-monitor-incident-policy\.mjs/);
+  assert.ok(workflow.indexOf("Publish machine-readable monitor status") < workflow.indexOf("Decide whether a source failure needs immediate notification"));
   assert.match(workflow, /npm test/);
   assert.match(
     workflow,

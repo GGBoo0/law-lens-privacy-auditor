@@ -192,6 +192,22 @@ npm run dev
 
 ### 검증
 
+Windows에서 `vinext dev`의 로컬 Worker가 시작되지 않거나 `vinext start`가
+정적 파일을 찾지 못하면 빌드된 앱을 다음 방식으로 확인할 수 있습니다.
+
+```powershell
+npm.cmd ci
+npm.cmd run build
+npm.cmd run preview:local
+```
+
+미리보기 주소는 `http://127.0.0.1:4173`입니다. 이 명령은 로컬 주소에만 열리며,
+요청 제한에는 실제 마이그레이션으로 구성한 임시 SQLite와 실행마다 생성한
+로컬 비밀값을 사용합니다. 종료하면 요청 제한 기록이 사라집니다. 코드 수정 후
+다시 빌드하고 미리보기를 재시작하세요. Cloudflare 배포 검증은 별도로 필요합니다.
+
+### 자동 검사
+
 ```bash
 npm test
 npm run lint
