@@ -13,6 +13,7 @@ import accuracyStatus from "../data/legal-accuracy-status.json";
 import { storeCalibrationTransferDraft } from "../lib/developer-calibration-transfer";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 import { findEvidenceRange } from "../lib/report-evidence";
+import "./review-studio.css";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
 type ContextKey =
@@ -409,6 +410,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [analysisNotice, setAnalysisNotice] = useState("");
   const [error, setError] = useState("");
+  const [fieldError, setFieldError] = useState<"url" | "text" | null>(null);
   const [canPasteRecovery, setCanPasteRecovery] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<LegalMonitorStatus | null>(null);
@@ -438,6 +440,9 @@ export default function Home() {
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLDetailsElement>(null);
   const analysisControllerRef = useRef<AbortController | null>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => analysisControllerRef.current?.abort(), []);
 
@@ -485,6 +490,7 @@ export default function Home() {
     let timedOut = false;
     const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 45_000);
     setError("");
+    setFieldError(null);
     setAnalysisNotice("");
     setCanPasteRecovery(false);
     setLoading(true);
@@ -536,6 +542,7 @@ export default function Home() {
         setAnalysisNotice(result
           ? "분석을 취소했습니다. 기존 결과와 검토 메모는 유지됩니다."
           : "분석을 취소했습니다.");
+        window.setTimeout(() => submitButtonRef.current?.focus(), 0);
       } else {
         setError(
           timedOut
@@ -546,6 +553,7 @@ export default function Home() {
                 ? caught.message
                 : "분석 중 오류가 발생했습니다.",
         );
+        window.setTimeout(() => errorRef.current?.focus(), 0);
       }
     } finally {
       window.clearTimeout(timeout);
@@ -559,10 +567,14 @@ export default function Home() {
 
     if (mode === "url" && !url.trim()) {
       setError("분석할 회사 또는 개인정보처리방침 URL을 입력해 주세요.");
+      setFieldError("url");
+      urlInputRef.current?.focus();
       return;
     }
     if (mode === "text" && policyText.trim().length < 120) {
       setError("분석할 방침 원문을 120자 이상 붙여 넣어 주세요.");
+      setFieldError("text");
+      policyTextRef.current?.focus();
       return;
     }
     await requestAnalysis(
@@ -592,6 +604,8 @@ export default function Home() {
     const nextMode =
       event.key === "ArrowLeft" || event.key === "Home" ? "url" : "text";
     setMode(nextMode);
+    setError("");
+    setFieldError(null);
     document.getElementById(`input-tab-${nextMode}`)?.focus();
   }
 
@@ -662,16 +676,18 @@ export default function Home() {
   const monitorBadgeView: MonitorBadge = monitorFailed
     ? { tone: "degraded", label: "법령 감시 상태 확인 실패", detail: "연결을 다시 확인해 주세요" }
     : monitorBadge(monitorStatus);
+  const reviewedCount = Object.values(reviewEntries).filter((entry) => entry.status !== "unreviewed").length;
+  const contextCount = Object.values(contextOverrides).filter((value) => value !== "auto").length;
 
   return (
-    <main className="reviewWorkspace">
+    <main className="reviewWorkspace focusedWorkspace">
       <a className="skipLink" href="#analyzer">
         분석 입력으로 건너뛰기
       </a>
       <header className="topbar">
         <a className="brand" href="#top" aria-label="법령렌즈 처음으로">
           <span className="brandMark" aria-hidden="true">
-            ㄹ
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M5 3h10a2 2 0 0 1 2 2v4M5 3v18h10"/><path d="M8 7h5M8 11h3M8 15h2"/><circle cx="16" cy="15" r="4"/><path d="m19 18 3 3"/></svg>
           </span>
           <span>법령렌즈<small className="brandCaption">PRIVACY REVIEW</small></span>
         </a>
@@ -705,32 +721,24 @@ export default function Home() {
         </nav>
       </header>
 
-      <section className="hero" id="top">
-        <div className="heroCopy">
-          <div className="eyebrow">개인정보처리방침 검토 도구</div>
-          <h1>
-            개인정보처리방침,
-            <br />
-            <span>근거와 함께</span>{" "}
-            <br />검토하세요.
-          </h1>
-          <p className="heroLead">
-            홈페이지 주소나 방침 원문을 넣으면 누락 가능성과
-            확인할 내용을 정리합니다. 원문과 조문을 대조하며 검토를 이어가세요.
-          </p>
-          <ol className="reviewSteps" aria-label="검토 순서">
-            <li><span>01</span><div><strong>방침 입력</strong><small>홈페이지 URL 또는 원문</small></div></li>
-            <li><span>02</span><div><strong>위험 신호 확인</strong><small>누락·모호성·사실 확인 구분</small></div></li>
-            <li><span>03</span><div><strong>근거 검토와 기록</strong><small>원문 대조 · 메모 · 보고서 저장</small></div></li>
-          </ol>
-        </div>
+      <section className="workspaceIntro" id="top" aria-labelledby="workspace-title">
+        <div><p className="workspaceEyebrow">개인정보처리방침 검토 도구</p><h1 id="workspace-title">방침을 읽고, <span>근거를 찾다.</span></h1>
+          <p>검토할 문서를 가져오세요. 확인이 필요한 항목부터 함께 살펴봅니다.</p></div>
+        <ol className="workflowProgress" aria-label="검토 진행 단계">
+          <li aria-current={!result ? "step" : undefined}><a href="#analyzer"><span>01</span>문서 입력</a></li>
+          <li aria-current={result && reviewedCount === 0 ? "step" : undefined}>{result ? <a href="#report"><span>02</span>점검 결과</a> : <span><b>02</b>점검 결과</span>}</li>
+          <li aria-current={reviewedCount > 0 ? "step" : undefined}>{result ? <a href="#review-findings"><span>03</span>검토 기록</a> : <span><b>03</b>검토 기록</span>}</li>
+        </ol>
+      </section>
+
+      <section className="hero" aria-label="처리방침 입력과 검토 안내">
 
         <div className="analyzerCard" id="analyzer" tabIndex={-1}>
           <div className="cardHeader">
             <span className="stepPill">01</span>
             <div>
-              <h2>검토할 처리방침</h2>
-              <p>주소를 입력하거나 방침 원문을 붙여 넣으세요.</p>
+              <h2>어떤 처리방침을 살펴볼까요?</h2>
+              <p>홈페이지 주소 또는 방침 원문으로 시작하세요.</p>
             </div>
           </div>
 
@@ -743,10 +751,10 @@ export default function Home() {
               aria-selected={mode === "url"}
               aria-controls="input-panel-url"
               tabIndex={mode === "url" ? 0 : -1}
-              onClick={() => setMode("url")}
+              onClick={() => { setMode("url"); setError(""); setFieldError(null); }}
               onKeyDown={handleTabKey}
             >
-              웹사이트 URL
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z"/></svg>웹사이트 URL
             </button>
             <button
               id="input-tab-text"
@@ -756,10 +764,10 @@ export default function Home() {
               aria-selected={mode === "text"}
               aria-controls="input-panel-text"
               tabIndex={mode === "text" ? 0 : -1}
-              onClick={() => setMode("text")}
+              onClick={() => { setMode("text"); setError(""); setFieldError(null); }}
               onKeyDown={handleTabKey}
             >
-              방침 원문
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 12h8M8 16h6"/></svg>방침 원문
             </button>
           </div>
 
@@ -772,21 +780,24 @@ export default function Home() {
               >
                 <label className="fieldLabel">
                   회사 또는 방침 주소
-                  <div className="urlField">
-                    <span aria-hidden="true">https://</span>
+                  <div className={`urlField ${fieldError === "url" ? "invalidField" : ""}`}>
                     <input
+                      id="policy-url"
+                      ref={urlInputRef}
                       type="text"
                       value={url}
-                      onChange={(event) => setUrl(event.target.value)}
-                      placeholder="company.co.kr"
+                      onChange={(event) => { setUrl(event.target.value); if (fieldError) { setFieldError(null); setError(""); } }}
+                      placeholder="https://company.co.kr"
                       autoComplete="url"
                       inputMode="url"
-                      aria-describedby="url-help"
+                      aria-describedby={`url-help${fieldError === "url" ? " url-error" : ""}`}
+                      aria-invalid={fieldError === "url"}
                     />
                   </div>
                   <small id="url-help">
                     회사 홈페이지 주소도 입력할 수 있습니다. 공개된 방침을 자동으로 찾습니다.
                   </small>
+                  {fieldError === "url" && <small className="inlineError" id="url-error" role="alert">{error}</small>}
                 </label>
               </div>
             ) : (
@@ -798,16 +809,19 @@ export default function Home() {
                 <label className="fieldLabel">
                   개인정보처리방침 원문
                   <textarea
+                    id="policy-text"
                     ref={policyTextRef}
                     value={policyText}
-                    onChange={(event) => setPolicyText(event.target.value)}
+                    onChange={(event) => { setPolicyText(event.target.value); if (fieldError) { setFieldError(null); setError(""); } }}
                     placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
-                    rows={8}
-                    aria-describedby="text-help"
+                    rows={7}
+                    aria-describedby={`text-help${fieldError === "text" ? " text-error" : ""}`}
+                    aria-invalid={fieldError === "text"}
                   />
                   <small id="text-help">
                     {policyText.trim().length.toLocaleString("ko-KR")}자 입력됨 · 최소 120자
                   </small>
+                  {fieldError === "text" && <small className="inlineError" id="text-error" role="alert">{error}</small>}
                 </label>
               </div>
             )}
@@ -818,7 +832,7 @@ export default function Home() {
                   <strong>서비스에 해당하는 항목</strong>
                   <small>알고 있는 사실로 분석 맥락을 보완합니다.</small>
                 </span>
-                <em>선택사항 · {contextOptions.length}개</em>
+                <em>{contextCount ? `${contextCount}개 직접 지정` : "선택사항"}</em>
               </summary>
               <fieldset className="contextPicker">
                 <legend>서비스 맥락 보정</legend>
@@ -853,8 +867,8 @@ export default function Home() {
               </fieldset>
             </details>
 
-            {error && (
-              <div className="errorBox" role="alert">
+            {error && !fieldError && (
+              <div className="errorBox" role="alert" tabIndex={-1} ref={errorRef}>
                 <span aria-hidden="true">!</span>
                 <div>
                   <p>{error}</p>
@@ -868,7 +882,7 @@ export default function Home() {
               </div>
             )}
 
-            <button className="primaryButton" type="submit" disabled={loading}>
+            <button className="primaryButton" type="submit" disabled={loading} ref={submitButtonRef}>
               {loading ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
@@ -877,7 +891,7 @@ export default function Home() {
               ) : (
                 <>
                   위험 신호 분석하기
-                  <span aria-hidden="true">↗</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>
                 </>
               )}
             </button>
@@ -930,6 +944,16 @@ export default function Home() {
             </p>
           </details>
         </div>
+        <aside className="reviewGuide" aria-labelledby="guide-title">
+          <div className="guideTitle"><span>REVIEW GUIDE</span><h2 id="guide-title">결과를 읽는<br />세 가지 기준</h2></div>
+          <ol>
+            <li><span className="guideNumber">01</span><div><h3>누락 가능성</h3><p>필요한 공개 항목이 보이지 않으면, 실제 처리 여부부터 확인합니다.</p></div></li>
+            <li><span className="guideNumber">02</span><div><h3>불명확한 표현</h3><p>넓거나 모호한 문장을 찾아 구체화할 부분을 살펴봅니다.</p></div></li>
+            <li><span className="guideNumber">03</span><div><h3>근거와 사실 확인</h3><p>발견 문구와 법령을 대조하고, 확인한 내용을 메모로 남깁니다.</p></div></li>
+          </ol>
+          <a href="/methodology">평가 방법 자세히 보기 <span aria-hidden="true">↗</span></a>
+          <div className="guideNote"><span aria-hidden="true">§</span><p>법령 근거는 결과마다 연결됩니다.<br />원문을 확인하며 검토를 이어가세요.</p></div>
+        </aside>
       </section>
 
       <section className="coverageStrip" aria-label="검토 범위">
@@ -1153,7 +1177,7 @@ export default function Home() {
 
               <p className="filterSummary" role="status" aria-live="polite">
                 전체 {sortedFindings.length}건 중 {visibleFindingCount}건 표시
-                <span>검토 상태 기록 {Object.values(reviewEntries).filter((entry) => entry.status !== "unreviewed").length}건</span>
+                <span>검토 상태 기록 {reviewedCount} / {sortedFindings.length}건</span>
               </p>
               {visibleFindingCount === 0 && (
                 <div className="emptyFindings">
@@ -1172,6 +1196,7 @@ export default function Home() {
                       data-filtered={filter !== "all" && finding.severity !== filter}
                     >
                       <button
+                        id={`finding-summary-${finding.id}`}
                         className="findingSummary"
                         onClick={() =>
                           setOpenFinding(opened ? null : finding.id)
@@ -1188,6 +1213,9 @@ export default function Home() {
                         <span className="findingTitle">
                           <small>{finding.category}</small>
                           <strong>{finding.title}</strong>
+                          {reviewEntries[finding.id]?.status && reviewEntries[finding.id].status !== "unreviewed" && (
+                            <span className="humanReviewStatus">사람 검토 · {reviewLabels[reviewEntries[finding.id].status]}</span>
+                          )}
                           {finding.requiresFactualVerification && (
                             <em className="verificationTag">현장 검증 필요</em>
                           )}
@@ -1433,9 +1461,20 @@ export default function Home() {
                 문서 SHA-256 <code>{result.documentHash.slice(0, 16)}…</code>
               </span>
               {selectedSourceFinding && (
-                <strong>{selectedSourceFinding.title} · {findEvidenceRange(result.policyExcerpt, selectedSourceFinding.evidence)
+                <><strong>{selectedSourceFinding.title} · {findEvidenceRange(result.policyExcerpt, selectedSourceFinding.evidence)
                   ? "근거 위치 표시 중"
                   : "연속된 원문 위치를 찾지 못했습니다. 발견 문구와 원문을 직접 대조해 주세요."}</strong>
+                  <button className="returnToFinding" type="button" onClick={() => {
+                    setFilter((current) => current === "all" || current === selectedSourceFinding.severity
+                      ? current
+                      : selectedSourceFinding.severity);
+                    setOpenFinding(selectedSourceFinding.id);
+                    window.setTimeout(() => {
+                      const target = document.getElementById(`finding-summary-${selectedSourceFinding.id}`);
+                      target?.focus({ preventScroll: true });
+                      target?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+                    }, 0);
+                  }}>↑ 점검 항목으로 돌아가기</button></>
               )}
             </div>
             <pre>
