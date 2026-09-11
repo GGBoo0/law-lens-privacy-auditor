@@ -1,0 +1,214 @@
+/* UI UX Pro Max: a document-first working surface with an editorial legal guide. */
+.reviewWorkspace.focusedWorkspace {
+  --studio-muted: #566477;
+  --studio-gold: #8b6228;
+  background: #f4f5f7;
+  overflow-x: visible;
+}
+.focusedWorkspace .workspaceIntro,
+.focusedWorkspace .hero,
+.focusedWorkspace .coverageStrip,
+.focusedWorkspace .reportSection {
+  width: min(1180px, calc(100% - 64px));
+  margin-inline: auto;
+}
+.reviewWorkspace.focusedWorkspace .topbar {
+  width: 100%;
+  padding-inline: max(32px, calc((100% - 1180px) / 2));
+  height: 80px;
+  gap: 28px;
+  background: #fff;
+  border-bottom: 1px solid #dce0e5;
+}
+.focusedWorkspace .brandMark svg { width: 25px; height: 28px; }
+.reviewWorkspace.focusedWorkspace .brandMark { width: 42px; height: 44px; border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .brandCaption { font-size: 12px; letter-spacing: .06em; }
+.reviewWorkspace.focusedWorkspace .monitorBadge { border: 0; border-radius: 0; padding: 4px 0 4px 20px; box-shadow: none; background: none; }
+.reviewWorkspace.focusedWorkspace .monitorBadge strong { font-size: 13px; }
+.reviewWorkspace.focusedWorkspace .topNav { gap: 24px; }
+.focusedWorkspace .workspaceIntro { display: flex; justify-content: space-between; align-items: flex-end; gap: 28px; padding: 40px 0 26px; }
+.focusedWorkspace .workspaceEyebrow { color: var(--studio-muted); font-size: .8125rem; margin: 0 0 8px; font-weight: 600; }
+.focusedWorkspace .workspaceIntro h1 { font-size: clamp(28px, 2.7vw, 36px); letter-spacing: -.05em; line-height: 1.3; margin: 0; font-weight: 760; }
+.focusedWorkspace .workspaceIntro h1 span { color: var(--studio-gold); }
+.focusedWorkspace .workspaceIntro h1 + p { color: var(--studio-muted); font-size: .9375rem; margin-top: 10px; }
+.focusedWorkspace .workflowProgress { list-style: none; display: flex; padding: 0; margin: 0 0 2px; gap: 18px; flex-shrink: 0; }
+.focusedWorkspace .workflowProgress li > :is(a,span) { min-height: 44px; display: flex; align-items: center; gap: 8px; color: #647084; text-decoration: none; font-size: .875rem; font-weight: 550; }
+.focusedWorkspace .workflowProgress li :is(a > span, span > b) { display: grid; place-items: center; width: 26px; height: 26px; font-size: .75rem; font-weight: 650; border: 1px solid #ccd2dc; border-radius: 50%; }
+.focusedWorkspace .workflowProgress [aria-current="step"] > a { color: var(--ink); font-weight: 750; }
+.focusedWorkspace .workflowProgress [aria-current="step"] > a > span { background: var(--ink); color: #fff; border-color: var(--ink); }
+.focusedWorkspace .workflowProgress a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.reviewWorkspace.focusedWorkspace .hero { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 28px; align-items: start; padding: 0 0 28px; min-height: 0; }
+.reviewWorkspace.focusedWorkspace .analyzerCard { padding: 30px 34px 16px; border: 1px solid #d5dce5; border-radius: 8px; box-shadow: 0 4px 18px #172c4805; max-width: none; }
+.reviewWorkspace.focusedWorkspace .analyzerCard::after { display: none; }
+.reviewWorkspace.focusedWorkspace .cardHeader { align-items: center; gap: 14px; }
+.reviewWorkspace.focusedWorkspace .cardHeader .stepPill { background: #edf1f5; color: var(--ink); border-radius: 5px; min-width: 38px; height: 40px; font-size: 13px; }
+.reviewWorkspace.focusedWorkspace .cardHeader h2 { font-size: 1.3rem; letter-spacing: -.035em; line-height: 1.4; }
+.reviewWorkspace.focusedWorkspace .cardHeader p { margin-top: 4px; color: var(--studio-muted); font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .modeTabs { margin: 24px 0; padding: 0; gap: 24px; border-radius: 0; background: transparent; border-bottom: 1px solid #dce1e8; }
+.reviewWorkspace.focusedWorkspace .modeTabs button { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 52px; padding: 12px 0; font-size: .9375rem; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; box-shadow: none; margin-bottom: -1px; }
+.reviewWorkspace.focusedWorkspace .modeTabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+.reviewWorkspace.focusedWorkspace .modeTabs button:hover { background: #f8f9fb; }
+.focusedWorkspace .modeTabs svg { width: 19px; height: 19px; flex-shrink: 0; }
+.reviewWorkspace.focusedWorkspace .fieldLabel { gap: 10px; font-size: .9375rem; font-weight: 650; }
+.reviewWorkspace.focusedWorkspace .urlField { padding: 0 17px; border: 1px solid #aab6c5; background: #fff; border-radius: 5px; min-height: 60px; }
+.reviewWorkspace.focusedWorkspace .urlField input { padding: 14px 0; width: 100%; min-width: 0; font-size: 1rem; font-weight: 450; }
+.reviewWorkspace.focusedWorkspace .fieldLabel textarea { border: 1px solid #aab6c5; padding: 16px; border-radius: 5px; font-size: 1rem; line-height: 1.75; min-height: 200px; background: #fff; }
+.reviewWorkspace.focusedWorkspace .fieldLabel small { font-size: .8125rem; font-weight: 400; line-height: 1.6; color: var(--studio-muted); }
+.reviewWorkspace.focusedWorkspace .fieldLabel .inlineError { color: #a22d30; font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .invalidField,
+.reviewWorkspace.focusedWorkspace textarea[aria-invalid="true"] { border-color: #ac3538; box-shadow: 0 0 0 1px #ac3538; }
+.reviewWorkspace.focusedWorkspace .contextDetails { margin-top: 22px; border: 1px solid #dce1e8; background: #f8f9fb; border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .contextDetails > summary { min-height: 64px; padding: 12px 16px; }
+.reviewWorkspace.focusedWorkspace .contextDetails > summary strong { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .contextDetails > summary small { font-size: .8125rem; color: var(--studio-muted); }
+.reviewWorkspace.focusedWorkspace .contextDetails > summary em { font-size: .75rem; }
+.reviewWorkspace.focusedWorkspace .contextPicker { padding: 0 16px 16px; }
+.reviewWorkspace.focusedWorkspace .contextPicker > div { grid-template-columns: 1fr; }
+.reviewWorkspace.focusedWorkspace .contextPicker label { grid-template-columns: minmax(0, 1fr) 140px; }
+.reviewWorkspace.focusedWorkspace .contextPicker strong { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .primaryButton { min-height: 56px; margin-top: 24px; border-radius: 5px; justify-content: center; gap: 14px; font-size: 1rem; }
+.focusedWorkspace .primaryButton svg { width: 22px; height: 22px; }
+.reviewWorkspace.focusedWorkspace .sampleButton { min-height: 44px; font-size: .875rem; margin-top: 6px; font-weight: 550; }
+.reviewWorkspace.focusedWorkspace .inputAssurance { font-size: .8125rem; color: var(--studio-muted); margin: 8px 0 0; }
+.reviewWorkspace.focusedWorkspace .betaNotice { margin-top: 24px; padding-top: 16px; max-width: none; border-radius: 0; }
+.reviewWorkspace.focusedWorkspace .betaNotice strong { font-size: .8125rem; }
+.reviewWorkspace.focusedWorkspace .betaNotice p { font-size: .8125rem; }
+.reviewWorkspace.focusedWorkspace .privacyNote { margin-top: 6px; }
+.reviewWorkspace.focusedWorkspace .privacyNote summary { font-size: .8125rem; }
+.focusedWorkspace .reviewGuide { overflow: hidden; color: #f7f9fc; background: #172c48; border: 1px solid #172c48; border-radius: 8px; }
+.focusedWorkspace .guideTitle { padding: 30px 28px 22px; border-bottom: 1px solid #ffffff26; }
+.focusedWorkspace .guideTitle > span { color: #dec79f; font-size: .75rem; letter-spacing: .14em; font-weight: 650; }
+.focusedWorkspace .guideTitle h2 { color: white; margin-top: 13px; font-size: 1.65rem; line-height: 1.45; letter-spacing: -.035em; font-weight: 550; }
+.focusedWorkspace .reviewGuide ol { padding: 4px 28px 0; margin: 0; list-style: none; }
+.focusedWorkspace .reviewGuide li { display: flex; align-items: start; gap: 16px; padding: 22px 0; border-bottom: 1px solid #ffffff26; }
+.focusedWorkspace .guideNumber { color: #ddc293; padding-top: 3px; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.focusedWorkspace .reviewGuide h3 { font-size: .9375rem; color: #fff; margin: 0; font-weight: 650; }
+.focusedWorkspace .reviewGuide li p { font-size: .875rem; color: #c6d1df; margin: 8px 0 0; line-height: 1.75; word-break: keep-all; }
+.focusedWorkspace .reviewGuide > a { min-height: 64px; margin: 0 28px; display: flex; justify-content: space-between; align-items: center; color: #f0dbb5; font-size: .875rem; text-decoration: none; }
+.focusedWorkspace .reviewGuide > a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.focusedWorkspace .guideNote { display: flex; gap: 18px; align-items: center; padding: 22px 28px; background: #10233c; }
+.focusedWorkspace .guideNote > span { font-family: Georgia, serif; color: #dfc59a; font-size: 36px; line-height: 1; }
+.focusedWorkspace .guideNote p { margin: 0; color: #c6d1df; font-size: .8125rem; line-height: 1.7; }
+.reviewWorkspace.focusedWorkspace .coverageStrip { border: 0; padding: 8px 0 24px; color: var(--studio-muted); gap: 6px; }
+.reviewWorkspace.focusedWorkspace .coverageStrip > * { font-size: .8125rem; padding: 5px 10px; }
+.reviewWorkspace.focusedWorkspace .coverageStrip > :first-child { padding-left: 0; }
+.reviewWorkspace.focusedWorkspace .reportSection { padding: 34px 0 64px; border-top: 1px solid #ccd4de; }
+.reviewWorkspace.focusedWorkspace .reportTopline h2 { font-size: clamp(26px, 3vw, 34px); }
+.reviewWorkspace.focusedWorkspace .reportTopline p { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .reportNav { background: #fff; padding: 8px 18px; border: 1px solid #d7dfe8; border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .reportNav a { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .scoreGrid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.reviewWorkspace.focusedWorkspace .scoreCard { border-radius: 6px; background: #fff; border: 1px solid #d7dfe8; }
+.reviewWorkspace.focusedWorkspace .scoreCard h3 { font-size: 1.25rem; }
+.reviewWorkspace.focusedWorkspace .scoreCard p { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .countCards button { border-radius: 5px; background: #fff; }
+.reviewWorkspace.focusedWorkspace .countCards small { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .evaluationAxes { border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .evaluationAxes strong { font-size: .9375rem; }
+.reviewWorkspace.focusedWorkspace .evaluationAxes p { font-size: .8125rem; }
+.reviewWorkspace.focusedWorkspace .reportLayout { grid-template-columns: minmax(0, 1fr) 280px; gap: 28px; }
+.reviewWorkspace.focusedWorkspace .sectionHeading { align-items: start; flex-direction: column; }
+.reviewWorkspace.focusedWorkspace .sectionHeading h3 { font-size: 1.25rem; }
+.reviewWorkspace.focusedWorkspace .sectionHeading p { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .filterRow button { font-size: .875rem; padding: 8px 13px; border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .filterSummary { font-size: .875rem; margin-block: 12px 18px; }
+.reviewWorkspace.focusedWorkspace .filterSummary span { font-size: .8125rem; }
+.reviewWorkspace.focusedWorkspace .finding { border-radius: 6px; border-left: 3px solid #c5cfdb; }
+.reviewWorkspace.focusedWorkspace .finding.severity-high { border-left-color: #b63331; }
+.reviewWorkspace.focusedWorkspace .finding.severity-medium { border-left-color: #b58224; }
+.reviewWorkspace.focusedWorkspace .finding.severity-pass { border-left-color: #278160; }
+.reviewWorkspace.focusedWorkspace .findingSummary { padding: 20px; min-height: 110px; }
+.reviewWorkspace.focusedWorkspace .findingTitle strong { font-size: 1.0625rem; line-height: 1.6; }
+.reviewWorkspace.focusedWorkspace .findingTitle small { font-size: .8125rem; }
+.focusedWorkspace .humanReviewStatus { color: #43566d; font-size: .8125rem; font-weight: 500; margin-top: 6px; display: block; }
+.reviewWorkspace.focusedWorkspace .findingSummaryText,
+.reviewWorkspace.focusedWorkspace .recommendation p { font-size: 1rem; line-height: 1.8; }
+.reviewWorkspace.focusedWorkspace .findingDetail blockquote { font-size: 1rem; }
+.reviewWorkspace.focusedWorkspace .findingTools :is(button,a) { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .reviewBox { border-radius: 5px; }
+.reviewWorkspace.focusedWorkspace .reviewBox :is(textarea,select) { font-size: 1rem; }
+.focusedWorkspace .returnToFinding { display: inline-flex; align-items: center; justify-self: start; min-height: 44px; padding: 8px 14px; background: #fff; color: var(--ink); border: 1px solid #a9b7c8; border-radius: 5px; font-size: .875rem; cursor: pointer; }
+.focusedWorkspace .returnToFinding:hover { background: #edf1f5; }
+.reviewWorkspace.focusedWorkspace .coveragePanel { border-radius: 6px; padding: 22px 20px; }
+.reviewWorkspace.focusedWorkspace .coverageList strong { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace .methodSection { width: 100%; padding: 40px max(32px, calc((100% - 1180px) / 2)); margin-top: 16px; background: #e9edf2; }
+.reviewWorkspace.focusedWorkspace .methodSection h2 { font-size: 1.6rem; }
+.reviewWorkspace.focusedWorkspace .methodCards h3 { font-size: 1rem; }
+.reviewWorkspace.focusedWorkspace .methodCards p { font-size: .875rem; }
+.reviewWorkspace.focusedWorkspace :is(button,a,input,textarea,select,summary) { transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease; }
+.reviewWorkspace.focusedWorkspace :is(button,a,input,textarea,select,summary):focus-visible { outline: 3px solid #3971bd; outline-offset: 4px; }
+@media (max-width: 1100px) {
+  .focusedWorkspace .workspaceIntro { align-items: start; flex-direction: column; gap: 12px; padding-top: 28px; }
+  .focusedWorkspace .workflowProgress { gap: 28px; }
+  .reviewWorkspace.focusedWorkspace .hero { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+  .reviewWorkspace.focusedWorkspace .analyzerCard { padding-inline: 24px; }
+  .focusedWorkspace .guideTitle { padding: 26px 22px 20px; }
+  .focusedWorkspace .reviewGuide ol { padding-inline: 22px; }
+  .focusedWorkspace .reviewGuide li { gap: 12px; }
+  .focusedWorkspace .guideNote { padding: 20px 22px; }
+  .reviewWorkspace.focusedWorkspace .scoreGrid { grid-template-columns: 1fr; }
+  .reviewWorkspace.focusedWorkspace .reportLayout { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .focusedWorkspace .workspaceIntro,
+  .focusedWorkspace .hero,
+  .focusedWorkspace .coverageStrip,
+  .focusedWorkspace .reportSection { width: calc(100% - 32px); }
+  .reviewWorkspace.focusedWorkspace .topbar { padding: 14px 16px 0; gap: 12px; height: auto; position: relative; }
+  .reviewWorkspace.focusedWorkspace .brand { font-size: 18px; }
+  .reviewWorkspace.focusedWorkspace .brandCaption { display: none; }
+  .reviewWorkspace.focusedWorkspace .brandMark { width: 32px; height: 36px; }
+  .focusedWorkspace .brandMark svg { width: 22px; height: 24px; }
+  .reviewWorkspace.focusedWorkspace .monitorBadge { padding: 4px 0; min-width: 0; max-width: 175px; }
+  .reviewWorkspace.focusedWorkspace .monitorBadge strong { font-size: .75rem; }
+  .reviewWorkspace.focusedWorkspace .topNav { gap: 24px; min-height: 44px; margin-top: 0; padding: 0; }
+  .focusedWorkspace .workspaceIntro { padding: 24px 0 18px; gap: 8px; }
+  .focusedWorkspace .workspaceEyebrow { display: none; }
+  .focusedWorkspace .workspaceIntro h1 { font-size: clamp(25px, 6vw, 30px); }
+  .focusedWorkspace .workspaceIntro h1 + p { font-size: .875rem; line-height: 1.65; margin-top: 8px; }
+  .focusedWorkspace .workflowProgress { width: 100%; justify-content: space-between; gap: 8px; }
+  .focusedWorkspace .workflowProgress li > :is(a,span) { font-size: .875rem; gap: 6px; }
+  .focusedWorkspace .workflowProgress li :is(a > span, span > b) { width: 23px; height: 23px; font-size: .75rem; }
+  .reviewWorkspace.focusedWorkspace .hero { grid-template-columns: minmax(0, 1fr); padding-bottom: 16px; gap: 20px; }
+  .reviewWorkspace.focusedWorkspace .analyzerCard { padding: 22px 18px 12px; }
+  .reviewWorkspace.focusedWorkspace .cardHeader { gap: 12px; }
+  .reviewWorkspace.focusedWorkspace .cardHeader .stepPill { display: none; }
+  .reviewWorkspace.focusedWorkspace .cardHeader h2 { font-size: 1.1875rem; }
+  .reviewWorkspace.focusedWorkspace .cardHeader p { font-size: .8125rem; }
+  .reviewWorkspace.focusedWorkspace .modeTabs { margin: 16px 0 20px; gap: 12px; }
+  .reviewWorkspace.focusedWorkspace .modeTabs button { min-height: 48px; font-size: .875rem; }
+  .reviewWorkspace.focusedWorkspace .urlField { min-height: 56px; }
+  .reviewWorkspace.focusedWorkspace .contextDetails { margin-top: 18px; }
+  .reviewWorkspace.focusedWorkspace .contextDetails > summary { padding: 12px; flex-wrap: wrap; gap: 6px 8px; }
+  .reviewWorkspace.focusedWorkspace .contextDetails > summary small { display: none; }
+  .reviewWorkspace.focusedWorkspace .contextDetails > summary em { display: inline; }
+  .reviewWorkspace.focusedWorkspace .contextPicker label { grid-template-columns: 1fr; gap: 8px; }
+  .reviewWorkspace.focusedWorkspace .contextPicker select { width: 100%; font-size: 1rem; }
+  .reviewWorkspace.focusedWorkspace .primaryButton { margin-top: 20px; }
+  .focusedWorkspace .reviewGuide { background: #172c48; }
+  .focusedWorkspace .guideTitle { padding: 22px 22px 18px; }
+  .focusedWorkspace .guideTitle > span { font-size: .75rem; }
+  .focusedWorkspace .guideTitle h2 { font-size: 1.25rem; margin-top: 8px; }
+  .focusedWorkspace .guideTitle h2 br { display: none; }
+  .focusedWorkspace .reviewGuide li { padding: 18px 0; }
+  .focusedWorkspace .guideNote { display: none; }
+  .reviewWorkspace.focusedWorkspace .coverageStrip { padding-bottom: 22px; gap: 4px; }
+  .reviewWorkspace.focusedWorkspace .reportSection { padding-top: 28px; }
+  .reviewWorkspace.focusedWorkspace .reportNav { padding: 8px 12px; gap: 2px 20px; }
+  .reviewWorkspace.focusedWorkspace .countCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reviewWorkspace.focusedWorkspace .findingSummary { padding: 18px 12px; }
+  .reviewWorkspace.focusedWorkspace .findingTitle strong { font-size: 1rem; }
+  .reviewWorkspace.focusedWorkspace .methodSection { padding: 32px 16px; }
+  .reviewWorkspace.focusedWorkspace .methodCards article { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reviewWorkspace.focusedWorkspace :is(button,a,input,textarea,select,summary) { transition: none; }
+}
+@media print {
+  .focusedWorkspace .workspaceIntro,
+  .focusedWorkspace .returnToFinding,
+  .focusedWorkspace .humanReviewStatus { display: none !important; }
+  .reviewWorkspace.focusedWorkspace .reportSection { width: 100%; margin: 0; padding: 0; border: 0; }
+  .reviewWorkspace.focusedWorkspace .reportLayout { display: block; }
+  .reviewWorkspace.focusedWorkspace .scoreGrid { display: block; }
+}
