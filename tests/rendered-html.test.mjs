@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { findEvidenceRange } from "../lib/report-evidence.ts";
 
 import {
   DEFAULT_STRUCTURED_TABLE_LIMITS,
@@ -18,6 +19,35 @@ const accuracyStatus = JSON.parse(
 const accuracyEvaluationConfig = JSON.parse(
   readFileSync(new URL("../data/legal-evaluation/config.json", import.meta.url), "utf8"),
 );
+
+test("evidence matching preserves literal punctuation and handles whitespace without inventing quotes", () => {
+  const text = "항목: 이메일(test)+주소\n  보유 기간: 탈퇴 시까지";
+  const range = findEvidenceRange(text, "이메일(test)+주소 보유 기간:");
+  assert.ok(range);
+  assert.equal(text.slice(range.start, range.end), "이메일(test)+주소\n  보유 기간:");
+  assert.equal(findEvidenceRange(text, "주소 존재하지 않는 문구"), null);
+  assert.equal(findEvidenceRange(text, "  "), null);
+});
+
+test("retains late policy evidence and does not duplicate overlapping disclosure sections", async () => {
+  for (const repetitions of [10, 1700]) {
+    const text = "개인정보처리방침\n" + "일반 안내 문구입니다. ".repeat(repetitions)
+      + "\n제 5조 국외 이전\n개인정보를 해외 서버로 이전합니다. 이전 국가와 업체는 별도 안내합니다.";
+    const response = await fetchWorker(new Request("http://localhost/api/analyze", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    }));
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.policyExcerpt.length, result.textLength);
+    const finding = result.findings.find((item) => item.id === "overseas-transfer");
+    assert.ok(finding?.evidence);
+    const range = findEvidenceRange(result.policyExcerpt, finding.evidence);
+    assert.ok(range, "the evidence must be an actual contiguous quotation from the analyzed text");
+    if (repetitions > 10) assert.ok(range.start > 18_000);
+  }
+});
 
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;

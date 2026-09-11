@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import accuracyStatus from "../data/legal-accuracy-status.json";
 import { storeCalibrationTransferDraft } from "../lib/developer-calibration-transfer";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
+import { findEvidenceRange } from "../lib/report-evidence";
 
 type Severity = "high" | "medium" | "low" | "pass" | "na";
 type ContextKey =
@@ -262,29 +263,13 @@ function feedbackUrl(finding: Finding) {
 }
 
 function highlightEvidence(text: string, evidence?: string) {
-  if (!evidence) return text;
-  const directIndex = text.indexOf(evidence);
-  let start = directIndex;
-  let end = directIndex < 0 ? -1 : directIndex + evidence.length;
-
-  if (directIndex < 0) {
-    const pattern = evidence
-      .trim()
-      .split(/\s+/)
-      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-      .join("\\s+");
-    const match = new RegExp(pattern, "i").exec(text);
-    if (match?.index !== undefined) {
-      start = match.index;
-      end = match.index + match[0].length;
-    }
-  }
-
-  if (start < 0 || end < 0) return text;
+  const range = findEvidenceRange(text, evidence);
+  if (!range) return text;
+  const { start, end } = range;
   return (
     <>
       {text.slice(0, start)}
-      <mark>{text.slice(start, end)}</mark>
+      <mark tabIndex={-1}>{text.slice(start, end)}</mark>
       {text.slice(end)}
     </>
   );
@@ -422,10 +407,13 @@ export default function Home() {
   const [url, setUrl] = useState("");
   const [policyText, setPolicyText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [analysisNotice, setAnalysisNotice] = useState("");
   const [error, setError] = useState("");
   const [canPasteRecovery, setCanPasteRecovery] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<LegalMonitorStatus | null>(null);
+  const [monitorFailed, setMonitorFailed] = useState(false);
+  const [monitorAttempt, setMonitorAttempt] = useState(0);
   const [openFinding, setOpenFinding] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | Severity>("all");
   const [contextOverrides, setContextOverrides] = useState<
@@ -449,31 +437,40 @@ export default function Home() {
   const [sourceOpen, setSourceOpen] = useState(false);
   const reportHeadingRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLDetailsElement>(null);
+  const analysisControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => analysisControllerRef.current?.abort(), []);
 
   useEffect(() => {
     const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
+    let disposed = false;
     fetch("/api/legal-monitor-status", { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json() as Promise<LegalMonitorStatus>;
       })
-      .then(setMonitorStatus)
-      .catch((fetchError: unknown) => {
-        if (fetchError instanceof DOMException && fetchError.name === "AbortError") return;
+      .then((status) => { if (!disposed) setMonitorStatus(status); })
+      .catch(() => {
+        if (disposed) return;
         setMonitorStatus(null);
-      });
-    return () => controller.abort();
-  }, []);
+        setMonitorFailed(true);
+      })
+      .finally(() => window.clearTimeout(timeout));
+    return () => { disposed = true; window.clearTimeout(timeout); controller.abort(); };
+  }, [monitorAttempt]);
   const policyTextRef = useRef<HTMLTextAreaElement>(null);
 
-  const filteredFindings = useMemo(() => {
+  const sortedFindings = useMemo(() => {
     if (!result) return [];
     return [...result.findings]
-      .filter((finding) => filter === "all" || finding.severity === filter)
       .sort(
         (a, b) => severityOrder[a.severity] - severityOrder[b.severity],
       );
-  }, [filter, result]);
+  }, [result]);
+  const visibleFindingCount = sortedFindings.filter(
+    (finding) => filter === "all" || finding.severity === filter,
+  ).length;
 
   const selectedSourceFinding = useMemo(
     () =>
@@ -482,20 +479,26 @@ export default function Home() {
   );
 
   async function requestAnalysis(payload: { url?: string; text?: string }) {
+    if (analysisControllerRef.current) return;
+    const controller = new AbortController();
+    analysisControllerRef.current = controller;
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, 45_000);
     setError("");
+    setAnalysisNotice("");
     setCanPasteRecovery(false);
     setLoading(true);
-    setResult(null);
-    setSourceFindingId(null);
-    setSourceOpen(false);
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, contexts: contextOverrides }),
+        signal: controller.signal,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => {
+        throw new Error("서버 응답을 읽지 못했습니다. 잠시 후 다시 분석해 주세요.");
+      });
       if (!response.ok) {
         setCanPasteRecovery(Boolean(data.canPaste));
         throw new Error(
@@ -505,6 +508,8 @@ export default function Home() {
       }
 
       setResult(data);
+      setSourceFindingId(null);
+      setSourceOpen(false);
       const firstIssue = [...data.findings]
         .sort(
           (a: Finding, b: Finding) =>
@@ -527,12 +532,24 @@ export default function Home() {
         });
       }, 80);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "분석 중 오류가 발생했습니다.",
-      );
+      if (controller.signal.aborted && !timedOut) {
+        setAnalysisNotice(result
+          ? "분석을 취소했습니다. 기존 결과와 검토 메모는 유지됩니다."
+          : "분석을 취소했습니다.");
+      } else {
+        setError(
+          timedOut
+            ? "분석 응답이 지연되고 있습니다. 다시 시도하거나 방침 원문을 붙여 넣어 주세요."
+            : caught instanceof TypeError
+              ? "서버에 연결하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요."
+              : caught instanceof Error
+                ? caught.message
+                : "분석 중 오류가 발생했습니다.",
+        );
+      }
     } finally {
+      window.clearTimeout(timeout);
+      analysisControllerRef.current = null;
       setLoading(false);
     }
   }
@@ -593,7 +610,12 @@ export default function Home() {
     setSourceFindingId(finding.id);
     setSourceOpen(true);
     window.setTimeout(() => {
-      sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const target = sourceRef.current?.querySelector<HTMLElement>("mark") ?? sourceRef.current;
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "center",
+      });
     }, 30);
   }
 
@@ -634,18 +656,15 @@ export default function Home() {
   }
 
   function printReport() {
-    const previousFilter = filter;
-    setFilter("all");
-    window.setTimeout(() => {
-      window.print();
-      setFilter(previousFilter);
-    }, 50);
+    window.print();
   }
 
-  const monitorBadgeView = monitorBadge(monitorStatus);
+  const monitorBadgeView: MonitorBadge = monitorFailed
+    ? { tone: "degraded", label: "법령 감시 상태 확인 실패", detail: "연결을 다시 확인해 주세요" }
+    : monitorBadge(monitorStatus);
 
   return (
-    <main>
+    <main className="reviewWorkspace">
       <a className="skipLink" href="#analyzer">
         분석 입력으로 건너뛰기
       </a>
@@ -654,7 +673,7 @@ export default function Home() {
           <span className="brandMark" aria-hidden="true">
             ㄹ
           </span>
-          <span>법령렌즈</span>
+          <span>법령렌즈<small className="brandCaption">PRIVACY REVIEW</small></span>
         </a>
         <a
           className={`topMeta monitorBadge ${monitorBadgeView.tone}`}
@@ -673,51 +692,45 @@ export default function Home() {
           </span>
           <b aria-hidden="true">↗</b>
         </a>
+        {monitorFailed && (
+          <button className="monitorRetry" type="button" onClick={() => {
+            setMonitorFailed(false);
+            setMonitorAttempt((attempt) => attempt + 1);
+          }}>다시 확인</button>
+        )}
+        <nav className="topNav" aria-label="주요 메뉴">
+          <a href="#analyzer">방침 점검</a>
+          {result && <a href="#report">검토 결과</a>}
+          <a href="/methodology">평가 방법</a>
+        </nav>
       </header>
 
       <section className="hero" id="top">
         <div className="heroCopy">
-          <div className="eyebrow">KOREAN PRIVACY COMPLIANCE · 2026</div>
+          <div className="eyebrow">개인정보처리방침 검토 도구</div>
           <h1>
             개인정보처리방침,
             <br />
-            <span>어디가 위험한지</span> 먼저 봅니다.
+            <span>근거와 함께</span>{" "}
+            <br />검토하세요.
           </h1>
           <p className="heroLead">
-            회사 홈페이지를 넣으면 방침을 찾아 추출하고, 누락·모호성·
-            위반 소지를 공식 검증일 기준 대한민국 법령과 함께 짚어드립니다.
+            홈페이지 주소나 방침 원문을 넣으면 누락 가능성과
+            확인할 내용을 정리합니다. 원문과 조문을 대조하며 검토를 이어가세요.
           </p>
-          <div className="betaNotice" role="note">
-            <strong>공개 베타</strong>
-            <p>
-              이 결과는 법률 검토를 돕는 자동 점검이며 위법 여부의 확정이나
-              변호사의 법률 자문이 아닙니다. 중요한 조치는 원문·실제 처리 현황과
-              전문가 검토를 함께 확인하세요. 법률 판단 정확도는 전문가 평가 전이며
-              숫자로 제공하지 않습니다. <a href="/methodology">평가 방법 보기</a>
-            </p>
-          </div>
-          <div className="proofRow">
-            <div>
-              <strong>18+</strong>
-              <span>핵심 점검 기준</span>
-            </div>
-            <div>
-              <strong>조문별</strong>
-              <span>근거와 수정 제안</span>
-            </div>
-            <div>
-              <strong>₩0</strong>
-              <span>외부 AI API 분석비</span>
-            </div>
-          </div>
+          <ol className="reviewSteps" aria-label="검토 순서">
+            <li><span>01</span><div><strong>방침 입력</strong><small>홈페이지 URL 또는 원문</small></div></li>
+            <li><span>02</span><div><strong>위험 신호 확인</strong><small>누락·모호성·사실 확인 구분</small></div></li>
+            <li><span>03</span><div><strong>근거 검토와 기록</strong><small>원문 대조 · 메모 · 보고서 저장</small></div></li>
+          </ol>
         </div>
 
         <div className="analyzerCard" id="analyzer" tabIndex={-1}>
           <div className="cardHeader">
             <span className="stepPill">01</span>
             <div>
-              <h2>검토할 대상을 입력하세요</h2>
-              <p>홈페이지 주소만 넣어도 방침 링크를 자동으로 찾습니다.</p>
+              <h2>검토할 처리방침</h2>
+              <p>주소를 입력하거나 방침 원문을 붙여 넣으세요.</p>
             </div>
           </div>
 
@@ -772,8 +785,7 @@ export default function Home() {
                     />
                   </div>
                   <small id="url-help">
-                    홈페이지의 링크·포함 문서·공통 경로·사이트맵과 일부 공식 공개
-                    데이터를 비용 없이 확인해 방침 본문을 찾습니다.
+                    회사 홈페이지 주소도 입력할 수 있습니다. 공개된 방침을 자동으로 찾습니다.
                   </small>
                 </label>
               </div>
@@ -791,9 +803,10 @@ export default function Home() {
                     onChange={(event) => setPolicyText(event.target.value)}
                     placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
                     rows={8}
+                    aria-describedby="text-help"
                   />
-                  <small>
-                    {policyText.length.toLocaleString("ko-KR")}자 입력됨
+                  <small id="text-help">
+                    {policyText.trim().length.toLocaleString("ko-KR")}자 입력됨 · 최소 120자
                   </small>
                 </label>
               </div>
@@ -802,10 +815,10 @@ export default function Home() {
             <details className="contextDetails">
               <summary>
                 <span>
-                  <strong>정확도를 높이는 서비스 맥락</strong>
-                  <small>알고 있는 사실이 있을 때만 선택하세요.</small>
+                  <strong>서비스에 해당하는 항목</strong>
+                  <small>알고 있는 사실로 분석 맥락을 보완합니다.</small>
                 </span>
-                <em>선택사항 · 9개</em>
+                <em>선택사항 · {contextOptions.length}개</em>
               </summary>
               <fieldset className="contextPicker">
                 <legend>서비스 맥락 보정</legend>
@@ -845,6 +858,7 @@ export default function Home() {
                 <span aria-hidden="true">!</span>
                 <div>
                   <p>{error}</p>
+                  {result && <p>기존 분석 결과와 검토 메모는 아래에 유지했습니다.</p>}
                   {canPasteRecovery && (
                     <button type="button" onClick={openPasteRecovery}>
                       원문 붙여넣기로 계속하기
@@ -867,6 +881,12 @@ export default function Home() {
                 </>
               )}
             </button>
+            {loading && (
+              <button className="sampleButton" type="button" onClick={() => analysisControllerRef.current?.abort()}>
+                분석 취소
+              </button>
+            )}
+            {analysisNotice && <p className="analysisNotice" role="status">{analysisNotice}</p>}
             <button
               className="sampleButton"
               type="button"
@@ -878,12 +898,21 @@ export default function Home() {
             <p className="srOnly" role="status" aria-live="polite">
               {loading
                 ? "개인정보처리방침을 분석하고 있습니다."
-                : result
+                : result && !error && !analysisNotice
                   ? `분석이 완료되었습니다. 누락 가능성 높음 ${result.counts.high}건, 불명확 또는 보완 ${result.counts.medium}건, 사실 확인 ${result.counts.low}건입니다.`
                   : ""}
             </p>
+            <p className="inputAssurance">외부 AI 전송 없음 <span aria-hidden="true">·</span> 입력 원문 서버 저장 없음</p>
           </form>
 
+          <div className="betaNotice" role="note">
+            <strong>공개 베타</strong>
+            <p>
+              법률 검토를 돕는 자동 점검이며 위법 여부의 확정이나 법률 자문이 아닙니다.
+              법률 판단 정확도는 전문가 평가 전입니다. 중요한 조치는 실제 처리 현황과
+              전문가 검토를 함께 확인하세요. <a href="/methodology">평가 방법 보기</a>
+            </p>
+          </div>
           <details className="privacyNote">
             <summary>
               <span aria-hidden="true">●</span>
@@ -955,6 +984,13 @@ export default function Home() {
               </button>
             </div>
           </div>
+          <nav className="reportNav" aria-label="보고서 내 이동">
+            <a href="#review-findings">점검 결과 <span>{result.findings.length}</span></a>
+            <a href="#review-coverage">기재 항목</a>
+            <a href="#review-bases">법령 근거</a>
+            <a href="#review-source" onClick={() => setSourceOpen(true)}>분석 원문</a>
+            <a href="#analyzer" className="newAnalysisLink">새로 점검하기 ↑</a>
+          </nav>
 
           <div className="scoreGrid">
             <article className={`scoreCard score-${result.grade}`}>
@@ -1042,6 +1078,8 @@ export default function Home() {
             </div>
           )}
 
+          <details className="engineDisclosure">
+            <summary>분석 방식·정확도·한계 <span>무료 규칙 분석 · 전문가 평가 전</span></summary>
           <div className="engineStrip" aria-label="분석 엔진 정보">
             <div>
               <span>API 비용</span>
@@ -1079,9 +1117,10 @@ export default function Home() {
               <p>{result.scoreMethod.formula}</p>
             </details>
           </div>
+          </details>
 
           <div className="reportLayout">
-            <div className="findingsPanel">
+            <div className="findingsPanel" id="review-findings" tabIndex={-1}>
               <div className="sectionHeading">
                 <div>
                   <span className="stepPill">02</span>
@@ -1112,13 +1151,25 @@ export default function Home() {
                 </div>
               </div>
 
+              <p className="filterSummary" role="status" aria-live="polite">
+                전체 {sortedFindings.length}건 중 {visibleFindingCount}건 표시
+                <span>검토 상태 기록 {Object.values(reviewEntries).filter((entry) => entry.status !== "unreviewed").length}건</span>
+              </p>
+              {visibleFindingCount === 0 && (
+                <div className="emptyFindings">
+                  <strong>이 분류에 해당하는 점검 결과가 없습니다.</strong>
+                  <button type="button" onClick={() => setFilter("all")}>전체 결과 보기</button>
+                </div>
+              )}
+
               <div className="findingsList">
-                {filteredFindings.map((finding, index) => {
+                {sortedFindings.map((finding, index) => {
                   const opened = openFinding === finding.id;
                   return (
                     <article
                       className={`finding severity-${finding.severity}`}
                       key={finding.id}
+                      data-filtered={filter !== "all" && finding.severity !== filter}
                     >
                       <button
                         className="findingSummary"
@@ -1148,7 +1199,7 @@ export default function Home() {
                       <div
                         className="findingDetail"
                         id={`finding-detail-${finding.id}`}
-                        hidden={!opened}
+                        data-collapsed={!opened}
                       >
                           <p className="findingSummaryText">{finding.summary}</p>
                           {finding.evidence && (
@@ -1228,6 +1279,10 @@ export default function Home() {
                               />
                             </label>
                           </div>
+                          <div className="printReview">
+                            <strong>사람 검토 · {reviewLabels[reviewEntries[finding.id]?.status ?? "unreviewed"]}</strong>
+                            <p>{reviewEntries[finding.id]?.note || "검토 메모 없음"}</p>
+                          </div>
                       </div>
                     </article>
                   );
@@ -1235,7 +1290,7 @@ export default function Home() {
               </div>
             </div>
 
-            <aside className="coveragePanel">
+            <aside className="coveragePanel" id="review-coverage" tabIndex={-1}>
               <div className="sectionHeading compact">
                 <div>
                   <span className="stepPill">03</span>
@@ -1269,7 +1324,7 @@ export default function Home() {
             </aside>
           </div>
 
-          <div className="sourceGrid">
+          <div className="sourceGrid" id="review-bases" tabIndex={-1}>
             <div>
               <div className="eyebrow">LEGAL BASELINE</div>
               <h3>공식 원문으로 검증한 법령과 지침</h3>
@@ -1366,9 +1421,11 @@ export default function Home() {
 
           <details
             className="excerpt"
+            id="review-source"
             ref={sourceRef}
             open={sourceOpen}
             onToggle={(event) => setSourceOpen(event.currentTarget.open)}
+            tabIndex={-1}
           >
             <summary>분석에 사용한 추출 원문과 근거 위치 보기</summary>
             <div className="excerptMeta">
@@ -1376,7 +1433,9 @@ export default function Home() {
                 문서 SHA-256 <code>{result.documentHash.slice(0, 16)}…</code>
               </span>
               {selectedSourceFinding && (
-                <strong>{selectedSourceFinding.title} 근거 표시 중</strong>
+                <strong>{selectedSourceFinding.title} · {findEvidenceRange(result.policyExcerpt, selectedSourceFinding.evidence)
+                  ? "근거 위치 표시 중"
+                  : "연속된 원문 위치를 찾지 못했습니다. 발견 문구와 원문을 직접 대조해 주세요."}</strong>
               )}
             </div>
             <pre>

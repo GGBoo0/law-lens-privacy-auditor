@@ -7,30 +7,30 @@
 }
 
 :root {
-  --ink: #101828;
-  --ink-soft: #263348;
-  --muted: #667085;
+  --ink: #172c48;
+  --ink-soft: #2c4059;
+  --muted: #5c6877;
   --muted-strong: #475467;
-  --paper: #f5f7f4;
+  --paper: #f6f5f1;
   --surface: #ffffff;
-  --surface-soft: #f8faf8;
-  --surface-tint: #eef3ef;
-  --line: #d9e0da;
-  --line-strong: #bdc9bf;
-  --acid: #c9ff57;
-  --acid-strong: #a7e62d;
+  --surface-soft: #f7f8fa;
+  --surface-tint: #eef1f5;
+  --line: #dce0e5;
+  --line-strong: #bac3ce;
+  --acid: #f2dfb8;
+  --acid-strong: #aa7229;
   --coral: #d94f3d;
   --amber: #d69016;
   --blue: #315bd6;
   --green: #18794e;
   --radius-sm: 10px;
   --radius-md: 16px;
-  --radius-lg: 22px;
-  --radius-xl: 30px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --container: 1280px;
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
   --shadow-md: 0 14px 42px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 30px 80px rgba(16, 24, 40, 0.12);
+  --shadow-lg: 0 12px 32px rgba(23, 44, 72, 0.06);
 }
 
 html {
@@ -1642,7 +1642,52 @@ footer p,
   }
 }
 
+.monitorRetry {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.analysisNotice,
+.filterSummary {
+  color: var(--muted-strong);
+  font-size: 13px;
+}
+
+.filterSummary { margin: 0 0 14px; }
+.finding[data-filtered="true"], .findingDetail[data-collapsed="true"], .printReview { display: none; }
+.emptyFindings {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  padding: 28px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.emptyFindings button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .topbar:has(.monitorRetry) { height: auto; min-height: 76px; flex-wrap: wrap; padding: 10px 0; gap: 8px; }
+}
+
 @media print {
+  .finding[data-filtered="true"], .findingDetail[data-collapsed="true"], .printReview { display: block !important; }
+  .reviewBox, .emptyFindings, .filterSummary { display: none !important; }
+  .printReview { margin-top: 16px; border-top: 1px solid #bbb; padding-top: 12px; }
+  .printReview p { white-space: pre-wrap; overflow-wrap: anywhere; }
   .skipLink {
     display: none !important;
   }
@@ -1674,4 +1719,178 @@ footer p,
   .countCards button {
     transition: none;
   }
+}
+/* UI UX Pro Max: accessible legal workspace, adapted for Korean review work. */
+.reviewWorkspace { background: var(--paper); }
+.reviewWorkspace .topbar { gap: 24px; height: 84px; background: var(--paper); backdrop-filter: none; }
+.brandCaption { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; letter-spacing: .15em; font-weight: 650; }
+.reviewWorkspace .brand { flex-shrink: 0; line-height: 1.15; }
+.reviewWorkspace .brandMark { width: 38px; height: 42px; border-radius: 8px; color: var(--acid); }
+.topNav { display: flex; flex: 0 0 auto; align-items: center; gap: 24px; margin-left: 0; }
+.topNav a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; color: var(--muted-strong); font-size: 14px; font-weight: 650; }
+.topNav a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 6px; }
+.reviewWorkspace .monitorBadge { margin-left: auto; border-radius: 10px; background: var(--surface); box-shadow: none; }
+.reviewWorkspace .monitorBadge strong { max-width: none; white-space: normal; overflow: visible; font-size: 12px; }
+.reviewWorkspace .hero { padding: 44px 0 48px; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 64px; align-items: center; }
+.reviewWorkspace .hero::before { display: none; }
+.reviewWorkspace .heroCopy { padding: 0; min-width: 0; }
+.reviewWorkspace .eyebrow { font-size: 12px; color: #826024; letter-spacing: .075em; }
+.reviewWorkspace .eyebrow::before { background: #aa7229; width: 20px; }
+.reviewWorkspace .hero h1 { margin: 22px 0; font-size: clamp(34px, 3.8vw, 50px); line-height: 1.26; letter-spacing: -.045em; }
+.reviewWorkspace .hero h1 span { color: #946526; }
+.reviewWorkspace .hero h1 span::after { display: none; }
+.reviewWorkspace .heroLead { max-width: 410px; font-size: 16px; line-height: 1.8; }
+.reviewSteps { list-style: none; padding: 0; margin: 34px 0 0; display: grid; gap: 0; max-width: 410px; }
+.reviewSteps li { display: flex; gap: 18px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line); }
+.reviewSteps li > span { font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 750; color: #8b652d; }
+.reviewSteps strong { display: block; font-size: 14px; font-weight: 700; }
+.reviewSteps small { color: var(--muted); font-size: 12px; display: block; margin-top: 3px; }
+.reviewWorkspace .analyzerCard { min-width: 0; padding: 28px 32px 20px; border-radius: 16px; box-shadow: var(--shadow-lg); }
+.reviewWorkspace .analyzerCard::after { width: 52px; right: 32px; background: var(--acid-strong); height: 3px; }
+.reviewWorkspace .cardHeader h2 { font-size: 22px; }
+.reviewWorkspace .stepPill { min-width: 34px; height: 30px; border-radius: 6px; }
+.reviewWorkspace .modeTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 22px 0; background: var(--surface-tint); border-radius: 10px; }
+.reviewWorkspace .modeTabs button { border-radius: 7px; color: var(--muted-strong); }
+.reviewWorkspace .urlField, .reviewWorkspace .fieldLabel textarea { border-radius: 8px; }
+.reviewWorkspace .urlField { min-height: 58px; }
+.reviewWorkspace .contextDetails { border-radius: 8px; margin-top: 18px; background: var(--surface-soft); }
+.reviewWorkspace .contextDetails > summary { min-height: 60px; padding: 12px 14px; gap: 12px; }
+.reviewWorkspace .contextDetails > summary::after { background: var(--surface-tint); }
+.reviewWorkspace .contextDetails > summary strong { font-size: 13px; }
+.reviewWorkspace .primaryButton { min-height: 54px; border-radius: 8px; box-shadow: none; margin-top: 18px; }
+.reviewWorkspace .primaryButton:hover:not(:disabled) { background: #284364; transform: none; box-shadow: none; }
+.reviewWorkspace .primaryButton:active:not(:disabled) { background: #0e2038; }
+.reviewWorkspace .sampleButton { min-height: 44px; margin-top: 4px; color: var(--ink-soft); }
+.inputAssurance { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.reviewWorkspace .betaNotice { display: block; margin-top: 20px; padding: 14px 0 0; border: 0; border-top: 1px solid var(--line); background: none; }
+.reviewWorkspace .betaNotice strong { display: inline; padding: 0; border-radius: 0; background: none; color: #846024; font-size: 12px; }
+.reviewWorkspace .betaNotice p { margin-top: 5px; font-size: 12px; line-height: 1.65; color: var(--muted); }
+.reviewWorkspace .privacyNote { margin-top: 10px; }
+.reviewWorkspace .privacyNote summary { min-height: 44px; font-size: 12px; }
+.reviewWorkspace .coverageStrip { margin: 0 auto; padding: 14px 0; gap: 6px; border: 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); border-radius: 0; background: none; box-shadow: none; flex-wrap: wrap; justify-content: flex-start; overflow: visible; }
+.reviewWorkspace .coverageStrip > * { min-height: 32px; padding: 4px 12px; font-size: 12px; }
+.reviewWorkspace .coverageStrip > :first-child { padding-left: 0; color: var(--ink); background: none; font-weight: 750; }
+.reviewWorkspace .reportSection { padding: 64px 0; scroll-margin-top: 92px; }
+.reviewWorkspace .reportTopline { align-items: flex-start; gap: 24px; }
+.reviewWorkspace .reportTopline h2 { margin-top: 12px; font-size: clamp(26px, 3vw, 36px); line-height: 1.3; }
+.reviewWorkspace .reportActions { flex-wrap: wrap; justify-content: flex-end; max-width: 380px; }
+.reviewWorkspace .downloadButton { border-radius: 8px; padding: 10px 14px; background: var(--surface); }
+.reportNav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 8px 0; margin-top: 24px; }
+.reportNav a { display: inline-flex; align-items: center; min-height: 44px; gap: 8px; color: var(--ink); font-size: 13px; text-decoration: none; font-weight: 650; }
+.reportNav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.reportNav a span { border-radius: 5px; padding: 1px 7px; background: #e7ebf0; font-size: 11px; }
+.reportNav .newAnalysisLink { margin-left: auto; color: var(--muted-strong); }
+.reviewWorkspace .scoreGrid { margin-top: 24px; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+.reviewWorkspace .scoreCard { min-height: 216px; padding: 24px; grid-template-columns: 112px minmax(0, 1fr); gap: 24px; box-shadow: none; border-radius: 12px; }
+.reviewWorkspace .scoreRing { width: 112px; height: 112px; }
+.reviewWorkspace .scoreRing::after { inset: 8px; }
+.reviewWorkspace .scoreRing strong { font-size: 36px; }
+.reviewWorkspace .scoreCard h3 { margin: 10px 0 8px; font-size: 22px; line-height: 1.4; }
+.reviewWorkspace .scoreCard p { font-size: 13px; line-height: 1.7; }
+.reviewWorkspace .scoreLabel { background: #f2efe9; color: #715421; border-radius: 5px; }
+.reviewWorkspace .countCards { gap: 10px; }
+.reviewWorkspace .countCards button { min-height: 102px; border-radius: 10px; padding: 12px 16px; box-shadow: none; }
+.reviewWorkspace .countCards strong { font-size: 28px; font-variant-numeric: tabular-nums; }
+.reviewWorkspace .countCards button:hover, .reviewWorkspace .countCards button[aria-pressed="true"] { transform: none; background: #edf1f6; border-color: #889bb3; }
+.reviewWorkspace .evaluationAxes { gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: white; }
+.reviewWorkspace .evaluationAxes article { min-height: 118px; border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 16px; background: transparent; }
+.reviewWorkspace .evaluationAxes article:last-child { border-right: 0; }
+.reviewWorkspace .evaluationAxes strong { margin-top: 8px; }
+.reviewWorkspace .signalBar { border-radius: 8px; background: #e9edf1; flex-wrap: wrap; }
+.reviewWorkspace .signalBar em { border-radius: 5px; color: var(--muted-strong); }
+.engineDisclosure { margin-top: 16px; border-bottom: 1px solid var(--line); }
+.engineDisclosure > summary { min-height: 48px; cursor: pointer; font-size: 13px; font-weight: 650; padding: 12px 4px; }
+.engineDisclosure > summary > span { margin-left: 12px; color: var(--muted); font-weight: 400; }
+.reviewWorkspace .engineStrip { margin: 0 0 16px; border-radius: 8px; }
+.reviewWorkspace .reportLayout { margin-top: 32px; gap: 24px; grid-template-columns: minmax(0, 1fr) 310px; }
+.reviewWorkspace .sectionHeading { gap: 18px; }
+.reviewWorkspace .filterRow { flex-wrap: wrap; gap: 8px; overflow: visible; }
+.reviewWorkspace .filterRow button { min-height: 44px; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
+.reviewWorkspace .filterRow button.active { color: white; background: var(--ink); border-color: var(--ink); }
+.filterSummary { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.filterSummary span { font-size: 12px; }
+.reviewWorkspace .findingsList { gap: 10px; }
+.reviewWorkspace .finding { border-radius: 10px; box-shadow: none; }
+.reviewWorkspace .findingSummary { grid-template-columns: 28px minmax(0, 1fr) 28px; padding: 18px 20px; gap: 8px 12px; min-height: 102px; align-items: start; }
+.reviewWorkspace .findingIndex { grid-column: 1; grid-row: 1 / 3; padding-top: 5px; color: var(--muted); }
+.reviewWorkspace .findingSummary .statusTag { grid-column: 2; grid-row: 1; border-radius: 5px; font-size: 12px; max-width: 100%; padding: 5px 8px; line-height: 1.45; }
+.reviewWorkspace .statusTag.low { color: #254e81; background: #e8effb; }
+.reviewWorkspace .statusTag.medium { color: #7a4b0c; background: #fff0d2; }
+.reviewWorkspace .statusTag.high { color: #ffffff; background: #b63331; }
+.reviewWorkspace .statusTag.pass { color: #166344; background: #e9f4ee; }
+.reviewWorkspace .findingTitle { grid-column: 2; grid-row: 2; }
+.reviewWorkspace .findingTitle small { font-size: 12px; color: var(--muted); }
+.reviewWorkspace .findingTitle strong { font-size: 16px; line-height: 1.5; }
+.reviewWorkspace .verificationTag { font-size: 11px; border-radius: 5px; font-weight: 600; }
+.reviewWorkspace .chevron { grid-column: 3; grid-row: 1 / 3; }
+.reviewWorkspace .findingDetail { padding: 0 24px 24px 60px; }
+.reviewWorkspace .findingDetail blockquote { font-size: 14px; border-radius: 6px; }
+.reviewWorkspace .findingTools { gap: 8px; flex-wrap: wrap; }
+.reviewWorkspace .findingTools button, .reviewWorkspace .findingTools a { min-height: 44px; display: inline-flex; align-items: center; border-radius: 6px; font-size: 12px; }
+.reviewWorkspace .reviewBox { border-radius: 8px; background: #f5f6f8; }
+.reviewWorkspace .reviewBox textarea, .reviewWorkspace .reviewBox select { border-radius: 6px; font-size: 14px; }
+.reviewWorkspace .coveragePanel { padding: 22px; border-radius: 10px; box-shadow: none; }
+.reviewWorkspace .sourceGrid { margin-top: 40px; border-radius: 12px; box-shadow: none; }
+.reviewWorkspace .excerpt { border-radius: 10px; margin-top: 24px; }
+.reviewWorkspace .methodSection { margin-top: 48px; padding: 48px 24px; background: #edf0f3; }
+.reviewWorkspace .methodSection h2 { font-size: 30px; }
+.reviewWorkspace .methodCards article { border: 0; border-left: 1px solid #c8d0db; border-radius: 0; background: none; box-shadow: none; min-height: 160px; }
+.reviewWorkspace .methodCards h3 { margin-top: 24px; }
+.reviewWorkspace :is(#review-findings, #review-coverage, #review-bases, #review-source) { scroll-margin-top: 104px; }
+.reviewWorkspace :is(button, summary, select) { cursor: pointer; }
+.reviewWorkspace :is(button:disabled, select:disabled) { cursor: not-allowed; }
+.reviewWorkspace :is(button, a, input, textarea, select, summary):focus-visible { outline: 3px solid #3565a7; outline-offset: 3px; }
+@media (max-width: 1100px) {
+  .reviewWorkspace .hero { gap: 32px; }
+  .reviewWorkspace .hero h1 { font-size: 38px; }
+  .topNav { gap: 16px; margin-left: 0; }
+  .reviewWorkspace .reportLayout { grid-template-columns: 1fr; }
+  .reviewWorkspace .scoreGrid { grid-template-columns: 1fr; }
+  .reviewWorkspace .countCards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .reviewWorkspace .coverageList { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+}
+@media (max-width: 760px) {
+  .reviewWorkspace .topbar { position: relative; min-height: 76px; height: auto; flex-wrap: wrap; padding: 16px 0; gap: 12px; }
+  .topNav { flex-basis: 100%; gap: 24px; border-top: 1px solid var(--line); padding-top: 4px; }
+  .reviewWorkspace .monitorBadge { min-width: 0; max-width: 190px; padding: 8px 10px; }
+  .reviewWorkspace .hero { display: grid; grid-template-columns: minmax(0, 1fr); padding: 24px 0 32px; gap: 24px; }
+  .reviewWorkspace .hero h1 { font-size: clamp(30px, 7.8vw, 40px); margin: 12px 0; line-height: 1.3; }
+  .reviewWorkspace .hero h1 br:last-of-type { display: none; }
+  .reviewWorkspace .heroLead { font-size: 14px; max-width: 100%; }
+  .reviewSteps { display: none; }
+  .reviewWorkspace .analyzerCard { padding: 22px 20px 12px; max-width: none; }
+  .reviewWorkspace .cardHeader h2 { font-size: 20px; }
+  .reviewWorkspace .fieldLabel textarea, .reviewWorkspace select, .reviewWorkspace .reviewBox textarea { font-size: 16px; }
+  .reviewWorkspace .coverageStrip { margin-top: 0; padding: 12px 0; }
+  .reviewWorkspace .coverageStrip > * { padding: 4px 8px; font-size: 11px; }
+  .reviewWorkspace .reportSection { padding: 40px 0; }
+  .reviewWorkspace .reportActions { max-width: none; width: 100%; grid-template-columns: 1fr 1fr; }
+  .reviewWorkspace .reportActions .downloadButton:last-child { grid-column: 1 / -1; }
+  .reportNav { gap: 4px 20px; margin-top: 20px; }
+  .reportNav .newAnalysisLink { margin-left: 0; }
+  .reviewWorkspace .scoreCard { grid-template-columns: 80px minmax(0, 1fr); padding: 20px; gap: 16px; text-align: left; min-height: 0; }
+  .reviewWorkspace .scoreRing { width: 80px; height: 80px; }
+  .reviewWorkspace .scoreRing strong { font-size: 27px; }
+  .reviewWorkspace .scoreRing::after { inset: 6px; }
+  .reviewWorkspace .scoreCard h3 { font-size: 19px; }
+  .reviewWorkspace .countCards { grid-template-columns: 1fr 1fr; }
+  .reviewWorkspace .countCards button { min-height: 96px; }
+  .reviewWorkspace .evaluationAxes { grid-template-columns: 1fr 1fr; }
+  .reviewWorkspace .evaluationAxes article { border-bottom: 1px solid var(--line); }
+  .engineDisclosure > summary > span { display: block; margin-left: 0; font-size: 12px; margin-top: 4px; }
+  .reviewWorkspace .findingSummary { padding: 16px 12px; grid-template-columns: 22px minmax(0, 1fr) 24px; gap: 8px; }
+  .reviewWorkspace .findingDetail { padding: 0 16px 20px; }
+  .reviewWorkspace .findingTitle strong { font-size: 15px; }
+  .reviewWorkspace .coverageList { grid-template-columns: 1fr; }
+  .reviewWorkspace .methodSection { padding: 32px 20px; gap: 24px; }
+  .reviewWorkspace .methodCards article { min-height: 0; padding: 16px; }
+  .reviewWorkspace .methodCards h3 { margin-top: 12px; }
+}
+@media print {
+  .reportNav, .filterSummary, .engineDisclosure > summary { display: none !important; }
+  .reviewWorkspace .reportSection { padding: 0; width: 100%; }
+  .reviewWorkspace .reportLayout { display: block; }
+  .reviewWorkspace .coveragePanel { margin-top: 24px; }
+  .reviewWorkspace .finding { break-inside: auto; }
+  .reviewWorkspace .findingSummary { break-after: avoid; }
 }

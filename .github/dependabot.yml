@@ -8,6 +8,13 @@ updates:
       time: "08:30"
       timezone: Asia/Seoul
     open-pull-requests-limit: 5
+    # These candidates failed compatibility checks. Keep future releases and
+    # security alerts enabled while their migrations remain unvalidated.
+    ignore:
+      - dependency-name: typescript
+        versions: ["7.0.2"]
+      - dependency-name: vinext
+        versions: ["0.2.1"]
     groups:
       production-security-updates:
         dependency-type: production
