@@ -1468,7 +1468,9 @@ export async function POST(request: Request) {
       return json(
         {
           error:
-            error instanceof Error
+            error instanceof TypeError
+              ? "올바른 웹사이트 주소를 입력해 주세요. 예: company.co.kr"
+              : error instanceof Error
               ? error.message
               : "올바른 웹사이트 주소를 입력해 주세요.",
         },

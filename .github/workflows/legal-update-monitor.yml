@@ -58,7 +58,7 @@ jobs:
           else
             printf '{}\n' > "$RETRY_STATUS"
           fi
-          INCIDENT_OPEN=false
+          INCIDENT_OPEN=unknown
           if OPEN_INCIDENT="$(gh issue list \
             --state open \
             --label "automation:legal-monitor" \
@@ -66,8 +66,9 @@ jobs:
             --json title \
             --jq 'any(.[]; .title == "[automation] Legal source monitor failure")' \
             2>/dev/null)"; then
-            INCIDENT_OPEN="${OPEN_INCIDENT:-false}"
+            INCIDENT_OPEN="${OPEN_INCIDENT:-unknown}"
           fi
+          echo "incident_open=$INCIDENT_OPEN" >> "$GITHUB_OUTPUT"
           node scripts/legal-monitor-retry-gate.mjs \
             --eventName "$EVENT_NAME" \
             --schedule "${SCHEDULE_EXPRESSION:-}" \
@@ -225,11 +226,28 @@ jobs:
             git -C "$STATUS_WORKTREE" push origin "HEAD:refs/heads/$STATUS_BRANCH"
           fi
 
+      - name: Decide whether a source failure needs immediate notification
+        id: incident
+        if: >-
+          always() &&
+          steps.monitor.outcome == 'failure' &&
+          steps.status.outcome == 'success'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE_EXPRESSION: ${{ github.event.schedule }}
+          INCIDENT_OPEN: ${{ steps.gate.outputs.incident_open }}
+          MONITOR_DIAGNOSTICS: ${{ steps.monitor.outputs.diagnostic_summary }}
+        run: >-
+          node scripts/legal-monitor-incident-policy.mjs
+          "$RUNNER_TEMP/legal-monitor-status.json"
+          "$RUNNER_TEMP/legal-monitor-status.previous.json"
+
       - name: Notify or resolve legal monitor incident
         if: >-
           always() &&
           steps.gate.outputs.should_run == 'true' &&
-          (steps.monitor.outcome == 'success' || steps.monitor.outcome == 'failure')
+          (steps.monitor.outcome == 'success' ||
+            (steps.monitor.outcome == 'failure' && steps.incident.outputs.notify != 'false'))
         env:
           GH_TOKEN: ${{ github.token }}
           MONITOR_OUTCOME: ${{ steps.monitor.outcome }}
@@ -436,12 +454,12 @@ jobs:
               --comment "The legal update pipeline recovered. Recovery run: $RUN_URL"
           fi
 
-      - name: Conclude a primary or manual source failure
+      - name: Conclude an actionable source failure
         if: >-
           always() &&
           steps.gate.outputs.should_run == 'true' &&
           steps.monitor.outcome == 'failure' &&
-          steps.gate.outputs.run_kind != 'scheduled_retry'
+          steps.incident.outputs.notify != 'false'
         run: |
-          echo "기본 또는 수동 법령 감시가 실패했습니다. 예약 재시도는 별도 실행에서 진행됩니다." >&2
+          echo "법령 감시가 실패했습니다. 지속 장애 또는 즉시 검토가 필요한 오류입니다." >&2
           exit 1

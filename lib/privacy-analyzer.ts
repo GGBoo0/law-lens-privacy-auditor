@@ -205,13 +205,17 @@ function sectionScope(text: string, patterns: RegExp[], maxChars = 2600) {
   for (let index = 0; index < lines.length; index += 1) {
     if (!matches(lines[index], patterns)) continue;
     const section = [lines[index]];
+    let lastIncluded = index;
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
       const next = lines[cursor];
       if (headingPattern.test(next)) break;
       section.push(next);
+      lastIncluded = cursor;
       if (section.join(" ").length >= maxChars) break;
     }
     scopes.push(section.join(" "));
+    // A matching body line is already part of this section; do not quote it twice.
+    index = lastIncluded;
   }
   return scopes.join(" ").slice(0, maxChars * 2);
 }
@@ -1822,7 +1826,7 @@ export function analyzePrivacyPolicy(
     coverage,
     evaluationAxes,
     detectedSignals: [...new Set(signals)],
-    policyExcerpt: text.slice(0, 18000),
+    policyExcerpt: text,
     analysisEngine: {
       mode: "local_rules",
       name: "무료 규칙·휴리스틱 엔진",
