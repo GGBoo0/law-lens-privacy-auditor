@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import accuracyStatus from "../data/legal-accuracy-status.json";
 import { storeCalibrationTransferDraft } from "../lib/developer-calibration-transfer";
 import { LEGAL_BASELINE } from "../lib/legal-baseline";
 import { findEvidenceRange } from "../lib/report-evidence";
@@ -684,12 +683,12 @@ export default function Home() {
       <a className="skipLink" href="#analyzer">
         분석 입력으로 건너뛰기
       </a>
-      <header className="topbar">
+      <header className="topbar" id="top">
         <a className="brand" href="#top" aria-label="법령렌즈 처음으로">
           <span className="brandMark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M5 3h10a2 2 0 0 1 2 2v4M5 3v18h10"/><path d="M8 7h5M8 11h3M8 15h2"/><circle cx="16" cy="15" r="4"/><path d="m19 18 3 3"/></svg>
           </span>
-          <span>법령렌즈<small className="brandCaption">PRIVACY REVIEW</small></span>
+          <span>법령렌즈</span>
         </a>
         <a
           className={`topMeta monitorBadge ${monitorBadgeView.tone}`}
@@ -721,25 +720,11 @@ export default function Home() {
         </nav>
       </header>
 
-      <section className="workspaceIntro" id="top" aria-labelledby="workspace-title">
-        <div><p className="workspaceEyebrow">개인정보처리방침 검토 도구</p><h1 id="workspace-title">방침을 읽고, <span>근거를 찾다.</span></h1>
-          <p>검토할 문서를 가져오세요. 확인이 필요한 항목부터 함께 살펴봅니다.</p></div>
-        <ol className="workflowProgress" aria-label="검토 진행 단계">
-          <li aria-current={!result ? "step" : undefined}><a href="#analyzer"><span>01</span>문서 입력</a></li>
-          <li aria-current={result && reviewedCount === 0 ? "step" : undefined}>{result ? <a href="#report"><span>02</span>점검 결과</a> : <span><b>02</b>점검 결과</span>}</li>
-          <li aria-current={reviewedCount > 0 ? "step" : undefined}>{result ? <a href="#review-findings"><span>03</span>검토 기록</a> : <span><b>03</b>검토 기록</span>}</li>
-        </ol>
-      </section>
-
-      <section className="hero" aria-label="처리방침 입력과 검토 안내">
+      <section className="hero" aria-label="처리방침 입력">
 
         <div className="analyzerCard" id="analyzer" tabIndex={-1}>
           <div className="cardHeader">
-            <span className="stepPill">01</span>
-            <div>
-              <h2>어떤 처리방침을 살펴볼까요?</h2>
-              <p>홈페이지 주소 또는 방침 원문으로 시작하세요.</p>
-            </div>
+            <h1>개인정보처리방침 점검</h1>
           </div>
 
           <div className="modeTabs" role="tablist" aria-label="분석 입력 방식">
@@ -795,7 +780,7 @@ export default function Home() {
                     />
                   </div>
                   <small id="url-help">
-                    회사 홈페이지 주소도 입력할 수 있습니다. 공개된 방침을 자동으로 찾습니다.
+                    홈페이지 주소만 입력해도 됩니다.
                   </small>
                   {fieldError === "url" && <small className="inlineError" id="url-error" role="alert">{error}</small>}
                 </label>
@@ -813,7 +798,7 @@ export default function Home() {
                     ref={policyTextRef}
                     value={policyText}
                     onChange={(event) => { setPolicyText(event.target.value); if (fieldError) { setFieldError(null); setError(""); } }}
-                    placeholder="수집이 막힌 사이트나 PDF 방침은 원문을 붙여 넣어 주세요."
+                    placeholder="처리방침 원문을 붙여 넣으세요."
                     rows={7}
                     aria-describedby={`text-help${fieldError === "text" ? " text-error" : ""}`}
                     aria-invalid={fieldError === "text"}
@@ -829,16 +814,14 @@ export default function Home() {
             <details className="contextDetails">
               <summary>
                 <span>
-                  <strong>서비스에 해당하는 항목</strong>
-                  <small>알고 있는 사실로 분석 맥락을 보완합니다.</small>
+                  <strong>추가 설정</strong>
                 </span>
                 <em>{contextCount ? `${contextCount}개 직접 지정` : "선택사항"}</em>
               </summary>
               <fieldset className="contextPicker">
                 <legend>서비스 맥락 보정</legend>
                 <p>
-                  알고 있는 사실을 표시하면 방침에 해당 내용이 빠졌는지 함께
-                  확인합니다. 본문 신호가 명확하면 ‘비해당’ 선택으로 숨기지 않습니다.
+                  서비스에 해당하는 항목을 선택하세요.
                 </p>
                 <div>
                   {contextOptions.map((option) => (
@@ -886,11 +869,11 @@ export default function Home() {
               {loading ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
-                  방침을 읽고 조문과 대조하는 중
+                  분석 중…
                 </>
               ) : (
                 <>
-                  위험 신호 분석하기
+                  분석하기
                   <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>
                 </>
               )}
@@ -907,7 +890,7 @@ export default function Home() {
               onClick={loadSample}
               disabled={loading}
             >
-              샘플 원문으로 바로 분석
+              샘플로 체험
             </button>
             <p className="srOnly" role="status" aria-live="polite">
               {loading
@@ -916,61 +899,16 @@ export default function Home() {
                   ? `분석이 완료되었습니다. 누락 가능성 높음 ${result.counts.high}건, 불명확 또는 보완 ${result.counts.medium}건, 사실 확인 ${result.counts.low}건입니다.`
                   : ""}
             </p>
-            <p className="inputAssurance">외부 AI 전송 없음 <span aria-hidden="true">·</span> 입력 원문 서버 저장 없음</p>
+            <p className="inputAssurance">원문 저장 없음 · 외부 AI 전송 없음</p>
           </form>
 
-          <div className="betaNotice" role="note">
-            <strong>공개 베타</strong>
-            <p>
-              법률 검토를 돕는 자동 점검이며 위법 여부의 확정이나 법률 자문이 아닙니다.
-              법률 판단 정확도는 전문가 평가 전입니다. 중요한 조치는 실제 처리 현황과
-              전문가 검토를 함께 확인하세요. <a href="/methodology">평가 방법 보기</a>
-            </p>
-          </div>
-          <details className="privacyNote">
-            <summary>
-              <span aria-hidden="true">●</span>
-              입력 데이터와 보안 처리 방식
-            </summary>
-            <p>
-              유료 브라우저나 외부 AI API로 전송하지 않습니다. 공식 사이트의 공개
-              문서와 공개 데이터만 읽으며 입력 내용은 요청 중 규칙 분석에만 사용하고
-              앱 데이터베이스에 저장하지 않습니다. URL은 IP 리터럴·내부 호스트·이동
-              주소를 검사하고 공개 인터넷 경로만 사용합니다. 남용 방지를 위해 원본
-              네트워크 주소 대신 비밀키 기반 HMAC-SHA-256으로 매일 달라지는
-              IPv4 또는 IPv6 /64 가명키, 1분 요청 횟수와 만료 시각을 저장합니다.
-              가명키를 익명정보라고 단정하지 않으며 만료 기록은 다음 분석 요청 때
-              정리합니다.
-            </p>
-          </details>
         </div>
-        <aside className="reviewGuide" aria-labelledby="guide-title">
-          <div className="guideTitle"><span>REVIEW GUIDE</span><h2 id="guide-title">결과를 읽는<br />세 가지 기준</h2></div>
-          <ol>
-            <li><span className="guideNumber">01</span><div><h3>누락 가능성</h3><p>필요한 공개 항목이 보이지 않으면, 실제 처리 여부부터 확인합니다.</p></div></li>
-            <li><span className="guideNumber">02</span><div><h3>불명확한 표현</h3><p>넓거나 모호한 문장을 찾아 구체화할 부분을 살펴봅니다.</p></div></li>
-            <li><span className="guideNumber">03</span><div><h3>근거와 사실 확인</h3><p>발견 문구와 법령을 대조하고, 확인한 내용을 메모로 남깁니다.</p></div></li>
-          </ol>
-          <a href="/methodology">평가 방법 자세히 보기 <span aria-hidden="true">↗</span></a>
-          <div className="guideNote"><span aria-hidden="true">§</span><p>법령 근거는 결과마다 연결됩니다.<br />원문을 확인하며 검토를 이어가세요.</p></div>
-        </aside>
-      </section>
-
-      <section className="coverageStrip" aria-label="검토 범위">
-        <span>검토 범위</span>
-        <div>필수 공개항목</div>
-        <div>제3자 제공·위탁</div>
-        <div>국외 이전</div>
-        <div>아동·민감정보</div>
-        <div>쿠키·행태정보</div>
-        <div>AI·자동화 결정</div>
       </section>
 
       {result && (
         <section className="reportSection" id="report">
           <div className="reportTopline">
             <div>
-              <div className="eyebrow">ANALYSIS REPORT</div>
               <h2 ref={reportHeadingRef} tabIndex={-1}>
                 {result.policyTitle}
               </h2>
@@ -1035,8 +973,7 @@ export default function Home() {
                 </div>
                 <h3>{result.headline}</h3>
                 <p>
-                  {result.scoreMethod.meaning} 실제 처리 흐름·동의 화면·위탁계약을
-                  함께 확인해야 최종 판단할 수 있습니다.
+                  문서 기재상태의 참고 점수이며 법률 준수율이 아닙니다.
                 </p>
               </div>
             </article>
@@ -1077,80 +1014,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="evaluationAxes" aria-label="공식 평가체계 기반 자동 점검 축">
-            {result.evaluationAxes.map((axis) => (
-              <article className={`axis-${axis.state}`} key={axis.key}>
-                <span>
-                  {axis.state === "good"
-                    ? "자동 확인"
-                    : axis.state === "review"
-                      ? "검토 필요"
-                      : "판단 유보"}
-                </span>
-                <strong>{axis.label}</strong>
-                <p>{axis.detail}</p>
-              </article>
-            ))}
-          </div>
-
-          {result.detectedSignals.length > 0 && (
-            <div className="signalBar">
-              <span>감지된 처리 맥락</span>
-              {result.detectedSignals.map((signal) => (
-                <em key={signal}>{signal}</em>
-              ))}
-            </div>
-          )}
-
-          <details className="engineDisclosure">
-            <summary>분석 방식·정확도·한계 <span>무료 규칙 분석 · 전문가 평가 전</span></summary>
-          <div className="engineStrip" aria-label="분석 엔진 정보">
-            <div>
-              <span>API 비용</span>
-              <strong>₩{result.analysisEngine.estimatedApiCostKrw}</strong>
-            </div>
-            <div>
-              <span>분석 방식</span>
-              <strong>{result.analysisEngine.name}</strong>
-            </div>
-            <div>
-              <span>외부 AI 전송</span>
-              <strong>{result.analysisEngine.aiUsed ? "사용" : "없음"}</strong>
-            </div>
-            <div>
-              <span>법률 판단 정확도</span>
-              <strong>{accuracyStatus.label}</strong>
-            </div>
-            <details>
-              <summary>분석 정확도와 무료 분석의 한계</summary>
-              <p>현재 분석 실행 상태: {result.analysisEngine.evaluationStatus}</p>
-              <p>{accuracyStatus.summary}</p>
-              <p>
-                URL 자동 발견 QA {accuracyStatus.urlDiscoveryQa.verifiedSourceCount}/
-                {accuracyStatus.urlDiscoveryQa.sampleSize}(
-                {accuracyStatus.urlDiscoveryQa.verifiedSourceRatePercent}%)는 공식 방침을
-                찾는 능력만 측정하며 법률 판단 정확도와 별개입니다. {" "}
-                <a href="/methodology">평가 방법 확인</a>
-              </p>
-              <ul>
-                {result.analysisEngine.limitations.map((limitation) => (
-                  <li key={limitation}>{limitation}</li>
-                ))}
-              </ul>
-              <p>{result.analysisEngine.confidenceMeaning}</p>
-              <p>{result.scoreMethod.formula}</p>
-            </details>
-          </div>
-          </details>
-
           <div className="reportLayout">
             <div className="findingsPanel" id="review-findings" tabIndex={-1}>
               <div className="sectionHeading">
                 <div>
-                  <span className="stepPill">02</span>
                   <div>
-                    <h3>근거가 있는 점검 결과</h3>
-                    <p>누락 가능성·불명확성·사실 확인 순서로 정렬했습니다.</p>
+                    <h3>점검 결과</h3>
                   </div>
                 </div>
                 <div className="filterRow" role="group" aria-label="결과 필터">
@@ -1321,10 +1190,8 @@ export default function Home() {
             <aside className="coveragePanel" id="review-coverage" tabIndex={-1}>
               <div className="sectionHeading compact">
                 <div>
-                  <span className="stepPill">03</span>
                   <div>
-                    <h3>기재요소 적용 상태</h3>
-                    <p>법 제30조·시행령 제31조 및 조건부 기준</p>
+                    <h3>기재 항목</h3>
                   </div>
                 </div>
               </div>
@@ -1352,10 +1219,38 @@ export default function Home() {
             </aside>
           </div>
 
+          <details className="analysisDetails">
+            <summary>분석 세부정보</summary>
+          <div className="evaluationAxes" aria-label="공식 평가체계 기반 자동 점검 축">
+            {result.evaluationAxes.map((axis) => (
+              <article className={`axis-${axis.state}`} key={axis.key}>
+                <span>
+                  {axis.state === "good"
+                    ? "자동 확인"
+                    : axis.state === "review"
+                      ? "검토 필요"
+                      : "판단 유보"}
+                </span>
+                <strong>{axis.label}</strong>
+                <p>{axis.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          {result.detectedSignals.length > 0 && (
+            <div className="signalBar">
+              <span>감지된 처리 맥락</span>
+              {result.detectedSignals.map((signal) => (
+                <em key={signal}>{signal}</em>
+              ))}
+            </div>
+          )}
+
+          </details>
+
           <div className="sourceGrid" id="review-bases" tabIndex={-1}>
             <div>
-              <div className="eyebrow">LEGAL BASELINE</div>
-              <h3>공식 원문으로 검증한 법령과 지침</h3>
+              <h3>법령 근거</h3>
               <p>
                 공식 검증일 {result.legalBaseline.verifiedAt} · 규칙셋{" "}
                 {result.legalBaseline.rulesetVersion}. 조건부 법률은 관련
@@ -1455,7 +1350,7 @@ export default function Home() {
             onToggle={(event) => setSourceOpen(event.currentTarget.open)}
             tabIndex={-1}
           >
-            <summary>분석에 사용한 추출 원문과 근거 위치 보기</summary>
+            <summary>분석 원문</summary>
             <div className="excerptMeta">
               <span>
                 문서 SHA-256 <code>{result.documentHash.slice(0, 16)}…</code>
@@ -1487,53 +1382,13 @@ export default function Home() {
         </section>
       )}
 
-      <section className="methodSection">
-        <div>
-          <div className="eyebrow">HOW IT WORKS</div>
-          <h2>판정과 추측을 섞지 않습니다.</h2>
-        </div>
-        <div className="methodCards">
-          <article>
-            <span>1</span>
-            <h3>방침 발견·추출</h3>
-            <p>공개된 홈페이지에서 처리방침 링크와 본문을 찾아 정리합니다.</p>
-          </article>
-          <article>
-            <span>2</span>
-            <h3>무료 규칙·문장 패턴 검사</h3>
-            <p>외부 AI 없이 필수항목, 포괄 표현과 문단 간 충돌을 검사합니다.</p>
-          </article>
-          <article>
-            <span>3</span>
-            <h3>위험도와 불확실성 분리</h3>
-            <p>누락 가능성과 실제 위법 확정을 구분하고 추가 확인사항을 남깁니다.</p>
-          </article>
-        </div>
-      </section>
-
       <footer>
-        <div className="brand">
-          <span className="brandMark" aria-hidden="true">
-            ㄹ
-          </span>
-          <span>법령렌즈</span>
-        </div>
-        <p>
-          법률 리스크의 조기 발견을 위한 자동화 도구이며 변호사의 법률의견을
-          대체하지 않습니다.
-        </p>
+        <p>자동 점검 · 법률 판단 정확도는 전문가 평가 전</p>
         <nav className="footerLinks" aria-label="서비스 정보">
           <a href="/methodology">평가 방법·정확도</a>
           <a href="/calibration">개발자 사전 교정</a>
-          <a href="/privacy">개인정보 처리 안내</a>
+          <a href="/privacy">개인정보 처리</a>
           <a href="/terms">이용조건·문의</a>
-          <a
-            href="https://www.pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS217&mCode=&nttId=12018"
-            target="_blank"
-            rel="noreferrer"
-          >
-            2026 작성지침 ↗
-          </a>
           <a
             href="https://github.com/GGBoo0/law-lens-privacy-auditor/issues/new/choose"
             target="_blank"
