@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-09-11T04:34:55.090Z",
+  "capturedAt": "2026-10-20T04:43:50.948Z",
   "sourceCount": 11,
   "sources": {
     "pipa": {
@@ -3608,10 +3608,10 @@
       "name": "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법",
       "type": "law",
       "officialUrl": "https://www.law.go.kr/법령/인공지능발전과신뢰기반조성등에관한기본법",
-      "fingerprint": "2d51f0e271da4d97992f6d350c5cedaac2cf1c0b8af9e89ac0da123be505c4c0",
+      "fingerprint": "93fedf7874f3c1027ed7a61664cebb8521b748c5fee5ff03c66863e38267aaa0",
       "contentHashAlgorithm": "legal-semantic-text-v2",
       "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
-      "contentFingerprint": "2a0920c18c18d3f79f6cc79d1536bbc1e55acd785c6b8b635b7a15b35c491f7d",
+      "contentFingerprint": "123c80c34b6a074074a3ffe40bc7ff456f4027c2be769a15a1df435b9b5f5950",
       "versions": [
         {
           "id": "282791:20260721",
@@ -3708,6 +3708,248 @@
             "0015001": {
               "label": "제15조(인공지능 학습용데이터 관련 시책의 수립 등)",
               "hash": "fc763f29d045f47cfeebe6bfdc17efc368e71c13bf6d901cdc1953e3968887d5"
+            },
+            "0016000": {
+              "label": "제2절 인공지능기술 개발 및 인공지능산업 활성화",
+              "hash": "52bd007122ffdd8351b658222ff6187513f335e16bb05218badfd7f90012a5e8"
+            },
+            "0016001": {
+              "label": "제16조(인공지능기술 도입ㆍ활용 시책 등)",
+              "hash": "cb9819e4a7f369317117ec56868b3a210c547508521203a63d06d02b71740c46"
+            },
+            "0017001": {
+              "label": "제17조(중소기업등을 위한 특별지원)",
+              "hash": "bad09b49ebb1e1949dc25100de50f18b8935457a10b2b8440c30f9ae11f21fbe"
+            },
+            "0017021": {
+              "label": "제17조의2(인공지능제품 및 인공지능서비스 이용비용의 지원)",
+              "hash": "433acea5c37d92af67f4c442f6dfe2af24e8f37b04a27a6c5c4b8908b3dfbe6d"
+            },
+            "0018001": {
+              "label": "제18조(창업의 활성화 등)",
+              "hash": "4304817d4befa9429437fe66f09ff7ae7bd1bd65f28b255a1b64230af72f713b"
+            },
+            "0019001": {
+              "label": "제19조(인공지능 융합의 촉진)",
+              "hash": "c1038ab65583d4971fca9ce279a76a3cbc9922168752efa5f325ae4b7c5ff425"
+            },
+            "0020001": {
+              "label": "제20조(제도개선 등)",
+              "hash": "f3e9ce606e270dba2b1e784bab14f845fb004f33692719d98eb355500b8a4484"
+            },
+            "0021001": {
+              "label": "제21조(전문인력의 확보)",
+              "hash": "c362c975690f315ab09666b7de9d0031c9f18ef0cf707dbcae75c8da2f791018"
+            },
+            "0022001": {
+              "label": "제22조(국제협력 및 해외시장 진출의 지원)",
+              "hash": "0ab1244608b4baa577a945d5358c4b1012a5e3ba9e7e44429da8e33cbb24da14"
+            },
+            "0022021": {
+              "label": "제22조의2(인공지능연구소의 설립 및 지원 등)",
+              "hash": "dfb2986ed75a4385bd9b8025a236c63ebcaae93f19fec63405658ad0ca87f9b2"
+            },
+            "0022031": {
+              "label": "제22조의3(인공지능기술 확보를 위한 연구기관의 설립ㆍ운영) 과학기술정보통신부장관은 혁신적인 인공지능기술의 확보를 위하여 필요한 경우 대통령령으로 정하는 바에 따라 인공지능의 개발ㆍ활용 등에 관한 연구를 수행하는 기관을 설립ㆍ운영할 수 있다.",
+              "hash": "a689049a1be1e4e7dc60c9f1a0dc62cdb4095ca8e415972aced3756acaa8f71d"
+            },
+            "0023001": {
+              "label": "제23조(인공지능집적단지 지정 등)",
+              "hash": "4b8c96c3dac77882c196304eca25ecd49f624683c78951c17d327797ceee945b"
+            },
+            "0024001": {
+              "label": "제24조(인공지능 실증기반 조성 등)",
+              "hash": "cb787260b0a5731941e6cf05fdfa425b66608a01330518c57a626252abc6ab19"
+            },
+            "0025001": {
+              "label": "제25조(인공지능 데이터센터 관련 시책의 추진 등)",
+              "hash": "e2625661d21768ec667fa12f59585ba843611a72620da9488a6eec8db7ee6c2e"
+            },
+            "0026001": {
+              "label": "제26조(한국인공지능진흥협회의 설립)",
+              "hash": "ce5c982eef43cb9909933e3f61cf1b06a3580bc458c2b0ab18d41ad4ec60960e"
+            },
+            "0027000": {
+              "label": "제4장 인공지능윤리 및 신뢰성 확보",
+              "hash": "c09109b4e0de5146bf6b52e0b04e849e4ad1fd5f108ac2f4348004cadb624d4d"
+            },
+            "0027001": {
+              "label": "제27조(인공지능 윤리원칙 등)",
+              "hash": "4ac3aa766b298f91bb1ad331c587dbd9137956d29110b89966e60e48a4db066e"
+            },
+            "0028001": {
+              "label": "제28조(민간자율인공지능윤리위원회의 설치 등)",
+              "hash": "63bba972c19515045df2e2bc38bd8efa840bab98d5f5d8c86666a821cd6e45c2"
+            },
+            "0029001": {
+              "label": "제29조(인공지능 신뢰 기반 조성을 위한 시책의 마련) 정부는 인공지능이 국민의 생활에 미치는 잠재적 위험을 최소화하고 안전한 인공지능의 이용을 위한 신뢰 기반을 조성하기 위하여 다음 각 호의 시책을 마련하여야 한다.",
+              "hash": "d09aded14f68804a2f61b21f45caffbbffbb8f46df1e0f9d48825395f8d87a47"
+            },
+            "0030001": {
+              "label": "제30조(인공지능 안전성ㆍ신뢰성 검ㆍ인증등 지원)",
+              "hash": "56596051800d3650288f2f565b2777b4e068785db111ec5d412b56377cac300c"
+            },
+            "0031001": {
+              "label": "제31조(인공지능 투명성 확보 의무)",
+              "hash": "d0c90637d23693581ba1b37dd17387874b2c31194f7a66d8ac4455e2d219d9f9"
+            },
+            "0032001": {
+              "label": "제32조(인공지능 안전성 확보 의무)",
+              "hash": "16d67aa5adea564b55f481ecf77fbe9a95df6f7c523f9360cbc858ce2a441a2d"
+            },
+            "0033001": {
+              "label": "제33조(고영향 인공지능의 확인)",
+              "hash": "72a84e163d1e75ffadfa5f74973f8aecb741e8fd7fc23def3be91c6b2f5a79ea"
+            },
+            "0034001": {
+              "label": "제34조(고영향 인공지능과 관련한 사업자의 책무)",
+              "hash": "cb042df51a84632cb07ffcc7cb530c1dcfad7bfd0e0a169e12f45ebe7e81a4c9"
+            },
+            "0035001": {
+              "label": "제35조(고영향 인공지능 영향평가)",
+              "hash": "831c3d50413dee9d67e9552c63d720e335436fd2f66692ea910d1ce190d9934a"
+            },
+            "0036001": {
+              "label": "제36조(국내대리인 지정)",
+              "hash": "469ea3ac53a5029104f82b81b863e29ca527a0c4c0a21af3d7bcf37b41523251"
+            },
+            "0037000": {
+              "label": "제5장 보칙",
+              "hash": "c7d7500f012c28659b4abd1436c133bca0459eec95ef1b3ca3f63f946a2a8acf"
+            },
+            "0037001": {
+              "label": "제37조(인공지능산업의 진흥을 위한 재원의 확충 등)",
+              "hash": "0a7dcb4e7bd0b208f2b8af206cfe46ba1818644b60e409c0f57faa3d3d32057d"
+            },
+            "0038001": {
+              "label": "제38조(실태조사, 통계 및 지표의 작성)",
+              "hash": "dad07cc20ca6bdb3e67fb9fc121d293089fd6ac51652c1c4c1754815d374336a"
+            },
+            "0039001": {
+              "label": "제39조(권한의 위임 및 업무의 위탁)",
+              "hash": "043ef404b7637b4ce890f477b2a6ca0e33dec6611c3e341e051cd73fe4abec20"
+            },
+            "0040001": {
+              "label": "제40조(사실조사 등)",
+              "hash": "ee1241cade61e90768cf734348bd6edcf29ab35ce9bb4b99254e93f84676f3ab"
+            },
+            "0041001": {
+              "label": "제41조(벌칙 적용에서 공무원 의제)",
+              "hash": "aad198bf61fea2d8818de438369778c9a0ab9f06c5d3fb87e9575f4dee5bee2f"
+            },
+            "0042000": {
+              "label": "제6장 벌칙",
+              "hash": "2a39452e0675192d1430f5c697627aab698bcd556a61d26683c7553be1aa4703"
+            },
+            "0042001": {
+              "label": "제42조(벌칙) 제7조제9항을 위반하여 직무상 알게 된 비밀을 타인에게 누설하거나 직무상 목적 외의 용도로 사용한 자는 3년 이하의 징역 또는 3천만원 이하의 벌금에 처한다.",
+              "hash": "38802c2588cbadb0a0bf14d76596575943635640166cf1a861650f52c8f3346e"
+            },
+            "0043001": {
+              "label": "제43조(과태료)",
+              "hash": "ff3dd40424e3fe7b4a53fcdd324353a98a85c7ea9399a0f2bd4d4e216dafb5f2"
+            }
+          }
+        },
+        {
+          "id": "291229:20270421",
+          "state": "시행예정",
+          "effectiveDate": "20270421",
+          "promulgationDate": "20261020",
+          "promulgationNumber": "22076",
+          "revisionType": "일부개정",
+          "stageEffectiveDateAlgorithm": "promulgation-calendar-period-v2",
+          "stageEffectiveDates": [
+            {
+              "effectiveDate": "20270421",
+              "source": "law-search",
+              "basisText": "제1조(시행일) 이 법은 공포 후 6개월이 경과한 날부터 시행한다."
+            },
+            {
+              "effectiveDate": "20270610",
+              "source": "appendix-explicit",
+              "basisText": "다만, 부칙 제2조는 2027년 6월 10일부터 시행한다."
+            }
+          ],
+          "documentHash": "fbba970a20c789b92825aa0b3c6418c2b10a240aae7e4d4f08eabb375e7f6414",
+          "semanticDocumentHash": "ea1dbd9e05e97ceebfe755479e84397cde5d7532185d9ff69b2f81ea3a29de97",
+          "articleHashAlgorithm": "legal-semantic-text-v2",
+          "articles": {
+            "0001000": {
+              "label": "제1장 총칙",
+              "hash": "9fccc58f1e35b34d49bde0b4e489d767547c79276b7494915f197d98b3eca2e6"
+            },
+            "0001001": {
+              "label": "제1조(목적) 이 법은 인공지능의 건전한 발전과 신뢰 기반 조성에 필요한 기본적인 사항을 규정함으로써 국민의 권익과 존엄성을 보호하고 국민의 삶의 질 향상과 국가경쟁력을 강화하는 데 이바지함을 목적으로 한다.",
+              "hash": "279373413f590fac955e33d3f299e9f43f506e85cdb45c10961263ec23864e9f"
+            },
+            "0002001": {
+              "label": "제2조(정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.",
+              "hash": "ce0c11c51f38bf970aa7ff316d6dd961ec26aadc3ee2c0e79fda0d3da18d3c86"
+            },
+            "0003001": {
+              "label": "제3조(기본원칙 및 국가 등의 책무)",
+              "hash": "462fd75a1f4840926def49546797adefbd386c45533a36c93f84f80529d8586d"
+            },
+            "0004001": {
+              "label": "제4조(적용범위)",
+              "hash": "8a28bd161304f012a27a8ea8c85a9e2193885de423e022512757f99e8f75216e"
+            },
+            "0005001": {
+              "label": "제5조(다른 법률과의 관계)",
+              "hash": "ae2a93b29cedf42ba8fde92c6e041bd17b837556f469802c49431a4a55677fac"
+            },
+            "0006000": {
+              "label": "제2장 인공지능의 건전한 발전과 신뢰 기반 조성을 위한 추진체계",
+              "hash": "d39f5623d529ba23b88c4e225e557fc785e2b48dc55f71c0f00a104b916974c0"
+            },
+            "0006001": {
+              "label": "제6조(인공지능 기본계획의 수립)",
+              "hash": "51d44e4aaaeac7b227434a7c42cc4dfd04394a2540c15e0a0a481b6ebda95b2c"
+            },
+            "0007001": {
+              "label": "제7조(국가인공지능전략위원회)",
+              "hash": "ebaebe96706095e23742c22d3ecb06b53c9baf5dae7a372adca8f100a4a1a36e"
+            },
+            "0008001": {
+              "label": "제8조(위원회의 기능)",
+              "hash": "1749e99527a9b03a2555068e9d89a5c203cd42edf2d55171e17c15e2cd8b99f8"
+            },
+            "0009001": {
+              "label": "제9조(위원의 제척ㆍ기피 및 회피)",
+              "hash": "d25c5ee135a1785b5544feb782f20fcd619a1ef73d565e8b6503209470259a5e"
+            },
+            "0010001": {
+              "label": "제10조(분과위원회 등)",
+              "hash": "8343b27ec154d2fa59a44b090462962a8ba30838e565f159fdc65ca70f5a7536"
+            },
+            "0011001": {
+              "label": "제11조(인공지능정책센터)",
+              "hash": "e741de4f3080cde350f3ee84137abcc1a0cabd10cfbd5f74f6deb29744e5b805"
+            },
+            "0012001": {
+              "label": "제12조(인공지능안전연구소)",
+              "hash": "92788e3d6da8814eb063f7f2a05bfd7ecdb310077b596ee1ad0de60b6eef9269"
+            },
+            "0013000": {
+              "label": "제1절 인공지능산업 기반 조성",
+              "hash": "3dd2c428d7598cd662ef26a1fa5d35b0913c22193ca02f5785af7bcadf3fe97b"
+            },
+            "0013001": {
+              "label": "제13조(인공지능기술 개발 및 안전한 이용 지원)",
+              "hash": "f91c39191fd7355e3266576f92507a17ed0d23714cfeed8e4d8afcbb0efaa5fd"
+            },
+            "0014001": {
+              "label": "제14조(인공지능기술의 표준화)",
+              "hash": "015035f5612f59ff67acc0daf697774e0f17bbeb7dd821ca381f35a7e49674f5"
+            },
+            "0015001": {
+              "label": "제15조(인공지능 학습용데이터 관련 시책의 수립 등)",
+              "hash": "9ef1f39bd33d253a2b7e62463a578117226acda6447db4d99f521bf3c17ad09b"
+            },
+            "0015021": {
+              "label": "제15조의2(인공지능 학습용데이터 통합제공시스템의 구축ㆍ관리 등)",
+              "hash": "2c562e2d8f024cb3cb07680eb9e85a1e7d7ce80c6ebe6be665dfe514a05587c5"
             },
             "0016000": {
               "label": "제2절 인공지능기술 개발 및 인공지능산업 활성화",
