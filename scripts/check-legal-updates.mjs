@@ -41,6 +41,8 @@ function nestedErrorCode(error) {
 }
 
 function errorCategory(code) {
+  if (code === "MISSING_LAW_API_OC") return "configuration";
+  if (code === "LAW_API_AUTH_REJECTED") return "authentication";
   if (code === "HTTP_429") return "rate_limit";
   if (/^HTTP_4\d\d$/.test(code)) return "http_client";
   if (/^HTTP_5\d\d$/.test(code)) return "upstream_http";
@@ -651,15 +653,54 @@ async function fetchBinary(url, options = {}) {
   return bytes;
 }
 
+function isLawApiAuthenticationResult(value) {
+  return typeof value === "string" &&
+    value.replace(/\s/g, "").replace(/[.。]$/, "") ===
+      "사용자정보검증에실패하였습니다";
+}
+
+function isLawApiXmlAuthenticationRejection(text) {
+  // Only inspect a small error envelope, not arbitrary XML legal text.
+  const envelope = text.trim()
+    .replace(/^<\?xml\b[^?]*\?>\s*/i, "")
+    .match(/^<([\w:.-]+)\b[^>]*>([\s\S]*)<\/\1>$/);
+  if (!envelope) return false;
+  let result;
+  const remaining = envelope[2].replace(
+    /<(result|msg)\b[^>]*>([\s\S]*?)<\/\1>/gi,
+    (_, key, value) => {
+      if (key.toLowerCase() === "result") {
+        result = value.trim().replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1");
+      }
+      return "";
+    },
+  );
+  return remaining.trim() === "" && isLawApiAuthenticationResult(result);
+}
+
+function lawApiAuthenticationError() {
+  const error = new Error("법령 Open API 사용자 인증이 거부되었습니다.");
+  error.code = "LAW_API_AUTH_REJECTED";
+  return error;
+}
+
 async function fetchJson(url, options = {}) {
   const text = await fetchText(url, options);
+  let result;
   try {
-    return JSON.parse(text);
+    result = JSON.parse(text);
   } catch {
+    if (isLawApiXmlAuthenticationRejection(text)) {
+      throw lawApiAuthenticationError();
+    }
     const error = new Error("공식 API가 JSON이 아닌 응답을 반환했습니다.");
     error.code = "INVALID_JSON_RESPONSE";
     throw error;
   }
+  if (isLawApiAuthenticationResult(result?.result)) {
+    throw lawApiAuthenticationError();
+  }
+  return result;
 }
 
 function lawApiUrl(endpoint, parameters) {
@@ -995,6 +1036,11 @@ async function collectPipcArticle(source, options) {
 }
 
 async function collectSource(source, options) {
+  if (["law", "administrative_rule"].includes(source.type) && !options.oc) {
+    const error = new Error("LAW_OPEN_API_OC 설정이 필요합니다.");
+    error.code = "MISSING_LAW_API_OC";
+    throw error;
+  }
   if (source.type === "law") return collectLaw(source, options);
   if (source.type === "administrative_rule") {
     return collectAdministrativeRule(source, options);
@@ -1271,7 +1317,7 @@ export async function runMonitor(options) {
   for (const source of config.sources) {
     try {
       collected[source.id] = await collectSource(source, {
-        oc: options.oc || process.env.LAW_OPEN_API_OC?.trim() || "test",
+        oc: String(options.oc ?? process.env.LAW_OPEN_API_OC ?? "").trim(),
         fetchImpl: options.fetchImpl,
         sleepImpl: options.sleepImpl,
         fetchAttempts: options.fetchAttempts,

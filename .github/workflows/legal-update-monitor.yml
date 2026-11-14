@@ -289,7 +289,7 @@ jobs:
             SIGNATURE_PAYLOAD="$(jq -cS '{hosts,causes}' <<<"$DIAGNOSTIC_JSON")"
             SIGNATURE="$(printf '%s' "$SIGNATURE_PAYLOAD" | sha256sum | cut -d' ' -f1)"
             MARKER="<!-- legal-monitor-signature:${SIGNATURE} -->"
-            printf -v BODY 'Official legal source monitoring failed.\n\n- Failed sources: %s\n- Hosts: %s\n- Cause codes: %s\n- Workflow attempt: %s\n- Run: %s\n\nPer-request retries were exhausted. Separate +10/+30 minute recovery slots run only while the latest check is failed.\n\n%s' \
+            printf -v BODY 'Official legal source monitoring failed.\n\n- Failed sources: %s\n- Hosts: %s\n- Cause codes: %s\n- Workflow attempt: %s\n- Run: %s\n\nRetryable request failures use bounded retries. Configuration and authentication failures require checking LAW_OPEN_API_OC, API approval, and the registered caller IP/domain. Separate +10/+30 minute recovery slots run only while the latest check is failed.\n\n%s' \
               "${FAILED_SOURCE_COUNT:-unknown}" "$HOST_TEXT" "$CAUSE_TEXT" "$GITHUB_RUN_ATTEMPT" "$RUN_URL" "$MARKER"
             if [ -n "$OPEN_ISSUE" ]; then
               EXISTING_TEXT="$(gh issue view "$OPEN_ISSUE" --json body,comments --jq '[.body, (.comments[].body)] | join("\n")')"

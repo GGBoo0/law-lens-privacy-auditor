@@ -39,7 +39,7 @@ function git(cwd, ...arguments_) {
   return execFileSync("git", arguments_, { cwd, encoding: "utf8" }).trim();
 }
 
-async function createMonitorFixture() {
+async function createMonitorFixture(sourceConfig) {
   const root = await mkdtemp(path.join(os.tmpdir(), "law-lens-monitor-flow-"));
   const sources = path.join(root, "legal-sources.json");
   const snapshot = path.join(root, "legal-source-snapshot.json");
@@ -49,7 +49,7 @@ async function createMonitorFixture() {
     sources,
     `${JSON.stringify({
       schemaVersion: 1,
-      sources: [
+      sources: sourceConfig ?? [
         {
           id: "guide-list",
           name: "테스트 개인정보 안내서 목록",
@@ -74,6 +74,140 @@ function htmlFetch(getHtml) {
       headers: { "content-type": "text/html; charset=utf-8" },
     });
 }
+
+function legalApiSource(type = "law") {
+  return {
+    id: `test-${type}`,
+    name: type === "law" ? "테스트 법령" : "테스트 행정규칙",
+    type,
+    query: type === "law" ? "테스트 법령" : "테스트 행정규칙",
+    exactName: type === "law" ? "테스트 법령" : "테스트 행정규칙",
+    officialUrl: "https://www.law.go.kr/example",
+  };
+}
+
+test("missing legal API OC is explicit while PIPC checks continue and prior files remain", async (t) => {
+  const fixture = await createMonitorFixture();
+  const config = JSON.parse(await readFile(fixture.sources, "utf8"));
+  config.sources.unshift(legalApiSource(), legalApiSource("administrative_rule"));
+  await writeFile(fixture.sources, JSON.stringify(config));
+  await writeFile(fixture.snapshot, "previous snapshot");
+  await writeFile(fixture.report, "previous report");
+  const calls = [];
+  const messages = [];
+  t.mock.method(console, "error", (message) => messages.push(message));
+  t.mock.method(console, "log", () => {});
+  try {
+    await assert.rejects(runMonitor({
+      ...fixture,
+      oc: "   ",
+      fetchImpl: async (url) => {
+        calls.push(String(url));
+        assert.equal(new URL(url).hostname, "www.pipc.go.kr");
+        return new Response(guideHtml());
+      },
+    }), /category=configuration code=MISSING_LAW_API_OC/);
+    assert.equal(calls.length, 1);
+    assert.equal(messages.length, 2);
+    const output = await readFile(fixture.githubOutput, "utf8");
+    assert.match(output, /source_count=3\n/);
+    assert.match(output, /failed_source_count=2\n/);
+    assert.match(output, /"category":"configuration","code":"MISSING_LAW_API_OC","count":2/);
+    assert.equal(await readFile(fixture.snapshot, "utf8"), "previous snapshot");
+    assert.equal(await readFile(fixture.report, "utf8"), "previous report");
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+for (const [format, payload] of [
+  ["JSON", JSON.stringify({
+    result: "사용자 정보 검증에 실패하였습니다.",
+    msg: "OPEN API 호출 시 사용자 검증을 위하여 정확한 서버장비의 IP주소 및 도메인주소를 등록해 주세요. OC=secret-response-value",
+  })],
+  ["XML", '<?xml version="1.0" encoding="UTF-8"?><LawSearch><result><![CDATA[사용자 정보 검증에 실패하였습니다.]]></result><msg>OC=secret-response-value</msg></LawSearch>'],
+]) {
+  test(`legal API ${format} authentication envelopes are classified without exposing their contents`, async (t) => {
+    for (const type of ["law", "administrative_rule"]) {
+      await t.test(type, async (t) => {
+        const fixture = await createMonitorFixture([legalApiSource(type)]);
+        await writeFile(fixture.snapshot, "previous snapshot");
+        await writeFile(fixture.report, "previous report");
+        const messages = [];
+        t.mock.method(console, "error", (message) => messages.push(message));
+        let calls = 0;
+        try {
+          await assert.rejects(runMonitor({
+            ...fixture,
+            oc: "configured-secret-oc",
+            fetchImpl: async (url) => {
+              calls += 1;
+              assert.equal(new URL(url).searchParams.get("OC"), "configured-secret-oc");
+              return new Response(payload, { headers: { "content-type": `application/${format.toLowerCase()}` } });
+            },
+          }), (error) => {
+            assert.match(error.message, /category=authentication code=LAW_API_AUTH_REJECTED/);
+            assert.doesNotMatch(error.message, /secret|사용자 정보 검증|IP주소/);
+            return true;
+          });
+          assert.equal(calls, 1);
+          const output = await readFile(fixture.githubOutput, "utf8");
+          assert.match(output, /failed_source_count=1\n/);
+          assert.match(output, /"category":"authentication","code":"LAW_API_AUTH_REJECTED"/);
+          assert.doesNotMatch(output + messages.join("\n"), /secret|사용자 정보 검증|IP주소/);
+          assert.equal(await readFile(fixture.snapshot, "utf8"), "previous snapshot");
+          assert.equal(await readFile(fixture.report, "utf8"), "previous report");
+        } finally {
+          await rm(fixture.root, { recursive: true, force: true });
+        }
+      });
+    }
+  });
+}
+
+test("an explicit test OC remains usable with valid mocked law API responses", async (t) => {
+  const source = legalApiSource();
+  const fixture = await createMonitorFixture([source]);
+  const calls = [];
+  t.mock.method(console, "log", () => {});
+  try {
+    const result = await runMonitor({
+      ...fixture,
+      initialize: true,
+      oc: " test ",
+      fetchImpl: async (url) => {
+        const request = new URL(url);
+        calls.push(request);
+        assert.equal(request.searchParams.get("OC"), "test");
+        return Response.json(request.pathname.endsWith("lawSearch.do") ? {
+          LawSearch: { law: [{ 법령명한글: source.exactName, 현행연혁코드: "현행", 시행일자: "20260101", 법령일련번호: "1" }] },
+        } : {
+          법령: { 기본정보: { 법령명_한글: source.exactName }, 조문: { 조문단위: [{ 조문번호: "1", 조문내용: "제1조 테스트" }] } },
+        });
+      },
+    });
+    assert.equal(result.initialized, true);
+    assert.equal(calls.length, 2);
+    assert.ok(result.currentSnapshot.sources[source.id]);
+    assert.match(await readFile(fixture.githubOutput, "utf8"), /failed_source_count=0\n/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("unrelated non-JSON responses are not mislabeled as authentication rejection", async (t) => {
+  const fixture = await createMonitorFixture([legalApiSource()]);
+  t.mock.method(console, "error", () => {});
+  try {
+    await assert.rejects(runMonitor({
+      ...fixture,
+      oc: "configured-oc",
+      fetchImpl: async () => new Response("<html><body>서비스 점검 중</body></html>"),
+    }), /category=response code=INVALID_JSON_RESPONSE/);
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true });
+  }
+});
 
 test("canonical JSON fingerprints can ignore object key order", () => {
   assert.equal(

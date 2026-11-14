@@ -143,7 +143,11 @@ GitHub Actions의 [`Legal source monitor`](./.github/workflows/legal-update-moni
 
 공개 배포의 `/api/health`는 서비스와 법령 감시의 최신성을 함께 확인합니다. 별도 GitHub Actions 프로브가 매시간 이 엔드포인트를 외부에서 점검하고, 실패 시 공개 이슈를 생성해 누적 기록하며 복구 시 자동으로 닫습니다.
 
-기본값은 법제처 활용가이드의 공개 예시 인증값을 사용하며, 장기 운영 시 국가법령정보 공동활용에서 발급받은 인증값을 GitHub 저장소 Secret `LAW_OPEN_API_OC`로 등록하는 것을 권장합니다. 수동 재검증은 다음 명령으로 실행할 수 있습니다.
+법제처 API를 사용하는 법령·행정규칙 감시에는 승인받은 인증값(OC)이 필요합니다. [국가법령정보 공동활용의 API인증키관리](https://open.law.go.kr/LSO/usr/usrOcInfoMod.do)에서 확인한 값을 GitHub 저장소의 Actions Secret `LAW_OPEN_API_OC`로 등록하고, 로컬 실행에는 같은 이름의 환경변수를 설정합니다. 인증값을 생략하면 공개 예시값 `test`로 대체하지 않고 `configuration/MISSING_LAW_API_OC`로 기록합니다. 개인정보보호위원회 자료 수집에는 이 인증값이 필요하지 않습니다.
+
+`authentication/LAW_API_AUTH_REJECTED`는 법제처가 사용자 검증을 거절했다는 뜻입니다. 인증값과 사용 승인 여부, 신청내역에 등록된 실제 호출 서버의 IP·도메인을 확인해야 합니다. 이 경우에는 단순 재시도로 해결되지 않을 수 있습니다. `response/INVALID_JSON_RESPONSE`는 JSON 대신 다른 응답을 받은 경우이므로 [공식 사이트](https://open.law.go.kr/LSO/main.do)의 점검 공지도 함께 확인합니다. 실패 상태와 기존 스냅샷은 유지하며, 설정 누락이나 인증 거절을 정상 수집으로 처리하지 않습니다.
+
+설정을 완료한 후 수동 재검증은 다음 명령으로 실행할 수 있습니다.
 
 ```bash
 npm run legal:check
